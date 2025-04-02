@@ -91,5 +91,6 @@ iOSInjectionProject/
 
 # APIKey.swift
 Secret/
+GoogleService-Info.plist
 # End of https://www.toptal.com/developers/gitignore/api/swift
 
