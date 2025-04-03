@@ -9,11 +9,11 @@
 /* Begin PBXBuildFile section */
 		21E7A4952E843062008EFDDA /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 21E7A4942E843062008EFDDA /* .gitignore */; };
 		21E7A4AA2E8435EA008EFDDA /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 21E7A4A92E8435EA008EFDDA /* SnapKit */; };
-		21E7A4AD2E8435FE008EFDDA /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 21E7A4AC2E8435FE008EFDDA /* RxCocoa */; };
-		21E7A4AF2E8435FE008EFDDA /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21E7A4AE2E8435FE008EFDDA /* RxSwift */; };
 		21FE04CE2E850272004EFEE3 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04CD2E850272004EFEE3 /* RealmSwift */; };
 		21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */; };
 		21FE04D52E8503E8004EFEE3 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04D42E8503E8004EFEE3 /* FirebaseFirestore */; };
+		21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052C2E85358E004EFEE3 /* RxCocoa */; };
+		21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052E2E85358E004EFEE3 /* RxSwift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,10 +47,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */,
 				21FE04CE2E850272004EFEE3 /* RealmSwift in Frameworks */,
-				21E7A4AD2E8435FE008EFDDA /* RxCocoa in Frameworks */,
-				21E7A4AF2E8435FE008EFDDA /* RxSwift in Frameworks */,
 				21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */,
+				21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */,
 				21E7A4AA2E8435EA008EFDDA /* SnapKit in Frameworks */,
 				21FE04D52E8503E8004EFEE3 /* FirebaseFirestore in Frameworks */,
 			);
@@ -97,11 +97,11 @@
 			name = DoSurfApp;
 			packageProductDependencies = (
 				21E7A4A92E8435EA008EFDDA /* SnapKit */,
-				21E7A4AC2E8435FE008EFDDA /* RxCocoa */,
-				21E7A4AE2E8435FE008EFDDA /* RxSwift */,
 				21FE04CD2E850272004EFEE3 /* RealmSwift */,
 				21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */,
 				21FE04D42E8503E8004EFEE3 /* FirebaseFirestore */,
+				21FE052C2E85358E004EFEE3 /* RxCocoa */,
+				21FE052E2E85358E004EFEE3 /* RxSwift */,
 			);
 			productName = DoSurfApp;
 			productReference = 21E7A47C2E842FED008EFDDA /* DoSurfApp.app */;
@@ -133,9 +133,9 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				21E7A4A82E8435EA008EFDDA /* XCRemoteSwiftPackageReference "SnapKit" */,
-				21E7A4AB2E8435FE008EFDDA /* XCRemoteSwiftPackageReference "RxSwift" */,
 				21FE04CC2E850272004EFEE3 /* XCRemoteSwiftPackageReference "realm-swift" */,
 				21FE04D12E8503E8004EFEE3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 21E7A47D2E842FED008EFDDA /* Products */;
@@ -392,14 +392,6 @@
 				minimumVersion = 5.7.1;
 			};
 		};
-		21E7A4AB2E8435FE008EFDDA /* XCRemoteSwiftPackageReference "RxSwift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ReactiveX/RxSwift.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 6.9.0;
-			};
-		};
 		21FE04CC2E850272004EFEE3 /* XCRemoteSwiftPackageReference "realm-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/realm/realm-swift";
@@ -416,6 +408,14 @@
 				minimumVersion = 12.3.0;
 			};
 		};
+		21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/ReactiveX/RxSwift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.9.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -423,16 +423,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 21E7A4A82E8435EA008EFDDA /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
-		};
-		21E7A4AC2E8435FE008EFDDA /* RxCocoa */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 21E7A4AB2E8435FE008EFDDA /* XCRemoteSwiftPackageReference "RxSwift" */;
-			productName = RxCocoa;
-		};
-		21E7A4AE2E8435FE008EFDDA /* RxSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 21E7A4AB2E8435FE008EFDDA /* XCRemoteSwiftPackageReference "RxSwift" */;
-			productName = RxSwift;
 		};
 		21FE04CD2E850272004EFEE3 /* RealmSwift */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -448,6 +438,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 21FE04D12E8503E8004EFEE3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		21FE052C2E85358E004EFEE3 /* RxCocoa */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxCocoa;
+		};
+		21FE052E2E85358E004EFEE3 /* RxSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */;
+			productName = RxSwift;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
