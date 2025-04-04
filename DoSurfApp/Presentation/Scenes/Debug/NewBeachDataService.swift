@@ -15,7 +15,7 @@ import FirebaseFirestore
 
 // MARK: - Service
 protocol NewBeachDataServiceProtocol {
-    func fetchBeachData(beachId: String, completion: @escaping (Result<BeachDataDump, FirebaseAPIError>) -> Void)
+    func fetchBeachData(beachId: String, completion: @escaping (Result<NewBeachDataDump, FirebaseAPIError>) -> Void)
     func searchBeachInAllRegions(beachId: String, completion: @escaping (Result<String?, FirebaseAPIError>) -> Void)
 }
 
@@ -30,7 +30,7 @@ class NewBeachDataService: NewBeachDataServiceProtocol {
         self.knownRegions = knownRegions
     }
 
-    func fetchBeachData(beachId: String, completion: @escaping (Result<BeachDataDump, FirebaseAPIError>) -> Void) {
+    func fetchBeachData(beachId: String, completion: @escaping (Result<NewBeachDataDump, FirebaseAPIError>) -> Void) {
         repository.findRegion(for: beachId, among: knownRegions) { [weak self] result in
             guard let self = self else {
                 completion(.failure(.internalError))
@@ -49,7 +49,7 @@ class NewBeachDataService: NewBeachDataServiceProtocol {
                 let beachInfo = BeachInfo.availableBeaches.first { $0.id == beachId } ?? BeachInfo(id: beachId, name: "Unknown", region: region)
 
                 var metadataResult: BeachMetadata?
-                var forecastsResult: [FirestoreChartDTO] = []
+                var forecastsResult: [Chart] = []
                 var firstError: FirebaseAPIError?
                 let group = DispatchGroup()
 
@@ -70,7 +70,7 @@ class NewBeachDataService: NewBeachDataServiceProtocol {
                     case .failure(let error):
                         if firstError == nil { firstError = error }
                     case .success(let forecasts):
-                        forecastsResult = forecasts
+                        forecastsResult = self.convertDTOsToDomain(forecasts)
                     }
                     group.leave()
                 }
@@ -81,8 +81,11 @@ class NewBeachDataService: NewBeachDataServiceProtocol {
                         return
                     }
 
-                    let sortedForecasts = forecastsResult.sorted { $0.timestamp < $1.timestamp }
-                    let dump = BeachDataDump(
+                    let sortedForecasts = forecastsResult.sorted { a, b in
+                        a.time < b.time
+                    }
+                    
+                    let dump = NewBeachDataDump(
                         beachInfo: beachInfo,
                         metadata: metadataResult,
                         forecasts: sortedForecasts,
@@ -94,7 +97,15 @@ class NewBeachDataService: NewBeachDataServiceProtocol {
             }
         }
     }
-
+    private func convertDTOsToDomain(_ dtos: [FirestoreChartDTO]) -> [Chart] {
+            return dtos.compactMap { dto in
+                let chart = dto.toDomain()
+                if chart == nil {
+                    print("⚠️ Failed to convert DTO to Chart: \(dto.documentId)")
+                }
+                return chart
+            }
+        }
     func searchBeachInAllRegions(beachId: String, completion: @escaping (Result<String?, FirebaseAPIError>) -> Void) {
         repository.findRegion(for: beachId, among: knownRegions, completion: completion)
     }

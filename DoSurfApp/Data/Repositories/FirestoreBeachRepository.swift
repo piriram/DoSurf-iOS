@@ -76,7 +76,7 @@ final class FirestoreBeachRepository: BeachRepository {
             }
     }
 
-    // TODO: -900이하면 nil처리 해주기
+
     func fetchForecasts(beachId: String, region: String, since: Date, limit: Int, completion: @escaping (Result<[FirestoreChartDTO], FirebaseAPIError>) -> Void) {
         db.collection("regions")
             .document(region)
@@ -94,6 +94,10 @@ final class FirestoreBeachRepository: BeachRepository {
                     for document in documents {
                         if document.documentID == "_metadata" { continue }
                         let data = document.data()
+                        // Handle waveHeight: set to nil if -900 or below
+                        let rawWaveHeight = data["wave_height"] as? Double
+                        let waveHeight = (rawWaveHeight != nil && rawWaveHeight! <= -900) ? nil : rawWaveHeight
+                        
                         let forecast = FirestoreChartDTO(
                             documentId: document.documentID,
                             beachId: data["beach_id"] as? Int ?? Int(beachId) ?? 0,
@@ -103,7 +107,7 @@ final class FirestoreBeachRepository: BeachRepository {
                             timestamp: (data["timestamp"] as? Timestamp)?.dateValue() ?? Date(),
                             windSpeed: data["wind_speed"] as? Double,
                             windDirection: data["wind_direction"] as? Double,
-                            waveHeight: data["wave_height"] as? Double,
+                            waveHeight: waveHeight,
                             airTemperature: data["air_temperature"] as? Double,
                             precipitationProbability: data["precipitation_probability"] as? Double,
                             precipitationType: data["precipitation_type"] as? Int,
