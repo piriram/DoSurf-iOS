@@ -8,11 +8,11 @@
 import Foundation
 
 struct Chart: Equatable {
-    let beachID: String
+    let beachID: Int
     let time: Date
     let windDirection: Double
     let windSpeed: Double
-    let waveDirection: Int
+    let waveDirection: Double
     let waveHeight: Double
     let waveSpeed: Double
     let waterTemperature: Double
