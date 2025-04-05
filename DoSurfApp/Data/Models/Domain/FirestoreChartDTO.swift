@@ -37,7 +37,7 @@ struct FirestoreChartDTO {
                      windSpeed: windSpeed ?? 0.0,
                      waveDirection: omWaveDirection ?? 0.0,
                      waveHeight: waveHeight ?? omWaveHeight ?? 0.0,
-                     waveSpeed: 0.0,//TODO: 값 서버에서 넣어줘야함
+                     wavePeriod: 0.0,//TODO: 값 서버에서 넣어줘야함
                      waterTemperature: omSeaSurfaceTemperature ?? 0.0,
                      weather: .rain, // TODO: enum 값 연결
                      airTemperature: airTemperature ?? 0.0)
@@ -50,7 +50,7 @@ struct Chart: Equatable {
     let windSpeed: Double
     let waveDirection: Double
     let waveHeight: Double
-    let waveSpeed: Double
+    let wavePeriod: Double
     let waterTemperature: Double
     let weather: WeatherType
     let airTemperature: Double

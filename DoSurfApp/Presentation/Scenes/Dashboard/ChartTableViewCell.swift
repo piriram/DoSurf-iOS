@@ -240,7 +240,7 @@ class ChartTableViewCell: UITableViewCell {
         
         // Wave - setTextWithTypography 사용
         waveHeightLabel.setTextWithTypography(String(format: "%.1fm", chart.waveHeight), style: .body1Medium)
-        waveSpeedLabel.setTextWithTypography(String(format: "%.1fs", chart.waveSpeed), style: .captionMedium, color: .secondaryLabel)
+        waveSpeedLabel.setTextWithTypography(String(format: "%.1fs", chart.wavePeriod), style: .captionMedium, color: .secondaryLabel)
         
         // Update wave direction icon rotation
         let waveRadians = chart.waveDirection * .pi / 180

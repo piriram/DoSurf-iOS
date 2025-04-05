@@ -86,7 +86,7 @@ class CustomTabBarController: BaseTabBarController {
     }
     
     private func createRecordListViewController() -> UIViewController {
-        let vc = RecordViewController()
+        let vc = StaticsViewController()
         vc.title = "기록 차트"
         // 탭 루트로 사용할 때는 닫기 버튼 제거 (모달이 아님)
         vc.navigationItem.leftBarButtonItem = nil
@@ -174,7 +174,14 @@ class CustomTabBarController: BaseTabBarController {
         overlay.show()
     }
     
-    private func hideSurfEndOverlay() {
+    private func hideSurfEndOverlay(completion: (() -> Void)? = nil) {
+        // 탭바 보이기 (오버레이가 없더라도 보장)
+        if surfEndOverlay == nil {
+            animateTabBarVisibility(hidden: false)
+            completion?()
+            return
+        }
+        
         guard let overlay = surfEndOverlay else { return }
         
         // 탭바 보이기
@@ -184,6 +191,7 @@ class CustomTabBarController: BaseTabBarController {
         overlay.hide { [weak self] in
             overlay.removeFromSuperview()
             self?.surfEndOverlay = nil
+            completion?()
         }
     }
     
@@ -195,11 +203,30 @@ class CustomTabBarController: BaseTabBarController {
         let feedback = UINotificationFeedbackGenerator()
         feedback.notificationOccurred(.success)
         
-        // 오버레이 숨기기
-        hideSurfEndOverlay()
+        // 오버레이 숨기기 완료 후 기록 작성 화면으로 이동
+        hideSurfEndOverlay { [weak self] in
+            self?.pushToRecordWrite()
+        }
         
         // 기록 저장 로직 등 추가 처리
         // TODO: 실제 서핑 데이터 저장
+    }
+    
+    private func pushToRecordWrite() {
+        let recordVC = SurfRecordViewController()
+        recordVC.title = "기록 작성"
+        recordVC.hidesBottomBarWhenPushed = true
+        
+        if let nav = self.selectedViewController as? UINavigationController {
+            nav.pushViewController(recordVC, animated: true)
+        } else if let nav = self.navigationController {
+            nav.pushViewController(recordVC, animated: true)
+        } else {
+            // 네비게이션 컨트롤러가 없을 경우 대비
+            let nav = UINavigationController(rootViewController: recordVC)
+            nav.modalPresentationStyle = .fullScreen
+            self.present(nav, animated: true)
+        }
     }
     
     private func animateTabBarVisibility(hidden: Bool) {
@@ -210,4 +237,3 @@ class CustomTabBarController: BaseTabBarController {
         }
     }
 }
-
