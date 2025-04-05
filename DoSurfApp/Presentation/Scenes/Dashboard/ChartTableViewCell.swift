@@ -59,7 +59,7 @@ class ChartTableViewCell: UITableViewCell {
         selectionStyle = .none
         
         // Time Label - Typography 적용
-        timeLabel.applyTypography(.body2Medium, color: .gray) //TODO: 색상 변경
+        timeLabel.applyTypography(.body2Medium, color: UIColor(white: 1, alpha: 0.7))
         timeLabel.textAlignment = .center
         
         // Wind Components
@@ -77,7 +77,8 @@ class ChartTableViewCell: UITableViewCell {
         waveIconImageView.contentMode = .scaleAspectFit
         
         // Wave Height Label - Typography 적용
-        waveHeightLabel.applyTypography(.body1Medium, color: .label)
+//        waveHeightLabel.applyTypography(.body1Medium, color: .label)
+        waveHeightLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
         waveHeightLabel.adjustsFontSizeToFitWidth = true
         waveHeightLabel.minimumScaleFactor = 0.8
         
@@ -102,7 +103,7 @@ class ChartTableViewCell: UITableViewCell {
         
         // Water Temperature Image
         waterTemperatureImageView.image = UIImage(named: "waterTemperature") ?? UIImage(systemName: "drop.fill")
-        waterTemperatureImageView.contentMode = .scaleAspectFill
+        waterTemperatureImageView.contentMode = .scaleAspectFit
         
         // Stack Views
         setupStackViews()
@@ -125,19 +126,19 @@ class ChartTableViewCell: UITableViewCell {
         windStackView.addArrangedSubview(windInfoStack)
         windStackView.axis = .horizontal
         windStackView.alignment = .center
-        windStackView.spacing = 4
+        windStackView.spacing = 7
         
         // Wave Stack
         let waveInfoStack = UIStackView(arrangedSubviews: [waveHeightLabel, waveSpeedLabel])
         waveInfoStack.axis = .vertical
-        waveInfoStack.alignment = .leading
+        waveInfoStack.alignment = .center
         waveInfoStack.spacing = 2
         
         waveStackView.addArrangedSubview(waveIconImageView)
         waveStackView.addArrangedSubview(waveInfoStack)
         waveStackView.axis = .horizontal
         waveStackView.alignment = .center
-        waveStackView.spacing = 4
+        waveStackView.spacing = 7
         
         // Weather Stack (날씨 아이콘과 기온)
         let weatherInfoStack = UIStackView(arrangedSubviews: [airTemperatureLabel])
@@ -149,7 +150,7 @@ class ChartTableViewCell: UITableViewCell {
         weatherStackView.addArrangedSubview(weatherInfoStack)
         weatherStackView.axis = .horizontal
         weatherStackView.alignment = .center
-        weatherStackView.spacing = 4
+        weatherStackView.spacing = 1
         
         // Water Temperature Stack
         let waterTempInfoStack = UIStackView(arrangedSubviews: [waterTemperatureLabel])
@@ -162,14 +163,14 @@ class ChartTableViewCell: UITableViewCell {
         waterTemperatureStackView.addArrangedSubview(waterTemperatureImageView)
         waterTemperatureStackView.axis = .vertical
         waterTemperatureStackView.alignment = .center
-        waterTemperatureStackView.spacing = 4
+        waterTemperatureStackView.spacing = 1
         
         // Main Container Stack
         containerStackView.addArrangedSubview(timeStackView)
         containerStackView.addArrangedSubview(windStackView)
         containerStackView.addArrangedSubview(waveStackView)
-        containerStackView.addArrangedSubview(weatherStackView)
         containerStackView.addArrangedSubview(waterTemperatureStackView)
+        containerStackView.addArrangedSubview(weatherStackView)
         containerStackView.axis = .horizontal
         containerStackView.distribution = .equalSpacing
         containerStackView.alignment = .center
@@ -192,12 +193,12 @@ class ChartTableViewCell: UITableViewCell {
         }
         
         waterTemperatureImageView.snp.makeConstraints { make in
-            make.width.height.equalTo(16)
+            make.width.equalTo(waterTemperatureLabel.snp.width)
         }
         
         // 각 스택뷰의 최소 너비 설정
         timeStackView.snp.makeConstraints { make in
-            make.width.greaterThanOrEqualTo(50)
+            make.width.greaterThanOrEqualTo(30)
         }
         
         windStackView.snp.makeConstraints { make in
@@ -205,45 +206,21 @@ class ChartTableViewCell: UITableViewCell {
         }
         
         waveStackView.snp.makeConstraints { make in
-            make.width.greaterThanOrEqualTo(70)
+            make.width.greaterThanOrEqualTo(60)
         }
         
         weatherStackView.snp.makeConstraints { make in
-            make.width.greaterThanOrEqualTo(60)
+            make.width.greaterThanOrEqualTo(40)
         }
         
         waterTemperatureStackView.snp.makeConstraints { make in
             make.width.greaterThanOrEqualTo(60)
         }
         
-        // 각 스택뷰의 우선순위 조정 (균등 배치를 위해)
-        timeStackView.setContentHuggingPriority(UILayoutPriority(750), for: .horizontal)
-        timeStackView.setContentCompressionResistancePriority(UILayoutPriority(750), for: .horizontal)
-        
-        windStackView.setContentHuggingPriority(UILayoutPriority(750), for: .horizontal)
-        windStackView.setContentCompressionResistancePriority(UILayoutPriority(750), for: .horizontal)
-        
-        waveStackView.setContentHuggingPriority(UILayoutPriority(750), for: .horizontal)
-        waveStackView.setContentCompressionResistancePriority(UILayoutPriority(750), for: .horizontal)
-        
-        weatherStackView.setContentHuggingPriority(UILayoutPriority(750), for: .horizontal)
-        weatherStackView.setContentCompressionResistancePriority(UILayoutPriority(750), for: .horizontal)
-        
-        waterTemperatureStackView.setContentHuggingPriority(UILayoutPriority(750), for: .horizontal)
-        waterTemperatureStackView.setContentCompressionResistancePriority(UILayoutPriority(750), for: .horizontal)
-        
-        // 텍스트 레이블들의 압축 저항성을 높임 (잘리지 않도록)
-        timeLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        windSpeedLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        waveHeightLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        waveSpeedLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        airTemperatureLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        waterTemperatureLabel.setContentCompressionResistancePriority(UILayoutPriority(1000), for: .horizontal)
-        
         containerStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(12)
-            make.top.bottom.equalToSuperview().inset(12)
-            make.height.greaterThanOrEqualTo(50) // 최소 높이 보장
+            make.top.bottom.equalToSuperview().inset(4)
+            make.height.greaterThanOrEqualTo(30) // 최소 높이 보장
         }
     }
     
@@ -252,18 +229,18 @@ class ChartTableViewCell: UITableViewCell {
         // Time - setTextWithTypography 사용하여 완전한 스타일링 적용
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "HH시"
-        timeLabel.setTextWithTypography(timeFormatter.string(from: chart.time), style: .body2Medium)
+        timeLabel.setTextWithTypography(timeFormatter.string(from: chart.time), style: .body2Medium, color: UIColor(white: 0, alpha: 0.7))
         
         // Wind - setTextWithTypography 사용
-        windSpeedLabel.setTextWithTypography(String(format: "%.1fm/s", chart.windSpeed), style: .captionMedium)
+        windSpeedLabel.setTextWithTypography(String(format: "%.1fm/s", chart.windSpeed), style: .body1Medium)
         
         // Update wind direction icon rotation
         let windRadians = chart.windDirection * .pi / 180
         windIconImageView.transform = CGAffineTransform(rotationAngle: windRadians)
         
         // Wave - setTextWithTypography 사용
-        waveHeightLabel.setTextWithTypography(String(format: "%.1fm", chart.waveHeight), style: .captionMedium)
-        waveSpeedLabel.setTextWithTypography(String(format: "%.1fm/s", chart.waveSpeed), style: .captionMedium, color: .secondaryLabel)
+        waveHeightLabel.setTextWithTypography(String(format: "%.1fm", chart.waveHeight), style: .body1Medium)
+        waveSpeedLabel.setTextWithTypography(String(format: "%.1fs", chart.waveSpeed), style: .captionMedium, color: .secondaryLabel)
         
         // Update wave direction icon rotation
         let waveRadians = chart.waveDirection * .pi / 180
@@ -273,7 +250,8 @@ class ChartTableViewCell: UITableViewCell {
         weatherIconImageView.image = UIImage(named: chart.weather.iconName)
         
         // Temperature - setTextWithTypography 사용
-        airTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.airTemperature), style: .captionMedium)
-        waterTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.waterTemperature), style: .captionMedium, color: .label)
+        airTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.airTemperature), style: .body1Medium)
+        waterTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.waterTemperature), style: .body1Medium, color: .label)
     }
 }
+

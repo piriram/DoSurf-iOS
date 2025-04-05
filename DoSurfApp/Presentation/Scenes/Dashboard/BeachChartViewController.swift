@@ -4,63 +4,60 @@
 //
 //  Created by 잠만보김쥬디 on 9/27/25.
 //
-
 import UIKit
 import RxSwift
 import RxCocoa
 import SnapKit
 
-
-// MARK: - Main Chart View Controller
-class MainChartViewController: UIViewController {
+class BeachChartViewController: BaseViewController {
     
     // MARK: - Properties
     private let disposeBag = DisposeBag()
     private let beachDataService: BeachDataServiceProtocol
     private var charts: [Chart] = []
     private var beachInfo: BeachInfo?
+    private var currentDateIndex = 0
+    private var groupedCharts: [(date: Date, charts: [Chart])] = []
     
     // MARK: - UI Components
     private lazy var tableView: UITableView = {
-        let tableView = UITableView(frame: .zero, style: .insetGrouped)
+        let tableView = UITableView(frame: .zero, style: .grouped)
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(ChartTableViewCell.self, forCellReuseIdentifier: ChartTableViewCell.identifier)
         tableView.backgroundColor = .systemGroupedBackground
         tableView.separatorStyle = .singleLine
-        tableView.rowHeight = UITableView.automaticDimension
-        tableView.estimatedRowHeight = 40
+        tableView.rowHeight = 56
         tableView.sectionHeaderTopPadding = 0
+        tableView.showsVerticalScrollIndicator = false
         return tableView
     }()
     
     private let refreshControl = UIRefreshControl()
     
-    private lazy var headerView: UIView = {
+    private lazy var dateHeaderView: UIView = {
         let view = UIView()
         view.backgroundColor = .systemBackground
+        view.layer.shadowColor = UIColor.black.cgColor
+        view.layer.shadowOffset = CGSize(width: 0, height: 1)
+        view.layer.shadowRadius = 2
+        view.layer.shadowOpacity = 0.1
         
-        let titleLabel = UILabel()
-        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        titleLabel.textColor = .label
-        titleLabel.text = "파도 예보"
-        
-        let subtitleLabel = UILabel()
-        subtitleLabel.font = UIFont.systemFont(ofSize: 14, weight: .regular)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.text = "시간별 상세 예보"
-        
-        let stackView = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
-        stackView.axis = .vertical
-        stackView.spacing = 4
-        
-        view.addSubview(stackView)
-        stackView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(16)
+        view.addSubview(dateLabel)
+        dateLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
             make.top.bottom.equalToSuperview().inset(16)
         }
         
         return view
+    }()
+    
+    private let dateLabel: UILabel = {
+        let label = UILabel()
+        label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        label.textColor = .label
+        label.textAlignment = .center
+        return label
     }()
     
     // MARK: - Initialization
@@ -73,50 +70,52 @@ class MainChartViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // MARK: - Lifecycle
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        setupConstraints()
-        setupBindings()
-        loadInitialData()
-    }
-    
-    // MARK: - Setup
-    private func setupUI() {
-        view.backgroundColor = .systemBackground
+    // MARK: - Overrides from BaseViewController
+    override func configureNavigationBar() {
+        super.configureNavigationBar()
         title = "파도 예보"
-        
-        // Navigation Bar
         navigationController?.navigationBar.prefersLargeTitles = true
-        
-        // Refresh Control
-        refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
+    }
+
+    override func configureUI() {
+        view.backgroundColor = .systemBackground
         tableView.refreshControl = refreshControl
         
-        view.addSubview(headerView)
+        view.addSubview(dateHeaderView)
         view.addSubview(tableView)
     }
-    
-    private func setupConstraints() {
-        headerView.snp.makeConstraints { make in
+
+    override func configureLayout() {
+        dateHeaderView.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide)
             make.leading.trailing.equalToSuperview()
+            make.height.equalTo(60)
         }
         
         tableView.snp.makeConstraints { make in
-            make.top.equalTo(headerView.snp.bottom)
+            make.top.equalTo(dateHeaderView.snp.bottom)
             make.leading.trailing.bottom.equalToSuperview()
         }
     }
-    
-    private func setupBindings() {
-        // 추가 바인딩이 필요한 경우 여기에 구현
+
+    override func configureAction() {
+        refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
+    }
+
+    override func configureBind() {
+        // 스크롤 이벤트 바인딩
+        tableView.rx.contentOffset
+            .distinctUntilChanged()
+            .subscribe(onNext: { [weak self] _ in
+                self?.updateDateForVisibleSection()
+            })
+            .disposed(by: disposeBag)
+        
+        loadInitialData()
     }
     
     // MARK: - Data Loading
     private func loadInitialData() {
-        // 예시: 해운대 데이터 로드
         loadBeachData(beachId: "4001")
     }
     
@@ -137,18 +136,55 @@ class MainChartViewController: UIViewController {
     
     private func handleSuccessfulDataLoad(_ dump: BeachDataDump) {
         self.beachInfo = dump.beachInfo
-        // FirestoreChartDTO를 Chart로 변환
         self.charts = dump.forecasts.compactMap { $0.toDomain() }
+        
+        // 날짜별로 그룹화
+        self.groupedCharts = groupChartsByDate(charts)
+        
+        // 첫 번째 날짜로 초기화
+        updateCurrentDate(index: 0)
+        
         self.tableView.reloadData()
         
-        // Update header with beach info
         if let beachInfo = self.beachInfo {
             title = beachInfo.name
         }
     }
     
+    private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: charts) { chart in
+            calendar.startOfDay(for: chart.time)
+        }
+        
+        return grouped.sorted { $0.key < $1.key }.map { (date: $0.key, charts: $0.value.sorted { $0.time < $1.time }) }
+    }
+    
+    private func updateDateForVisibleSection() {
+        guard !groupedCharts.isEmpty else { return }
+        
+        let visibleIndexPaths = tableView.indexPathsForVisibleRows ?? []
+        if let firstVisibleIndexPath = visibleIndexPaths.first {
+            let newDateIndex = firstVisibleIndexPath.section
+            if newDateIndex != currentDateIndex && newDateIndex < groupedCharts.count {
+                updateCurrentDate(index: newDateIndex)
+            }
+        }
+    }
+    
+    private func updateCurrentDate(index: Int) {
+        guard index < groupedCharts.count else { return }
+        currentDateIndex = index
+        
+        let date = groupedCharts[index].date
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ko_KR")
+        formatter.dateFormat = "M월 d일 EEEE"
+        
+        dateLabel.text = formatter.string(from: date)
+    }
+    
     private func handleDataLoadError(_ error: FirebaseAPIError) {
-        // 에러 처리
         let alert = UIAlertController(title: "데이터 로드 실패",
                                     message: error.localizedDescription,
                                     preferredStyle: .alert)
@@ -166,9 +202,14 @@ class MainChartViewController: UIViewController {
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
-extension MainChartViewController: UITableViewDataSource, UITableViewDelegate {
+extension BeachChartViewController: UITableViewDataSource, UITableViewDelegate {
+    
+    func numberOfSections(in tableView: UITableView) -> Int {
+        return groupedCharts.count
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return charts.count
+        return groupedCharts[section].charts.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -176,31 +217,26 @@ extension MainChartViewController: UITableViewDataSource, UITableViewDelegate {
             return UITableViewCell()
         }
         
-        let chart = charts[indexPath.row]
+        let chart = groupedCharts[indexPath.section].charts[indexPath.row]
         cell.configure(with: chart)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        // 셀 선택 시 상세 화면으로 이동하거나 추가 동작 구현
     }
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
-        headerView.backgroundColor = .systemGroupedBackground
-        
-        let containerView = UIView()
-        containerView.backgroundColor = .secondarySystemGroupedBackground
-        containerView.layer.cornerRadius = 8
-        
+        headerView.backgroundColor = .secondarySystemGroupedBackground
+
         let stackView = UIStackView()
         stackView.axis = .horizontal
-        stackView.distribution = .fillEqually
+        stackView.distribution = .equalSpacing
         stackView.alignment = .center
         stackView.spacing = 8
-        
-        let labels = ["시간", "바람", "파도", "기온/수온"]
+
+        let labels = ["시간", "바람", "파도", "수온", "날씨"]
         labels.forEach { text in
             let label = UILabel()
             label.text = text
@@ -209,36 +245,34 @@ extension MainChartViewController: UITableViewDataSource, UITableViewDelegate {
             label.textAlignment = .center
             stackView.addArrangedSubview(label)
         }
-        
-        containerView.addSubview(stackView)
-        headerView.addSubview(containerView)
-        
+
+        headerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(8)
-        }
-        
-        containerView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(16)
-            make.top.bottom.equalToSuperview().inset(4)
+            make.centerY.equalToSuperview()
         }
-        
+
         return headerView
     }
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return charts.isEmpty ? 0 : 40
+        return section == 0 ? 44 : 20  // 첫 섹션만 헤더 표시
     }
 }
 
+
 // MARK: - RxSwift Extensions
-extension MainChartViewController {
+extension BeachChartViewController {
     func bindData(with observable: Observable<[Chart]>) {
         observable
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] charts in
                 self?.charts = charts
+                self?.groupedCharts = self?.groupChartsByDate(charts) ?? []
+                self?.updateCurrentDate(index: 0)
                 self?.tableView.reloadData()
             })
             .disposed(by: disposeBag)
     }
 }
+
