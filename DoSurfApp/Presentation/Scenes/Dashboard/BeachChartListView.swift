@@ -1,7 +1,7 @@
 import UIKit
 import SnapKit
 
-final class ChartListView: UIView {
+final class BeachChartListView: UIView {
     // MARK: - Properties
     private var groupedCharts: [(date: Date, charts: [Chart])] = []
     private var currentDateIndex: Int = 0
@@ -21,7 +21,7 @@ final class ChartListView: UIView {
     private let dateLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
-        label.textColor = .label
+        label.textColor = .surfBlue
         label.textAlignment = .center
         return label
     }()
@@ -99,10 +99,7 @@ final class ChartListView: UIView {
             return
         }
         let date = groupedCharts[index].date
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일 EEEE"
-        dateLabel.text = formatter.string(from: date)
+        dateLabel.text = date.koreanMonthDayWeekday
     }
     
     private func updateDateForVisibleSectionByCount() {
@@ -140,7 +137,7 @@ final class ChartListView: UIView {
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
-extension ChartListView: UITableViewDataSource, UITableViewDelegate {
+extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
         return groupedCharts.count
     }
@@ -164,7 +161,7 @@ extension ChartListView: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let headerView = UIView()
-        headerView.backgroundColor = .secondarySystemGroupedBackground
+        headerView.backgroundColor = .backgroundHeader.withAlphaComponent(0.5)
 
         let stackView = UIStackView()
         stackView.axis = .horizontal
@@ -192,7 +189,7 @@ extension ChartListView: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return section == 0 ? 44 : 20
+        return 20
     }
 
     // Keep the date header in sync with the section that has more visible rows
@@ -211,3 +208,4 @@ extension ChartListView: UITableViewDataSource, UITableViewDelegate {
         if !decelerate { updateDateForVisibleSectionByCount() }
     }
 }
+

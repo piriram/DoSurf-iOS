@@ -42,8 +42,8 @@ final class SurfRecordViewController: BaseViewController {
         
         // Ensure navigation bar is visible and back button available when pushed
         navigationController?.setNavigationBarHidden(false, animated: false)
+        navigationController?.setNavigationBarHidden(false, animated: false)
         navigationItem.hidesBackButton = false
-        navigationController?.navigationBar.tintColor = .systemBlue
         if title == nil || title?.isEmpty == true {
             title = "서핑 기록"
         }
@@ -153,8 +153,8 @@ final class SurfRecordViewController: BaseViewController {
         
         // Date header
         let dateHeaderView = UIView()
-        chartDateLabel.font = .systemFont(ofSize: 16, weight: .semibold)
-        chartDateLabel.textColor = .label
+        chartDateLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        chartDateLabel.textColor = .surfBlue
         chartDateLabel.textAlignment = .center
         dateHeaderView.addSubview(chartDateLabel)
         chartDateLabel.snp.makeConstraints { make in
@@ -222,10 +222,10 @@ final class SurfRecordViewController: BaseViewController {
         
         addMemoButton.setTitle("메모 추가  ", for: .normal)
         addMemoButton.setImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
-        addMemoButton.tintColor = .systemBlue
+        addMemoButton.tintColor = .surfBlue
         addMemoButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        addMemoButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.08)
-        addMemoButton.layer.cornerRadius = 12
+        addMemoButton.backgroundColor = .surfBlue.withAlphaComponent(0.08)
+        addMemoButton.layer.cornerRadius = 20
         addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 14)
         
         memoTextView.isHidden = true
@@ -246,9 +246,9 @@ final class SurfRecordViewController: BaseViewController {
     private func configureStyles() {
         saveButton.setTitle("기록 저장", for: .normal)
         saveButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
-        saveButton.backgroundColor = .systemBlue
+        saveButton.backgroundColor = .surfBlue
         saveButton.setTitleColor(.white, for: .normal)
-        saveButton.layer.cornerRadius = 14
+        saveButton.layer.cornerRadius = 20
     }
     
     private func bind() {
@@ -361,10 +361,7 @@ final class SurfRecordViewController: BaseViewController {
     }
     
     private func updateChartDateLabel() {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "M월 d일 EEEE"
-        chartDateLabel.text = formatter.string(from: datePicker.date)
+        chartDateLabel.text = datePicker.date.koreanMonthDayWeekday
     }
     
     // MARK: - Row Factory (좌측 타이틀 / 우측 값)
@@ -377,7 +374,7 @@ final class SurfRecordViewController: BaseViewController {
         let valueLabel = PaddingLabel(insets: .init(top: 6, left: 12, bottom: 6, right: 12))
         valueLabel.text = value
         valueLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        valueLabel.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
+        valueLabel.backgroundColor = UIColor.surfBlue
         valueLabel.textColor = .systemBlue
         valueLabel.layer.cornerRadius = 16
         valueLabel.clipsToBounds = true

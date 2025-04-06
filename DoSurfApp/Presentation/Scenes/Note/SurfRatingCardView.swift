@@ -139,7 +139,7 @@ final class SurfRatingCardView: UIView {
         
         starImageView.snp.makeConstraints {
             $0.centerY.equalToSuperview()
-            $0.width.height.equalTo(32)
+            $0.width.height.equalTo(4)
         }
     }
     
