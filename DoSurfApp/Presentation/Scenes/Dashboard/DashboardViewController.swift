@@ -32,23 +32,26 @@ class DashboardViewController: BaseViewController {
         return imageView
     }()
     
+    private lazy var locationButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("안양 중도해변 B", for: .normal)
+        button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
+        button.tintColor = .white
+        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.semanticContentAttribute = .forceRightToLeft
+        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
+        return button
+    }()
+    
     private lazy var locationHeaderView: UIView = {
         let view = UIView()
-        
-        let locationButton = UIButton(type: .system)
-        locationButton.setTitle("안양 중도해변 B", for: .normal)
-        locationButton.setImage(UIImage(systemName: "chevron.down"), for: .normal)
-        locationButton.tintColor = .white
-        locationButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
-        locationButton.semanticContentAttribute = .forceRightToLeft
-        locationButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
-        
+
         view.addSubview(locationButton)
         locationButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
             make.centerY.equalToSuperview()
         }
-        
+
         return view
     }()
     
@@ -201,6 +204,14 @@ class DashboardViewController: BaseViewController {
 
     override func configureAction() {
         refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
+        
+        // Push BeachChooseViewController when tapping the location button
+        locationButton.rx.tap
+            .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
+            .bind(onNext: { [weak self] in
+                self?.pushBeachChoose()
+            })
+            .disposed(by: disposeBag)
     }
 
     override func configureBind() {
@@ -252,6 +263,13 @@ class DashboardViewController: BaseViewController {
             .distinctUntilChanged()
             .bind(to: pageControl.rx.currentPage)
             .disposed(by: disposeBag)
+    }
+    
+    private func pushBeachChoose() {
+        let viewModel = BeachChooseViewModel()
+        let vc = BeachChooseViewController(viewModel: viewModel)
+        vc.hidesBottomBarWhenPushed = true
+        navigationController?.pushViewController(vc, animated: true)
     }
     
     // MARK: - Data Setup
