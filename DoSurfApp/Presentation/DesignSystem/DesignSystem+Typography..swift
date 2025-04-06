@@ -136,9 +136,10 @@ class CustomFontProvider: FontProviderProtocol {
 enum TypographyStyle: CaseIterable {
     case hero
     case heading1
-    case heading2Bold
-    case heading3Bold
+    case heading2Medium
+    case heading3Medium
     case subheadingBold
+    case subheadingMedium
     case body1Medium
     case body2Medium
     case captionMedium
@@ -147,9 +148,10 @@ enum TypographyStyle: CaseIterable {
         switch self {
         case .hero: return "Hero"
         case .heading1: return "Heading1"
-        case .heading2Bold: return "Heading2 Bold"
-        case .heading3Bold: return "Heading3 Bold"
+        case .heading2Medium: return "Heading2 Bold"
+        case .heading3Medium: return "Heading3 Bold"
         case .subheadingBold: return "Subheading Bold"
+        case .subheadingMedium: return "Subheading Bold"
         case .body1Medium: return "Body1 Bold"
         case .body2Medium: return "Body2 Bold"
         case .captionMedium: return "Caption Bold"
@@ -219,15 +221,19 @@ class TypographySystem {
             .iPad: TypographyConfiguration(fontSize: 38, lineHeight: 45, letterSpacing: -4, fontWeight: .medium),
             .iPhone: TypographyConfiguration(fontSize: 32, lineHeight: 38, letterSpacing: -4, fontWeight: .medium)
         ],
-        .heading2Bold: [
+        .heading2Medium: [
             .iPad: TypographyConfiguration(fontSize: 28, lineHeight: 36, letterSpacing: -4, fontWeight: .medium),
             .iPhone: TypographyConfiguration(fontSize: 24, lineHeight: 34, letterSpacing: -4, fontWeight: .medium)
         ],
-        .heading3Bold: [
+        .heading3Medium: [
             .iPad: TypographyConfiguration(fontSize: 22, lineHeight: 33, letterSpacing: -4, fontWeight: .medium),
             .iPhone: TypographyConfiguration(fontSize: 21, lineHeight: 30, letterSpacing: -4, fontWeight: .medium)
         ],
         .subheadingBold: [
+            .iPad: TypographyConfiguration(fontSize: 18, lineHeight: 27, letterSpacing: -2, fontWeight: .bold),
+            .iPhone: TypographyConfiguration(fontSize: 18, lineHeight: 27, letterSpacing: -2, fontWeight: .bold)
+        ],
+        .subheadingMedium: [
             .iPad: TypographyConfiguration(fontSize: 18, lineHeight: 27, letterSpacing: -2, fontWeight: .medium),
             .iPhone: TypographyConfiguration(fontSize: 18, lineHeight: 27, letterSpacing: -2, fontWeight: .medium)
         ],

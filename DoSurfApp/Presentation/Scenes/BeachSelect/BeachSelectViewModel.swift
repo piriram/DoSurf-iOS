@@ -104,9 +104,9 @@ final class BeachSelectViewModel {
             CategoryDTO(id: "jeju", name: "제주"),
             CategoryDTO(id: "busan", name: "부산"),
             CategoryDTO(id: "goseong", name: "고성/속초"),
-            CategoryDTO(id: "incheon", name: "인천/충청/강원"),
+            CategoryDTO(id: "incheon", name: "강릉/동해/삼척"),
             CategoryDTO(id: "pohang", name: "포항/울산"),
-            CategoryDTO(id: "jinhae", name: "지해/남해")
+            CategoryDTO(id: "jinhae", name: "서해/남해")
         ]
         
         let mockLocations = [

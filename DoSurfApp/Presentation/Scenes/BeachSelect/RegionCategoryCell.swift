@@ -7,23 +7,17 @@
 
 import UIKit
 import SnapKit
-// MARK: - LocationCell
-final class BeachCategoryCell: UITableViewCell {
-    static let identifier = "LocationCell"
+
+import Foundation
+// MARK: - CategoryCell
+final class RegionCategoryCell: UITableViewCell {
+    static let identifier = "RegionCategoryCell"
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 15)
-        label.textColor = .label
+        label.font = .systemFont(ofSize: 18, weight: .semibold)
+        label.textColor = .black.withAlphaComponent(0.5)
         return label
-    }()
-    
-    private let checkImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.contentMode = .scaleAspectFit
-        imageView.tintColor = .systemBlue
-        imageView.isHidden = true
-        return imageView
     }()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -36,29 +30,27 @@ final class BeachCategoryCell: UITableViewCell {
     }
     
     private func setupUI() {
-        selectionStyle = .none
+        backgroundColor = .clear
+        selectedBackgroundView = {
+            let view = UIView()
+            view.backgroundColor = .backgroundSkyblue
+            return view
+        }()
         
         contentView.addSubview(titleLabel)
-        contentView.addSubview(checkImageView)
-        
         titleLabel.snp.makeConstraints {
-            $0.leading.equalToSuperview().inset(16)
-            $0.trailing.equalTo(checkImageView.snp.leading).offset(-8)
-            $0.top.bottom.equalToSuperview().inset(12)
-        }
-        
-        checkImageView.snp.makeConstraints {
-            $0.trailing.equalToSuperview().inset(16)
-            $0.centerY.equalToSuperview()
-            $0.width.height.equalTo(20)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.top.bottom.equalToSuperview().inset(20)
         }
     }
     
-    func configure(with location: LocationDTO, isSelected: Bool) {
-        titleLabel.text = location.displayText
-        titleLabel.textColor = isSelected ? .systemBlue : .label
-        titleLabel.font = isSelected ? .systemFont(ofSize: 15, weight: .semibold) : .systemFont(ofSize: 15)
-        // 체크박스는 사용하지 않음
-        checkImageView.isHidden = true
+    func configure(with category: CategoryDTO) {
+        titleLabel.text = category.name
+    }
+    
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        titleLabel.textColor = selected ? .surfBlue : .black.withAlphaComponent(0.5)
+        titleLabel.font = selected ? .systemFont(ofSize: 18, weight: .semibold) : .systemFont(ofSize: 18, weight: .semibold)
     }
 }
