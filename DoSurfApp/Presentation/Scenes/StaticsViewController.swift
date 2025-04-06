@@ -9,6 +9,6 @@ import UIKit
 
 // MARK: - Record ViewController (예시)
 class StaticsViewController: BaseViewController {
-
+    
 }
 

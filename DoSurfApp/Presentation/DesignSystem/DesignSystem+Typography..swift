@@ -19,19 +19,19 @@ protocol FontProviderProtocol {
  USAGE EXAMPLES:
  
  1. 기본 사용 (시스템 폰트):
-    label.setTextWithTypography("Hello", style: .hero)
+ label.setTextWithTypography("Hello", style: .hero)
  
  2. 커스텀 폰트로 전환 (나중에 폰트 파일 추가 후):
-    TypographySystem.useCustomFont()
-    label.setTextWithTypography("Hello", style: .hero) // 이제 커스텀 폰트 사용
+ TypographySystem.useCustomFont()
+ label.setTextWithTypography("Hello", style: .hero) // 이제 커스텀 폰트 사용
  
  3. 다시 시스템 폰트로 되돌리기:
-    TypographySystem.useSystemFont()
+ TypographySystem.useSystemFont()
  
  4. 폰트 파일 추가 방법 (나중에):
-    - .ttf 또는 .otf 파일을 프로젝트에 추가
-    - CustomFontProvider의 fontFamily 변수를 실제 폰트명으로 수정
-    - fontName(for:) 메서드에서 각 weight별 폰트명 정의
+ - .ttf 또는 .otf 파일을 프로젝트에 추가
+ - CustomFontProvider의 fontFamily 변수를 실제 폰트명으로 수정
+ - fontName(for:) 메서드에서 각 weight별 폰트명 정의
  
  FONT INTEGRATION CHECKLIST (커스텀 폰트 추가 시):
  □ 폰트 파일들을 Bundle에 추가
@@ -199,12 +199,12 @@ class TypographySystem {
     
     // MARK: - Font Provider Switching
     private(set) static var currentFontProvider: FontProviderProtocol = SystemFontProvider.shared
-
+    
     static func useCustomFont() {
         currentFontProvider = CustomFontProvider.shared
         currentFontProvider.registerFonts()
     }
-
+    
     static func useSystemFont() {
         currentFontProvider = SystemFontProvider.shared
     }

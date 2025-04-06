@@ -245,11 +245,11 @@ class CustomTabBar: UITabBar {
                 if buttonIndex == 0 {
                     // 첫 번째 버튼 (왼쪽)
                     newFrame = CGRect(x: 0, y: subview.frame.origin.y,
-                                     width: buttonWidth, height: subview.frame.height)
+                                      width: buttonWidth, height: subview.frame.height)
                 } else {
                     // 두 번째 버튼 (오른쪽)
                     newFrame = CGRect(x: buttonWidth * 2, y: subview.frame.origin.y,
-                                     width: buttonWidth, height: subview.frame.height)
+                                      width: buttonWidth, height: subview.frame.height)
                 }
                 
                 subview.frame = newFrame

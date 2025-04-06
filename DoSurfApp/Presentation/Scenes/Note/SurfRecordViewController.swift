@@ -19,26 +19,26 @@ final class SurfRecordViewController: BaseViewController {
     private let datePicker = UIDatePicker()
     private let startTimePicker = UIDatePicker()
     private let endTimePicker = UIDatePicker()
-
+    
     private let tableView = UITableView(frame: .zero, style: .plain)
     private var charts: [Chart] = []
     private var tableCardHeightConstraint: Constraint?
     private let chartDateLabel = UILabel()
     private let tableContainer = UIStackView()
-
+    
     // State
     private var memoOpened = false
     private let disposeBag = DisposeBag()
-
+    
     // VM
     private let viewModel = SurfRecordViewModel()
-
+    
     override func configureUI() {
         view.backgroundColor = UIColor.systemGroupedBackground
         configureHierarchy()
         configureStyles()
         // 처음엔 스크롤 비활성화
-//        scrollView.isScrollEnabled = false
+        //        scrollView.isScrollEnabled = false
         
         // Ensure navigation bar is visible and back button available when pushed
         navigationController?.setNavigationBarHidden(false, animated: false)
@@ -53,7 +53,7 @@ final class SurfRecordViewController: BaseViewController {
             navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(dismissSelf))
         }
     }
-
+    
     override func configureBind() {
         bind()
     }
@@ -64,11 +64,11 @@ final class SurfRecordViewController: BaseViewController {
         navigationController?.setNavigationBarHidden(false, animated: animated)
         navigationItem.hidesBackButton = false
     }
-
+    
     @objc private func dismissSelf() {
         dismiss(animated: true)
     }
-
+    
     private func configureHierarchy() {
         // 하단 고정 버튼
         view.addSubview(saveButton)
@@ -77,14 +77,14 @@ final class SurfRecordViewController: BaseViewController {
             $0.bottom.equalTo(view.keyboardLayoutGuide.snp.top).offset(-12) // 키보드 위에 고정
             $0.height.equalTo(54)
         }
-
+        
         // 스크롤 영역
         view.addSubview(scrollView)
         scrollView.snp.makeConstraints {
             $0.top.left.right.equalTo(view.safeAreaLayoutGuide)
             $0.bottom.equalTo(saveButton.snp.top).offset(-12)
         }
-
+        
         content.axis = .vertical
         content.spacing = 12
         scrollView.addSubview(content)
@@ -92,7 +92,7 @@ final class SurfRecordViewController: BaseViewController {
             $0.edges.equalToSuperview().inset(16)
             $0.width.equalTo(scrollView.snp.width).offset(-32) // 가로 고정
         }
-
+        
         // --- Header (날짜/시작/종료) 카드
         headerCard.layer.cornerRadius = 12
         headerCard.backgroundColor = .white
@@ -102,13 +102,13 @@ final class SurfRecordViewController: BaseViewController {
         datePicker.datePickerMode = .date
         startTimePicker.datePickerMode = .time
         endTimePicker.datePickerMode = .time
-
+        
         if #available(iOS 14.0, *) {
             datePicker.preferredDatePickerStyle = .compact
             startTimePicker.preferredDatePickerStyle = .compact
             endTimePicker.preferredDatePickerStyle = .compact
         }
-
+        
         // Default values (today's date, 13:00~15:00)
         let baseDate = Date()
         let defaultStart = date(bySettingHour: 13, minute: 0, on: baseDate)
@@ -117,12 +117,12 @@ final class SurfRecordViewController: BaseViewController {
         startTimePicker.date = defaultStart
         endTimePicker.date = defaultEnd
         endTimePicker.minimumDate = defaultStart
-
+        
         // React to changes
         datePicker.addTarget(self, action: #selector(handleDateChanged), for: .valueChanged)
         startTimePicker.addTarget(self, action: #selector(handleStartTimeChanged), for: .valueChanged)
         endTimePicker.addTarget(self, action: #selector(handleEndTimeChanged), for: .valueChanged)
-
+        
         let dateRow = makePickerRow(title: "서핑 한 날짜", picker: datePicker)
         let startRow = makePickerRow(title: "시작 시간", picker: startTimePicker)
         let endRow = makePickerRow(title: "종료 시간", picker: endTimePicker)
@@ -131,7 +131,7 @@ final class SurfRecordViewController: BaseViewController {
         headerStack.spacing = 0
         headerCard.addSubview(headerStack)
         headerStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
-
+        
         // --- 표 카드 (샘플 자리)
         tableCard.layer.cornerRadius = 12
         tableCard.backgroundColor = .white
@@ -142,7 +142,7 @@ final class SurfRecordViewController: BaseViewController {
         
         // TableView + Date header + Column header inside card
         tableCard.layer.masksToBounds = true
-
+        
         // Container stack
         tableContainer.axis = .vertical
         tableContainer.spacing = 0
@@ -150,7 +150,7 @@ final class SurfRecordViewController: BaseViewController {
         tableContainer.snp.makeConstraints { make in
             make.edges.equalToSuperview()
         }
-
+        
         // Date header
         let dateHeaderView = UIView()
         chartDateLabel.font = .systemFont(ofSize: 16, weight: .semibold)
@@ -161,7 +161,7 @@ final class SurfRecordViewController: BaseViewController {
             make.center.equalToSuperview()
             make.top.bottom.equalToSuperview().inset(12)
         }
-
+        
         // Column header
         let headerRow = UIView()
         headerRow.backgroundColor = .secondarySystemGroupedBackground
@@ -186,7 +186,7 @@ final class SurfRecordViewController: BaseViewController {
         headerRow.snp.makeConstraints { make in
             make.height.equalTo(36)
         }
-
+        
         // TableView config
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
@@ -197,29 +197,29 @@ final class SurfRecordViewController: BaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(ChartTableViewCell.self, forCellReuseIdentifier: ChartTableViewCell.identifier)
-
+        
         // Build stack
         tableContainer.addArrangedSubview(dateHeaderView)
         tableContainer.addArrangedSubview(headerRow)
         tableContainer.addArrangedSubview(tableView)
-
+        
         // Prepare initial data and layout
         updateChartDateLabel()
         self.charts = buildSampleCharts()
         reloadChartTable()
-
+        
         // --- 파도 평가 카드
         content.addArrangedSubview(ratingCardView)
-
+        
         // --- 코멘트 카드
         commentCard.layer.cornerRadius = 12
         commentCard.backgroundColor = .white
         content.addArrangedSubview(commentCard)
-
+        
         let commentTitle = UILabel()
         commentTitle.text = "파도 코멘트"
         commentTitle.font = .systemFont(ofSize: 16, weight: .semibold)
-
+        
         addMemoButton.setTitle("메모 추가  ", for: .normal)
         addMemoButton.setImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
         addMemoButton.tintColor = .systemBlue
@@ -227,22 +227,22 @@ final class SurfRecordViewController: BaseViewController {
         addMemoButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.08)
         addMemoButton.layer.cornerRadius = 12
         addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 14)
-
+        
         memoTextView.isHidden = true
         memoTextView.font = .systemFont(ofSize: 15)
         memoTextView.backgroundColor = UIColor.secondarySystemBackground
         memoTextView.layer.cornerRadius = 10
         memoTextView.textContainerInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         memoTextView.snp.makeConstraints { $0.height.greaterThanOrEqualTo(100) }
-
+        
         let cStack = UIStackView(arrangedSubviews: [commentTitle, addMemoButton, memoTextView])
         cStack.axis = .vertical
         cStack.spacing = 12
-
+        
         commentCard.addSubview(cStack)
         cStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
     }
-
+    
     private func configureStyles() {
         saveButton.setTitle("기록 저장", for: .normal)
         saveButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .bold)
@@ -250,7 +250,7 @@ final class SurfRecordViewController: BaseViewController {
         saveButton.setTitleColor(.white, for: .normal)
         saveButton.layer.cornerRadius = 14
     }
-
+    
     private func bind() {
         // 메모 추가 버튼 → 입력창 표시 + 스크롤 활성화 + 포커스
         addMemoButton.rx.tap
@@ -260,7 +260,7 @@ final class SurfRecordViewController: BaseViewController {
                     self.memoOpened = true
                     self.memoTextView.isHidden = false
                     self.scrollView.isScrollEnabled = true
-
+                    
                     // 애니메이션로 펼치기
                     UIView.animate(withDuration: 0.25) {
                         self.view.layoutIfNeeded()
@@ -276,20 +276,20 @@ final class SurfRecordViewController: BaseViewController {
                 }
             })
             .disposed(by: disposeBag)
-
-    
+        
+        
     }
-
+    
     // MARK: - Date/Time Picker Helpers
     private func makePickerRow(title: String, picker: UIDatePicker) -> UIView {
         let row = UIView()
         let left = UILabel()
         left.text = title
         left.font = .systemFont(ofSize: 14, weight: .regular)
-
+        
         row.addSubview(left)
         row.addSubview(picker)
-
+        
         left.snp.makeConstraints { make in
             make.left.equalToSuperview().inset(8)
             make.centerY.equalToSuperview()
@@ -298,9 +298,9 @@ final class SurfRecordViewController: BaseViewController {
             make.right.equalToSuperview().inset(8)
             make.centerY.equalTo(left)
         }
-
+        
         row.snp.makeConstraints { $0.height.equalTo(44) }
-
+        
         let sep = UIView()
         sep.backgroundColor = .separator
         row.addSubview(sep)
@@ -308,17 +308,17 @@ final class SurfRecordViewController: BaseViewController {
             $0.left.right.bottom.equalToSuperview()
             $0.height.equalTo(0.5)
         }
-
+        
         return row
     }
-
+    
     private func date(bySettingHour hour: Int, minute: Int, on base: Date) -> Date {
         var comps = Calendar.current.dateComponents([.year, .month, .day], from: base)
         comps.hour = hour
         comps.minute = minute
         return Calendar.current.date(from: comps) ?? base
     }
-
+    
     private func combine(date: Date, withTimeOf time: Date) -> Date {
         let calendar = Calendar.current
         let d = calendar.dateComponents([.year, .month, .day], from: date)
@@ -332,7 +332,7 @@ final class SurfRecordViewController: BaseViewController {
         comps.second = t.second
         return calendar.date(from: comps) ?? date
     }
-
+    
     @objc private func handleDateChanged() {
         // Keep start/end times but move them to the selected date
         let newStart = combine(date: datePicker.date, withTimeOf: startTimePicker.date)
@@ -345,7 +345,7 @@ final class SurfRecordViewController: BaseViewController {
         }
         updateChartDateLabel()
     }
-
+    
     @objc private func handleStartTimeChanged() {
         let start = startTimePicker.date
         endTimePicker.minimumDate = start
@@ -353,27 +353,27 @@ final class SurfRecordViewController: BaseViewController {
             endTimePicker.date = start
         }
     }
-
+    
     @objc private func handleEndTimeChanged() {
         if endTimePicker.date < startTimePicker.date {
             endTimePicker.date = startTimePicker.date
         }
     }
-
+    
     private func updateChartDateLabel() {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
         formatter.dateFormat = "M월 d일 EEEE"
         chartDateLabel.text = formatter.string(from: datePicker.date)
     }
-
+    
     // MARK: - Row Factory (좌측 타이틀 / 우측 값)
     private func makeRow(title: String, value: String) -> UIView {
         let row = UIView()
         let left = UILabel()
         left.text = title
         left.font = .systemFont(ofSize: 14, weight: .regular)
-
+        
         let valueLabel = PaddingLabel(insets: .init(top: 6, left: 12, bottom: 6, right: 12))
         valueLabel.text = value
         valueLabel.font = .systemFont(ofSize: 14, weight: .semibold)
@@ -381,7 +381,7 @@ final class SurfRecordViewController: BaseViewController {
         valueLabel.textColor = .systemBlue
         valueLabel.layer.cornerRadius = 16
         valueLabel.clipsToBounds = true
-
+        
         row.addSubview(left)
         row.addSubview(valueLabel)
         left.snp.makeConstraints { make in
@@ -402,7 +402,7 @@ final class SurfRecordViewController: BaseViewController {
         }
         return row
     }
-
+    
     // MARK: - Table Helpers
     private func reloadChartTable() {
         tableView.reloadData()
@@ -411,7 +411,7 @@ final class SurfRecordViewController: BaseViewController {
         let headersHeight: CGFloat = 44 + 36 // date header + column header
         tableCardHeightConstraint?.update(offset: max(140, headersHeight + contentHeight))
     }
-
+    
     private func buildSampleCharts() -> [Chart] {
         // Build a few sample rows relative to current pickers
         let baseDate = datePicker.date
@@ -442,7 +442,7 @@ final class SurfRecordViewController: BaseViewController {
 extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int { 1 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { charts.count }
-
+    
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         guard let cell = tableView.dequeueReusableCell(withIdentifier: ChartTableViewCell.identifier, for: indexPath) as? ChartTableViewCell else {
             return UITableViewCell()
@@ -451,7 +451,7 @@ extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
         cell.configure(with: chart)
         return cell
     }
-
+    
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
     }

@@ -20,7 +20,7 @@ extension UIColor {
         let b = CGFloat(hex & 0xFF) / 255.0
         self.init(red: r, green: g, blue: b, alpha: alpha)
     }
-
+    
     // MARK: Brand & Icon Colors
     static var surfBlue: UIColor { UIColor(hex: 0x004AC7) }        // #004AC7
     static var iconBlue: UIColor { UIColor(hex: 0x4B88EF) }        // #4B88EF
@@ -29,7 +29,7 @@ extension UIColor {
     static var iconPurple: UIColor { UIColor(hex: 0xB097F6) }      // #B097F6
     static var iconWaterOrange: UIColor { UIColor(hex: 0xFFB891) } // #FFB891
     static var iconStarOrange: UIColor { UIColor(hex: 0xEA8F5B) }  // #EA8F5B
-
+    
     // MARK: Background / Neutrals
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
     static var backgroundGray: UIColor { UIColor(hex: 0xDEDFE4) }  // #DEDFE4
@@ -46,7 +46,7 @@ extension Color {
     static var iconPurple: Color { Color(UIColor.iconPurple) }
     static var iconWaterOrange: Color { Color(UIColor.iconWaterOrange) }
     static var iconStarOrange: Color { Color(UIColor.iconStarOrange) }
-
+    
     static var brightGray: Color { Color(UIColor.brightGray) }
     static var backgroundGray: Color { Color(UIColor.backgroundGray) }
     static var backgroundSkyblue: Color { Color(UIColor.backgroundSkyblue) }

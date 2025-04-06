@@ -23,7 +23,7 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
     case invalidPath(message: String?)
     case beachNotFoundInAnyRegion(beachId: String)
     case unknown(underlying: Error)
-
+    
     var errorDescription: String? {
         switch self {
         case .notFound: return "요청한 리소스를 찾을 수 없습니다."
@@ -43,7 +43,7 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
         case .unknown(let err): return err.localizedDescription
         }
     }
-
+    
     var isRetryable: Bool {
         switch self {
         case .unavailable, .deadlineExceeded, .resourceExhausted, .internalError:
@@ -52,7 +52,7 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
             return false
         }
     }
-
+    
     static func map(_ error: Error) -> FirebaseAPIError {
         let ns = error as NSError
         let code = FirestoreErrorCode.Code(rawValue: ns.code) ?? .unknown
@@ -77,15 +77,15 @@ extension FirebaseAPIError {
     static func == (lhs: FirebaseAPIError, rhs: FirebaseAPIError) -> Bool {
         switch (lhs, rhs) {
         case (.notFound, .notFound),
-             (.permissionDenied, .permissionDenied),
-             (.unauthenticated, .unauthenticated),
-             (.unavailable, .unavailable),
-             (.deadlineExceeded, .deadlineExceeded),
-             (.cancelled, .cancelled),
-             (.alreadyExists, .alreadyExists),
-             (.failedPrecondition, .failedPrecondition),
-             (.resourceExhausted, .resourceExhausted),
-             (.internalError, .internalError):
+            (.permissionDenied, .permissionDenied),
+            (.unauthenticated, .unauthenticated),
+            (.unavailable, .unavailable),
+            (.deadlineExceeded, .deadlineExceeded),
+            (.cancelled, .cancelled),
+            (.alreadyExists, .alreadyExists),
+            (.failedPrecondition, .failedPrecondition),
+            (.resourceExhausted, .resourceExhausted),
+            (.internalError, .internalError):
             return true
         case let (.invalidArgument(l), .invalidArgument(r)):
             return l == r
