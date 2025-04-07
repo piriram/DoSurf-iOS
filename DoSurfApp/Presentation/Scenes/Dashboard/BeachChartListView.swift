@@ -56,7 +56,7 @@ final class BeachChartListView: UIView {
     }()
 
     private(set) lazy var tableView: UITableView = {
-        let tableView = UITableView(frame: .zero, style: .grouped)
+        let tableView = UITableView(frame: .zero, style: .plain)
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(ChartTableViewCell.self, forCellReuseIdentifier: ChartTableViewCell.identifier)
@@ -118,6 +118,9 @@ final class BeachChartListView: UIView {
         self.currentDateIndex = 0
         updateDateLabel(index: currentDateIndex)
         tableView.reloadData()
+        DispatchQueue.main.async { [weak self] in
+            self?.scrollToUpcomingChart()
+        }
     }
 
     func setCurrentDateIndex(_ index: Int) {
@@ -168,6 +171,46 @@ final class BeachChartListView: UIView {
             updateDateLabel(index: bestSection)
         }
     }
+    
+    private func scrollToUpcomingChart() {
+        guard !groupedCharts.isEmpty else { return }
+        // let now = Date() // 서버 이슈로 현재 시간 사용 중단
+        // 임시 기준 시각: 2025-09-28 10:00 (Asia/Seoul)
+        let calendar = Calendar(identifier: .gregorian)
+        var comps = DateComponents()
+        comps.year = 2025
+        comps.month = 9
+        comps.day = 28
+        comps.hour = 10
+        comps.minute = 0
+        comps.second = 0
+        comps.timeZone = TimeZone(identifier: "Asia/Seoul")
+        let now = calendar.date(from: comps) ?? Date()
+        var targetIndexPath: IndexPath?
+
+        // Find the first chart whose time is now or in the future
+        outerLoop: for (sectionIndex, group) in groupedCharts.enumerated() {
+            for (rowIndex, chart) in group.charts.enumerated() {
+                if chart.time >= now {
+                    targetIndexPath = IndexPath(row: rowIndex, section: sectionIndex)
+                    break outerLoop
+                }
+            }
+        }
+
+        // If everything is in the past, focus the last row of the last section
+        if targetIndexPath == nil {
+            if let lastSection = groupedCharts.indices.last, !groupedCharts[lastSection].charts.isEmpty {
+                let lastRow = groupedCharts[lastSection].charts.count - 1
+                targetIndexPath = IndexPath(row: lastRow, section: lastSection)
+            }
+        }
+
+        guard let indexPath = targetIndexPath else { return }
+        tableView.scrollToRow(at: indexPath, at: .middle, animated: false)
+        currentDateIndex = indexPath.section
+        updateDateLabel(index: indexPath.section)
+    }
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
@@ -194,15 +237,15 @@ extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        if section == 0 { return nil }
-        let spacer = UIView()
-        spacer.backgroundColor = .clear
-        return spacer
+        return nil
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        if section == 0 { return 0 }
-        return 12
+        return 0
+    }
+
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
+        return 0.001
     }
 
     // Keep the date header in sync with the section that has more visible rows
