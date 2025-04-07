@@ -54,6 +54,7 @@ struct Chart: Equatable {
     let waterTemperature: Double
     let weather: WeatherType
     let airTemperature: Double
+    
 }
 struct ChartList {
     let id: String
