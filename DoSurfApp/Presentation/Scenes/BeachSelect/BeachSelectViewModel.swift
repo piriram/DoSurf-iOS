@@ -4,14 +4,14 @@
 //
 //  Created by 잠만보김쥬디 on 9/29/25.
 //
-
-import Foundation
+import UIKit
 import RxSwift
 import RxCocoa
-import UIKit
 
-// MARK: - ViewModel
 final class BeachSelectViewModel {
+    
+    // MARK: - Dependencies
+    private let fetchBeachDataUseCase: FetchBeachDataUseCase
     
     // MARK: - Input
     struct Input {
@@ -27,6 +27,9 @@ final class BeachSelectViewModel {
         let selectedCategory: Observable<Int>
         let canConfirm: Observable<Bool>
         let dismiss: Observable<[LocationDTO]>
+        let beachData: Observable<BeachDataDump>  // 추가
+        let error: Observable<Error>               // 추가
+        let isLoading: Observable<Bool>            // 추가
     }
     
     // MARK: - Properties
@@ -34,11 +37,14 @@ final class BeachSelectViewModel {
     private let locations = BehaviorRelay<[LocationDTO]>(value: [])
     private let selectedCategoryIndex = BehaviorRelay<Int>(value: 0)
     private let selectedLocations = BehaviorRelay<Set<String>>(value: [])
+    private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
+    private let errorRelay = PublishRelay<Error>()
     
     private let disposeBag = DisposeBag()
     
     // MARK: - Initialize
-    init() {
+    init(fetchBeachDataUseCase: FetchBeachDataUseCase) {
+        self.fetchBeachDataUseCase = fetchBeachDataUseCase
         setupMockData()
     }
     
@@ -63,18 +69,37 @@ final class BeachSelectViewModel {
             }
             .asObservable()
         
-        // 지역 선택 처리
-        input.locationSelected
+        // 지역 선택 처리 및 데이터 로딩
+        let beachData = input.locationSelected
             .withLatestFrom(filteredLocations) { indexPath, locations -> LocationDTO? in
                 guard indexPath.row < locations.count else { return nil }
                 return locations[indexPath.row]
             }
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] location in
-                // 단일 선택: 선택한 항목만 유지
+            .do(onNext: { [weak self] location in
                 self?.selectedLocations.accept([location.id])
+                self?.isLoadingRelay.accept(true)
             })
-            .disposed(by: disposeBag)
+            .flatMapLatest { [weak self] location -> Observable<BeachDataDump> in
+                guard let self = self else { return .empty() }
+                
+                return self.fetchBeachDataUseCase.execute(beachId: location.id)
+                    .asObservable()
+                    .do(
+                        onNext: { [weak self] _ in
+                            self?.isLoadingRelay.accept(false)
+                        },
+                        onError: { [weak self] error in
+                            self?.isLoadingRelay.accept(false)
+                            self?.errorRelay.accept(error)
+                        }
+                    )
+                    .catch { [weak self] error in
+                        self?.errorRelay.accept(error)
+                        return .empty()
+                    }
+            }
+            .share(replay: 1)
         
         // 확인 버튼 활성화 여부
         let canConfirm = selectedLocations
@@ -93,7 +118,10 @@ final class BeachSelectViewModel {
             locations: filteredLocations,
             selectedCategory: selectedCategoryIndex.asObservable(),
             canConfirm: canConfirm,
-            dismiss: dismiss
+            dismiss: dismiss,
+            beachData: beachData,
+            error: errorRelay.asObservable(),
+            isLoading: isLoadingRelay.asObservable()
         )
     }
     
@@ -110,17 +138,10 @@ final class BeachSelectViewModel {
         ]
         
         let mockLocations = [
-            LocationDTO(id: "1", categoryId: "yangyang", region: "양양", place: "죽도서핑비치"),
-            LocationDTO(id: "2", categoryId: "yangyang", region: "양양", place: "죽도해변 C"),
-            LocationDTO(id: "3", categoryId: "yangyang", region: "양양", place: "인구해변"),
-            LocationDTO(id: "4", categoryId: "yangyang", region: "양양", place: "기사문해변A"),
-            LocationDTO(id: "5", categoryId: "yangyang", region: "양양", place: "기사문해변B"),
-            LocationDTO(id: "6", categoryId: "yangyang", region: "양양", place: "기사문해변"),
-            LocationDTO(id: "7", categoryId: "yangyang", region: "양양", place: "남애해변파워A"),
-            LocationDTO(id: "8", categoryId: "yangyang", region: "양양", place: "플라자해변"),
-            LocationDTO(id: "9", categoryId: "yangyang", region: "양양", place: "싱잉타워해변"),
-            LocationDTO(id: "10", categoryId: "yangyang", region: "양양", place: "동산해변"),
-            LocationDTO(id: "11", categoryId: "yangyang", region: "양양", place: "하조대해변"),
+            LocationDTO(id: "1001", categoryId: "yangyang", region: "양양", place: "죽도서핑비치"),
+            LocationDTO(id: "1002", categoryId: "yangyang", region: "양양", place: "죽도해변 C"),
+            LocationDTO(id: "2001", categoryId: "jeju", region: "제주", place: "중문"),
+            LocationDTO(id: "3001", categoryId: "busan", region: "부산", place: "해운대"),
         ]
         
         categories.accept(mockCategories)

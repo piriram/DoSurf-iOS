@@ -9,33 +9,23 @@ import RxSwift
 import RxCocoa
 import SnapKit
 
-// MARK: - DTOs
-struct CategoryDTO: Sendable {
-    let id: String
-    let name: String
-}
-
-struct LocationDTO: Sendable {
-    let id: String
-    let categoryId: String
-    let region: String
-    let place: String
-    
-    var displayText: String {
-        return "\(place)"
-    }
-    
-    var passText: String {
-        return "\(region) \(place)"
-    }
-}
-
-// MARK: - Nonisolated conformances for Diffable Data Source
-nonisolated extension CategoryDTO: Hashable {}
-nonisolated extension LocationDTO: Hashable {}
-
 // MARK: - ViewController
 final class BeachSelectViewController: BaseViewController {
+    
+    // MARK: - Properties
+    private let viewModel: BeachSelectViewModel
+    private let disposeBag = DisposeBag()
+    
+    // 콜백 추가
+    var onBeachSelected: ((String) -> Void)?
+    
+    private typealias CategoryDataSource = UITableViewDiffableDataSource<Int, CategoryDTO>
+    private typealias LocationDataSource = UITableViewDiffableDataSource<Int, LocationDTO>
+    
+    private lazy var categoryDataSource = createCategoryDataSource()
+    private lazy var locationDataSource = createLocationDataSource()
+    
+    private var selectedLocationId: String? = nil
     
     // MARK: - UI Components
     private let containerView: UIView = {
@@ -70,18 +60,6 @@ final class BeachSelectViewController: BaseViewController {
         return button
     }()
     
-    // MARK: - Properties
-    private let viewModel: BeachSelectViewModel
-    private let disposeBag = DisposeBag()
-    
-    private typealias CategoryDataSource = UITableViewDiffableDataSource<Int, CategoryDTO>
-    private typealias LocationDataSource = UITableViewDiffableDataSource<Int, LocationDTO>
-    
-    private lazy var categoryDataSource = createCategoryDataSource()
-    private lazy var locationDataSource = createLocationDataSource()
-    
-    private var selectedLocationId: String? = nil
-    
     // MARK: - Initialize
     init(viewModel: BeachSelectViewModel) {
         self.viewModel = viewModel
@@ -94,7 +72,6 @@ final class BeachSelectViewController: BaseViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Ensure the navigation bar is visible when this view appears
         navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
@@ -172,13 +149,16 @@ final class BeachSelectViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // 확인 버튼 탭 처리 (전환 동안 탭 바 터치 비활성화)
+        // 확인 버튼 탭 처리
         output.dismiss
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] selectedLocations in
                 guard let self = self else { return }
-                // 선택된 지역 정보 전달 등 필요한 작업
-                print("Selected locations: \(selectedLocations)")
+                
+                // 선택된 해변 ID를 콜백으로 전달
+                if let selectedBeachId = selectedLocations.first?.id {
+                    self.onBeachSelected?(selectedBeachId)
+                }
                 
                 // 전환 동안 탭 바 터치 비활성화
                 let tabBar = self.tabBarController?.tabBar
@@ -191,7 +171,6 @@ final class BeachSelectViewController: BaseViewController {
                         tabBar?.isUserInteractionEnabled = true
                     }
                 } else {
-                    // 전환 코디네이터가 없을 경우를 대비한 안전장치
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         tabBar?.isUserInteractionEnabled = true
                     }
@@ -269,4 +248,3 @@ final class BeachSelectViewController: BaseViewController {
         locationDataSource.apply(snapshot, animatingDifferences: true)
     }
 }
-
