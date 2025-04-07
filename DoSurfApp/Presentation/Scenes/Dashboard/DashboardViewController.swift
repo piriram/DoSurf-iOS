@@ -207,12 +207,20 @@ class DashboardViewController: BaseViewController {
         
         let output = viewModel.transform(input: input)
         
-        // 해변 데이터 바인딩 - metadata 사용
+        // 해변 데이터 바인딩 - SurfBeach.displayName 사용 (해변 이름)
         output.beachData
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] beachData in
                 self?.currentBeachData = beachData
-                self?.beachSelectButton.setTitle(beachData.metadata.name, for: .normal)
+                
+                // beachID로 SurfBeach를 찾고 해당 해변의 displayName 사용
+                let beachID = beachData.metadata.beachID
+                if let surfBeach = SurfBeach(rawValue: beachID) {
+                    self?.beachSelectButton.setTitle(surfBeach.displayName, for: .normal)
+                } else {
+                    // 기본값으로 metadata의 name 사용
+                    self?.beachSelectButton.setTitle(beachData.metadata.name, for: .normal)
+                }
             })
             .disposed(by: disposeBag)
         
@@ -296,8 +304,8 @@ class DashboardViewController: BaseViewController {
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
         
-        vc.onBeachSelected = { [weak self] beachId in
-            self?.beachSelectedSubject.onNext(beachId)
+        vc.onBeachSelected = { [weak self] locationDTO in
+            self?.beachSelectedSubject.onNext(locationDTO.id)
         }
         
         navigationController?.pushViewController(vc, animated: true)

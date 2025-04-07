@@ -16,12 +16,12 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
     private let knownRegions: [String]
     
     init(
-          repository: RxBeachRepository,
-          knownRegions: [String] = BeachRegion.allCases.map { $0.rawValue }  // 변경
-      ) {
-          self.repository = repository
-          self.knownRegions = knownRegions
-      }
+        repository: RxBeachRepository,
+        knownRegions: [String] = BeachRegion.allCases.map { $0.rawValue }
+    ) {
+        self.repository = repository
+        self.knownRegions = knownRegions
+    }
     
     func execute(beachId: String) -> Single<BeachData> {
         return repository.findRegion(for: beachId, among: knownRegions)

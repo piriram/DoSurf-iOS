@@ -22,12 +22,13 @@ final class BeachSelectViewController: BaseViewController {
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
 
-    var onBeachSelected: ((String) -> Void)?
+    var onBeachSelected: ((LocationDTO) -> Void)?
 
     private lazy var categoryDataSource = createCategoryDataSource()
     private lazy var locationDataSource = createLocationDataSource()
 
     private var selectedLocationId: String?
+    private var selectedLocation: LocationDTO?
     private var currentCategories: [CategoryDTO] = []
     private var currentLocations: [LocationDTO] = []
 
@@ -136,6 +137,9 @@ final class BeachSelectViewController: BaseViewController {
         output.locations
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] locations in
+                // 새로운 위치 목록이 로드될 때 선택 상태 초기화
+                self?.selectedLocationId = nil
+                self?.selectedLocation = nil
                 self?.applyLocations(locations)
             })
             .disposed(by: disposeBag)
@@ -163,8 +167,8 @@ final class BeachSelectViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] selectedLocations in
                 guard let self = self else { return }
-                if let selectedBeachId = selectedLocations.first?.id {
-                    self.onBeachSelected?(selectedBeachId)
+                if let selectedBeach = selectedLocations.first {
+                    self.onBeachSelected?(selectedBeach)
                 }
 
                 let tabBar = self.tabBarController?.tabBar
@@ -185,17 +189,22 @@ final class BeachSelectViewController: BaseViewController {
 
         // 비치 선택 → 하이라이트/선택 상태 갱신
         beachTableView.rx.itemSelected
-            .withLatestFrom(output.locations) { indexPath, locations -> (IndexPath, LocationDTO)? in
+            .withLatestFrom(output.locations) { indexPath, locations -> LocationDTO? in
                 guard indexPath.row < locations.count else { return nil }
-                return (indexPath, locations[indexPath.row])
+                return locations[indexPath.row]
             }
             .compactMap { $0 }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] indexPath, location in
+            .subscribe(onNext: { [weak self] location in
                 guard let self = self else { return }
                 self.selectedLocationId = location.id
+                self.selectedLocation = location
                 self.beachTableView.reloadData()
-                self.beachTableView.deselectRow(at: indexPath, animated: true)
+                
+                // 선택 해제 (시각적 피드백)
+                if let selectedIndexPath = self.beachTableView.indexPathForSelectedRow {
+                    self.beachTableView.deselectRow(at: selectedIndexPath, animated: true)
+                }
             })
             .disposed(by: disposeBag)
     }

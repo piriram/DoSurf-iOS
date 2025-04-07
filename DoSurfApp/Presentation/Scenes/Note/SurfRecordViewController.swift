@@ -33,6 +33,17 @@ final class SurfRecordViewController: BaseViewController {
     // VM
     private let viewModel = SurfRecordViewModel()
     
+    // 서핑 시간 데이터
+    private var surfStartTime: Date?
+    private var surfEndTime: Date?
+    
+    /// 서핑 시작/종료 시간을 받아 초기화하는 메서드
+    convenience init(startTime: Date?, endTime: Date?) {
+        self.init()
+        self.surfStartTime = startTime
+        self.surfEndTime = endTime
+    }
+    
     override func configureUI() {
         view.backgroundColor = UIColor.systemGroupedBackground
         configureHierarchy()
@@ -63,6 +74,19 @@ final class SurfRecordViewController: BaseViewController {
         // Unhide navigation bar in case previous screen hid it
         navigationController?.setNavigationBarHidden(false, animated: animated)
         navigationItem.hidesBackButton = false
+        
+        // 서핑 시간 정보 디버깅 출력
+        if let startTime = surfStartTime, let endTime = surfEndTime {
+            print("🏄‍♂️ 서핑 기록 화면으로 시간 전달됨:")
+            print("   시작 시간: \(startTime)")
+            print("   종료 시간: \(endTime)")
+            let duration = endTime.timeIntervalSince(startTime)
+            let hours = Int(duration) / 3600
+            let minutes = Int(duration) % 3600 / 60
+            print("   서핑 지속 시간: \(hours)시간 \(minutes)분")
+        } else {
+            print("⚠️ 서핑 시간 정보가 전달되지 않았습니다. 기본값 사용.")
+        }
     }
     
     @objc private func dismissSelf() {
@@ -109,10 +133,21 @@ final class SurfRecordViewController: BaseViewController {
             endTimePicker.preferredDatePickerStyle = .compact
         }
         
-        // Default values (today's date, 13:00~15:00)
-        let baseDate = Date()
-        let defaultStart = date(bySettingHour: 13, minute: 0, on: baseDate)
-        let defaultEnd = date(bySettingHour: 15, minute: 0, on: baseDate)
+        // 서핑 시간이 전달되었다면 해당 시간으로 설정, 아니면 기본값 사용
+        let baseDate: Date
+        let defaultStart: Date
+        let defaultEnd: Date
+        
+        if let startTime = surfStartTime, let endTime = surfEndTime {
+            baseDate = startTime
+            defaultStart = startTime
+            defaultEnd = endTime
+        } else {
+            baseDate = Date()
+            defaultStart = date(bySettingHour: 13, minute: 0, on: baseDate)
+            defaultEnd = date(bySettingHour: 15, minute: 0, on: baseDate)
+        }
+        
         datePicker.date = baseDate
         startTimePicker.date = defaultStart
         endTimePicker.date = defaultEnd
