@@ -16,13 +16,13 @@ final class DashboardViewModel {
     // MARK: - Input
     struct Input {
         let viewDidLoad: Observable<Void>
-        let beachSelected: Observable<String>  // beachId
+        let beachSelected: Observable<String>
         let refreshTriggered: Observable<Void>
     }
     
     // MARK: - Output
     struct Output {
-        let beachData: Observable<BeachDataDump>
+        let beachData: Observable<BeachData>  // 변경
         let dashboardCards: Observable<[DashboardCardData]>
         let groupedCharts: Observable<[(date: Date, charts: [Chart])]>
         let isLoading: Observable<Bool>
@@ -30,7 +30,7 @@ final class DashboardViewModel {
     }
     
     // MARK: - Properties
-    private let currentBeachId = BehaviorRelay<String>(value: "4001") // 기본값
+    private let currentBeachId = BehaviorRelay<String>(value: "4001")
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
     
@@ -44,24 +44,21 @@ final class DashboardViewModel {
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
-        // beachId 변경 감지
         input.beachSelected
             .bind(to: currentBeachId)
             .disposed(by: disposeBag)
         
-        // 데이터 로드 트리거 (viewDidLoad, beachSelected, refresh)
         let loadTrigger = Observable.merge(
             input.viewDidLoad.map { [weak self] _ in self?.currentBeachId.value ?? "4001" },
             input.beachSelected,
             input.refreshTriggered.withLatestFrom(currentBeachId.asObservable())
         )
         
-        // 데이터 로드
         let beachData = loadTrigger
             .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
             })
-            .flatMapLatest { [weak self] beachId -> Observable<BeachDataDump> in
+            .flatMapLatest { [weak self] beachId -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
                 
                 return self.fetchBeachDataUseCase.execute(beachId: beachId)
@@ -82,10 +79,10 @@ final class DashboardViewModel {
             }
             .share(replay: 1)
         
-        // 대시보드 카드 데이터 생성
+        // 이미 Domain Chart를 사용
         let dashboardCards = beachData
-            .map { dump -> [DashboardCardData] in
-                guard let latestChart = dump.forecasts.first?.toDomain() else {
+            .map { beachData -> [DashboardCardData] in
+                guard let latestChart = beachData.charts.first else {
                     return []
                 }
                 
@@ -115,11 +112,10 @@ final class DashboardViewModel {
                 ]
             }
         
-        // 날짜별 그룹화된 차트
+        // 이미 Domain Chart를 사용
         let groupedCharts = beachData
-            .map { dump -> [(date: Date, charts: [Chart])] in
-                let charts = dump.forecasts.compactMap { $0.toDomain() }
-                return self.groupChartsByDate(charts)
+            .map { beachData -> [(date: Date, charts: [Chart])] in
+                return self.groupChartsByDate(beachData.charts)
             }
         
         return Output(
@@ -131,7 +127,6 @@ final class DashboardViewModel {
         )
     }
     
-    // MARK: - Private Methods
     private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: charts) { chart in

@@ -16,11 +16,11 @@ class DashboardViewController: BaseViewController {
     private let viewModel: DashboardViewModel
     private let disposeBag = DisposeBag()
     
-    private var currentBeachData: BeachDataDump?
+    private var currentBeachData: BeachData?  // 변경
     private let viewDidLoadSubject = PublishSubject<Void>()
     private let beachSelectedSubject = PublishSubject<String>()
     
-    // MARK: - UI Components (기존 코드 그대로 유지)
+    // MARK: - UI Components (기존 코드 그대로)
     private lazy var backgroundImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "backgroundMain")
@@ -199,22 +199,20 @@ class DashboardViewController: BaseViewController {
     override func configureBind() {
         cardCollectionView.rx.setDelegate(self).disposed(by: disposeBag)
         
-        // ViewModel Input 설정
         let input = DashboardViewModel.Input(
             viewDidLoad: viewDidLoadSubject.asObservable(),
             beachSelected: beachSelectedSubject.asObservable(),
             refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable()
         )
         
-        // ViewModel Output 바인딩
         let output = viewModel.transform(input: input)
         
-        // 해변 데이터 바인딩
+        // 해변 데이터 바인딩 - metadata 사용
         output.beachData
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] beachData in
                 self?.currentBeachData = beachData
-                self?.beachSelectButton.setTitle(beachData.beachInfo.name, for: .normal)
+                self?.beachSelectButton.setTitle(beachData.metadata.name, for: .normal)
             })
             .disposed(by: disposeBag)
         
@@ -255,7 +253,6 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // viewDidLoad 트리거
         viewDidLoadSubject.onNext(())
     }
     
@@ -299,7 +296,6 @@ class DashboardViewController: BaseViewController {
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
         
-        // 해변 선택 결과 받기
         vc.onBeachSelected = { [weak self] beachId in
             self?.beachSelectedSubject.onNext(beachId)
         }
@@ -357,4 +353,3 @@ extension DIContainer {
         )
     }
 }
-
