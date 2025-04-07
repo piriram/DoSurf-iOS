@@ -375,7 +375,7 @@ final class SurfRecordViewController: BaseViewController {
         valueLabel.text = value
         valueLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         valueLabel.backgroundColor = UIColor.surfBlue
-        valueLabel.textColor = .systemBlue
+        valueLabel.textColor = .surfBlue
         valueLabel.layer.cornerRadius = 16
         valueLabel.clipsToBounds = true
         

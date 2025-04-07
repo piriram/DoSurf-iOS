@@ -280,9 +280,9 @@ class DashboardViewController: BaseViewController {
     // MARK: - Data Setup
     private func setupDashboardCards() {
         dashboardData = [
-            DashboardCardData(type: .wind, title: "바람", value: "2.7m/s", icon: "wind", color: .systemBlue),
-            DashboardCardData(type: .wave, title: "파도", value: "1.2m", subtitle: "6.2s", icon: "water.waves", color: .systemBlue),
-            DashboardCardData(type: .temperature, title: "수온", value: "28°C", icon: "thermometer.medium", color: .systemOrange)
+            DashboardCardData(type: .wind, title: "바람", value: "2.7m/s", icon: "wind", color: .surfBlue),
+            DashboardCardData(type: .wave, title: "파도", value: "1.2m", subtitle: "6.2s", icon: "water.waves", color: .surfBlue),
+            DashboardCardData(type: .temperature, title: "수온", value: "28°C", icon: "thermometer.medium", color: .surfBlue)
         ]
     }
     
