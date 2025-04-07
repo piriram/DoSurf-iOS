@@ -22,6 +22,7 @@ final class SurfRecordViewController: BaseViewController {
     
     private let tableView = UITableView(frame: .zero, style: .plain)
     private var charts: [Chart] = []
+    private var injectedCharts: [Chart]?
     private var tableCardHeightConstraint: Constraint?
     private let chartDateLabel = UILabel()
     private let tableContainer = UIStackView()
@@ -37,29 +38,46 @@ final class SurfRecordViewController: BaseViewController {
     private var surfStartTime: Date?
     private var surfEndTime: Date?
     
-    /// 서핑 시작/종료 시간을 받아 초기화하는 메서드
+    // 테이블 고정 높이
+    private let tableFixedHeight: CGFloat = 260
+    
+    // MARK: - Initializers
+    /// 서핑 시작/종료 + 차트 목록 주입 이니셜라이저
+    convenience init(startTime: Date?, endTime: Date?, charts: [Chart]) {
+        self.init()
+        self.surfStartTime = startTime
+        self.surfEndTime = endTime
+        self.injectedCharts = charts
+    }
+    
+    /// 필요 시 2-파라미터 이니셜라이저도 지원
     convenience init(startTime: Date?, endTime: Date?) {
         self.init()
         self.surfStartTime = startTime
         self.surfEndTime = endTime
+        self.injectedCharts = nil
     }
     
+    // 외부에서 차트를 나중에 주입/갱신하고 싶을 때 사용
+    func applyInjectedCharts(_ charts: [Chart]) {
+        self.injectedCharts = charts
+        if isViewLoaded { filterAndApplyCharts() }
+    }
+    
+    // MARK: - Lifecycle
     override func configureUI() {
         view.backgroundColor = UIColor.systemGroupedBackground
         configureHierarchy()
         configureStyles()
-        // 처음엔 스크롤 비활성화
-        //        scrollView.isScrollEnabled = false
         
-        // Ensure navigation bar is visible and back button available when pushed
-        navigationController?.setNavigationBarHidden(false, animated: false)
+        // 네비게이션 표시
         navigationController?.setNavigationBarHidden(false, animated: false)
         navigationItem.hidesBackButton = false
         if title == nil || title?.isEmpty == true {
             title = "서핑 기록"
         }
         
-        // If presented modally as the root of a navigation controller, add a close button
+        // 모달 루트로 표시된 경우 닫기 버튼
         if presentingViewController != nil && navigationController?.viewControllers.first === self {
             navigationItem.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(dismissSelf))
         }
@@ -71,11 +89,9 @@ final class SurfRecordViewController: BaseViewController {
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Unhide navigation bar in case previous screen hid it
         navigationController?.setNavigationBarHidden(false, animated: animated)
         navigationItem.hidesBackButton = false
         
-        // 서핑 시간 정보 디버깅 출력
         if let startTime = surfStartTime, let endTime = surfEndTime {
             print("🏄‍♂️ 서핑 기록 화면으로 시간 전달됨:")
             print("   시작 시간: \(startTime)")
@@ -93,12 +109,13 @@ final class SurfRecordViewController: BaseViewController {
         dismiss(animated: true)
     }
     
+    // MARK: - UI Build
     private func configureHierarchy() {
         // 하단 고정 버튼
         view.addSubview(saveButton)
         saveButton.snp.makeConstraints {
             $0.left.right.equalTo(view.safeAreaLayoutGuide).inset(16)
-            $0.bottom.equalTo(view.keyboardLayoutGuide.snp.top).offset(-12) // 키보드 위에 고정
+            $0.bottom.equalTo(view.keyboardLayoutGuide.snp.top).offset(-12)
             $0.height.equalTo(54)
         }
         
@@ -114,7 +131,7 @@ final class SurfRecordViewController: BaseViewController {
         scrollView.addSubview(content)
         content.snp.makeConstraints {
             $0.edges.equalToSuperview().inset(16)
-            $0.width.equalTo(scrollView.snp.width).offset(-32) // 가로 고정
+            $0.width.equalTo(scrollView.snp.width).offset(-32)
         }
         
         // --- Header (날짜/시작/종료) 카드
@@ -127,31 +144,16 @@ final class SurfRecordViewController: BaseViewController {
         startTimePicker.datePickerMode = .time
         endTimePicker.datePickerMode = .time
         
+        // 타임존을 명시적으로 KST로 지정 (표시 일관성)
+        datePicker.timeZone = TimeZone(identifier: "Asia/Seoul")
+        startTimePicker.timeZone = TimeZone(identifier: "Asia/Seoul")
+        endTimePicker.timeZone = TimeZone(identifier: "Asia/Seoul")
+        
         if #available(iOS 14.0, *) {
             datePicker.preferredDatePickerStyle = .compact
             startTimePicker.preferredDatePickerStyle = .compact
             endTimePicker.preferredDatePickerStyle = .compact
         }
-        
-        // 서핑 시간이 전달되었다면 해당 시간으로 설정, 아니면 기본값 사용
-        let baseDate: Date
-        let defaultStart: Date
-        let defaultEnd: Date
-        
-        if let startTime = surfStartTime, let endTime = surfEndTime {
-            baseDate = startTime
-            defaultStart = startTime
-            defaultEnd = endTime
-        } else {
-            baseDate = Date()
-            defaultStart = date(bySettingHour: 13, minute: 0, on: baseDate)
-            defaultEnd = date(bySettingHour: 15, minute: 0, on: baseDate)
-        }
-        
-        datePicker.date = baseDate
-        startTimePicker.date = defaultStart
-        endTimePicker.date = defaultEnd
-        endTimePicker.minimumDate = defaultStart
         
         // React to changes
         datePicker.addTarget(self, action: #selector(handleDateChanged), for: .valueChanged)
@@ -167,12 +169,16 @@ final class SurfRecordViewController: BaseViewController {
         headerCard.addSubview(headerStack)
         headerStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
         
-        // --- 표 카드 (샘플 자리)
+        // >>> 전달된 start/end를 기준으로 3개 피커 정렬
+        setupPickersWithInitialTimes(start: surfStartTime, end: surfEndTime)
+        
+        // --- 표 카드
         tableCard.layer.cornerRadius = 12
         tableCard.backgroundColor = .white
         content.addArrangedSubview(tableCard)
         tableCard.snp.makeConstraints { make in
-            tableCardHeightConstraint = make.height.equalTo(140).constraint
+            // ✅ 고정 높이 + 스크롤
+            tableCardHeightConstraint = make.height.equalTo(tableFixedHeight).constraint
         }
         
         // TableView + Date header + Column header inside card
@@ -226,8 +232,8 @@ final class SurfRecordViewController: BaseViewController {
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
         tableView.rowHeight = 56
-        tableView.isScrollEnabled = false // avoid nested scrolling inside outer scrollView
-        tableView.showsVerticalScrollIndicator = false
+        tableView.isScrollEnabled = true           // ✅ 내부 수직 스크롤 허용
+        tableView.showsVerticalScrollIndicator = true
         tableView.tableFooterView = UIView()
         tableView.dataSource = self
         tableView.delegate = self
@@ -237,11 +243,6 @@ final class SurfRecordViewController: BaseViewController {
         tableContainer.addArrangedSubview(dateHeaderView)
         tableContainer.addArrangedSubview(headerRow)
         tableContainer.addArrangedSubview(tableView)
-        
-        // Prepare initial data and layout
-        updateChartDateLabel()
-        self.charts = buildSampleCharts()
-        reloadChartTable()
         
         // --- 파도 평가 카드
         content.addArrangedSubview(ratingCardView)
@@ -261,7 +262,7 @@ final class SurfRecordViewController: BaseViewController {
         addMemoButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         addMemoButton.backgroundColor = .surfBlue.withAlphaComponent(0.08)
         addMemoButton.layer.cornerRadius = 20
-        addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 14)
+        addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 10)
         
         memoTextView.isHidden = true
         memoTextView.font = .systemFont(ofSize: 15)
@@ -276,6 +277,12 @@ final class SurfRecordViewController: BaseViewController {
         
         commentCard.addSubview(cStack)
         cStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
+        
+        if let injected = injectedCharts, !injected.isEmpty {
+            filterAndApplyCharts()
+        }
+        
+        updateChartDateLabel()
     }
     
     private func configureStyles() {
@@ -296,7 +303,6 @@ final class SurfRecordViewController: BaseViewController {
                     self.memoTextView.isHidden = false
                     self.scrollView.isScrollEnabled = true
                     
-                    // 애니메이션로 펼치기
                     UIView.animate(withDuration: 0.25) {
                         self.view.layoutIfNeeded()
                     } completion: { _ in
@@ -306,13 +312,10 @@ final class SurfRecordViewController: BaseViewController {
                         self.scrollView.scrollRectToVisible(rect.insetBy(dx: 0, dy: -20), animated: true)
                     }
                 } else {
-                    // 이미 열려 있으면 포커스만
                     self.memoTextView.becomeFirstResponder()
                 }
             })
             .disposed(by: disposeBag)
-        
-        
     }
     
     // MARK: - Date/Time Picker Helpers
@@ -369,16 +372,16 @@ final class SurfRecordViewController: BaseViewController {
     }
     
     @objc private func handleDateChanged() {
-        // Keep start/end times but move them to the selected date
+        // 선택 날짜로 start/end를 같은 날짜선상으로 이동
         let newStart = combine(date: datePicker.date, withTimeOf: startTimePicker.date)
-        let newEnd = combine(date: datePicker.date, withTimeOf: endTimePicker.date)
+        let newEnd   = combine(date: datePicker.date, withTimeOf: endTimePicker.date)
         startTimePicker.date = newStart
-        endTimePicker.date = newEnd
         endTimePicker.minimumDate = newStart
         if endTimePicker.date < newStart {
             endTimePicker.date = newStart
         }
         updateChartDateLabel()
+        filterAndApplyCharts()          // ✅ 날짜 변경 시 재필터
     }
     
     @objc private func handleStartTimeChanged() {
@@ -387,86 +390,155 @@ final class SurfRecordViewController: BaseViewController {
         if endTimePicker.date < start {
             endTimePicker.date = start
         }
+        filterAndApplyCharts()          // ✅ 시작 변경 시 재필터
     }
     
     @objc private func handleEndTimeChanged() {
         if endTimePicker.date < startTimePicker.date {
             endTimePicker.date = startTimePicker.date
         }
+        filterAndApplyCharts()          // ✅ 종료 변경 시 재필터
     }
     
     private func updateChartDateLabel() {
         chartDateLabel.text = datePicker.date.koreanMonthDayWeekday
     }
     
-    // MARK: - Row Factory (좌측 타이틀 / 우측 값)
-    private func makeRow(title: String, value: String) -> UIView {
-        let row = UIView()
-        let left = UILabel()
-        left.text = title
-        left.font = .systemFont(ofSize: 14, weight: .regular)
-        
-        let valueLabel = PaddingLabel(insets: .init(top: 6, left: 12, bottom: 6, right: 12))
-        valueLabel.text = value
-        valueLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-        valueLabel.backgroundColor = UIColor.surfBlue
-        valueLabel.textColor = .surfBlue
-        valueLabel.layer.cornerRadius = 16
-        valueLabel.clipsToBounds = true
-        
-        row.addSubview(left)
-        row.addSubview(valueLabel)
-        left.snp.makeConstraints { make in
-            make.left.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
-        }
-        valueLabel.snp.makeConstraints { make in
-            make.right.equalToSuperview().inset(8)
-            make.centerY.equalTo(left)
-        }
-        row.snp.makeConstraints { $0.height.equalTo(44) }
-        let sep = UIView()
-        sep.backgroundColor = .separator
-        row.addSubview(sep)
-        sep.snp.makeConstraints {
-            $0.left.right.bottom.equalToSuperview()
-            $0.height.equalTo(0.5)
-        }
-        return row
-    }
-    
     // MARK: - Table Helpers
     private func reloadChartTable() {
         tableView.reloadData()
         tableView.layoutIfNeeded()
-        let contentHeight = tableView.contentSize.height
-        let headersHeight: CGFloat = 44 + 36 // date header + column header
-        tableCardHeightConstraint?.update(offset: max(140, headersHeight + contentHeight))
+        // ✅ 고정 높이 유지 (자동 변경 없음)
+    }
+}
+
+// MARK: - Initial Time Setup & Filtering
+private extension SurfRecordViewController {
+    func setupPickersWithInitialTimes(start: Date?, end: Date?) {
+        let now = Date()
+        var baseDate = start ?? now
+        
+        var startTime: Date
+        var endTime: Date
+        
+        switch (start, end) {
+        case let (s?, e?):
+            startTime = stripSeconds(s)
+            endTime   = stripSeconds(e)
+            if endTime < startTime {
+                endTime = Calendar.current.date(byAdding: .day, value: 1, to: endTime) ?? endTime
+            }
+            baseDate = startTime
+            
+        case let (s?, nil):
+            startTime = stripSeconds(s)
+            endTime   = Calendar.current.date(byAdding: .hour, value: 2, to: startTime) ?? startTime
+            baseDate  = startTime
+            
+        case let (nil, e?):
+            endTime   = stripSeconds(e)
+            startTime = Calendar.current.date(byAdding: .hour, value: -2, to: endTime) ?? endTime
+            baseDate  = startTime
+            
+        default:
+            baseDate  = now
+            startTime = date(bySettingHour: 13, minute: 0, on: baseDate)
+            endTime   = date(bySettingHour: 15, minute: 0, on: baseDate)
+        }
+        
+        // datePicker의 날짜를 기준으로 동일한 날짜선상에 정렬
+        datePicker.date = baseDate
+        let normalizedStart = combine(date: datePicker.date, withTimeOf: startTime)
+        var normalizedEnd   = combine(date: datePicker.date, withTimeOf: endTime)
+        
+        if normalizedEnd < normalizedStart {
+            normalizedEnd = Calendar.current.date(byAdding: .day, value: 1, to: normalizedEnd) ?? normalizedEnd
+        }
+        
+        startTimePicker.date = normalizedStart
+        endTimePicker.minimumDate = normalizedStart
+        endTimePicker.date = max(normalizedEnd, normalizedStart)
+        
+        updateChartDateLabel()
+        filterAndApplyCharts() // ✅ 초기에도 필터 적용
     }
     
-    private func buildSampleCharts() -> [Chart] {
-        // Build a few sample rows relative to current pickers
-        let baseDate = datePicker.date
-        let start = startTimePicker.date
-        // Generate 3 entries at 2-hour intervals starting from start time
-        var items: [Chart] = []
-        for i in 0..<3 {
-            let time = Calendar.current.date(byAdding: .hour, value: i * 2, to: combine(date: baseDate, withTimeOf: start)) ?? Date()
-            let chart = Chart(
-                beachID: 4001,
-                time: time,
-                windDirection: 45,
-                windSpeed: 2.7,
-                waveDirection: 120,
-                waveHeight: 1.2,
-                wavePeriod: 6.2,
-                waterTemperature: 28,
-                weather: .rain,
-                airTemperature: 30
-            )
-            items.append(chart)
+    func stripSeconds(_ date: Date) -> Date {
+        let cal = Calendar.current
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+        return cal.date(from: comps) ?? date
+    }
+    
+    // MARK: KST 3시간 그리드 정렬/필터 유틸
+    /// KST 캘린더
+    private func kstCalendar() -> Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        return cal
+    }
+    /// KST 기준 3시간 슬롯(00,03,06,...)으로 내림
+    private func alignDownTo3hKST(_ date: Date) -> Date {
+        let cal = kstCalendar()
+        let comps = cal.dateComponents([.year, .month, .day, .hour], from: date)
+        guard let hour = comps.hour else { return date }
+        let flooredHour = (hour / 3) * 3
+        var aligned = DateComponents()
+        aligned.year = comps.year
+        aligned.month = comps.month
+        aligned.day = comps.day
+        aligned.hour = flooredHour
+        aligned.minute = 0
+        aligned.second = 0
+        return cal.date(from: aligned) ?? date
+    }
+    /// 3시간 간격(10800초) 점검용 디버그
+    private func debugCheckThreeHourSpacing(_ charts: [Chart]) {
+        guard charts.count > 1 else { return }
+        let threeHours: TimeInterval = 3 * 3600
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        print("🧪 3시간 간격 점검 시작")
+        for i in 1..<charts.count {
+            let dt = charts[i].time.timeIntervalSince(charts[i-1].time)
+            if abs(dt - threeHours) > 1 {
+                print("⚠️ 간격 이상: \(f.string(from: charts[i-1].time)) -> \(f.string(from: charts[i].time)) = \(dt/3600)시간")
+            }
         }
-        return items
+    }
+    
+    /// ✅ 시작시간을 3시간 슬롯으로 내림(KST), 종료시간 이하는 포함(<=)
+    func filterAndApplyCharts() {
+        guard let all = injectedCharts, !all.isEmpty else {
+            self.charts = []
+            reloadChartTable()
+            return
+        }
+        let start = startTimePicker.date
+        let end   = endTimePicker.date
+        
+        let lowerBound = alignDownTo3hKST(start) // 시작은 같거나 빠른 슬롯부터
+        let upperBound = end                     // 종료는 end 이하
+        
+        let filtered = all
+            .filter { $0.time >= lowerBound && $0.time <= upperBound }
+            .sorted { $0.time < $1.time }
+        
+        self.charts = filtered
+        reloadChartTable()
+        
+        // 디버그: 한국시로 슬롯/리스트 출력
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        f.dateFormat = "yyyy-MM-dd HH:mm"
+        print("⏱ 경계(KST) start(slot↓): \(f.string(from: lowerBound))  ~  end(≤): \(f.string(from: upperBound))")
+        print("📊 필터링된 차트 시간대(KST):")
+        filtered.forEach { print(" - \(f.string(from: $0.time))") }
+        
+        // (선택) 간격 검증
+        debugCheckThreeHourSpacing(filtered)
     }
 }
 
@@ -488,22 +560,3 @@ extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
-
-// MARK: - 작은 유틸 라벨
-final class PaddingLabel: UILabel {
-    private let insets: UIEdgeInsets
-    init(insets: UIEdgeInsets) {
-        self.insets = insets
-        super.init(frame: .zero)
-    }
-    required init?(coder: NSCoder) { fatalError() }
-    override func drawText(in rect: CGRect) {
-        super.drawText(in: rect.inset(by: insets))
-    }
-    override var intrinsicContentSize: CGSize {
-        let s = super.intrinsicContentSize
-        return CGSize(width: s.width + insets.left + insets.right,
-                      height: s.height + insets.top + insets.bottom)
-    }
-}
-
