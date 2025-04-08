@@ -147,11 +147,25 @@ final class SurfRatingCardView: UIView {
         for (index, description) in ratingDescriptions.enumerated() {
             let containerView = UIView()
             
+            containerView.backgroundColor = .white
+            containerView.layer.cornerRadius = 12
+            containerView.clipsToBounds = true
+            
             let pointLabel = UILabel()
             pointLabel.text = "\(index + 1)점"
-            pointLabel.font = .systemFont(ofSize: 11, weight: .medium)
+            pointLabel.font = .systemFont(ofSize: 14, weight: .semibold)
             pointLabel.textColor = .systemGray
             pointLabel.textAlignment = .center
+            
+            let starIcon = UIImageView()
+            starIcon.image = UIImage(systemName: "star.fill")
+            starIcon.tintColor = .surfBlue
+            starIcon.contentMode = .scaleAspectFit
+            
+            let pointRow = UIStackView(arrangedSubviews: [starIcon, pointLabel])
+            pointRow.axis = .horizontal
+            pointRow.alignment = .center
+            pointRow.spacing = 4
             
             let descLabel = UILabel()
             descLabel.text = description
@@ -159,16 +173,21 @@ final class SurfRatingCardView: UIView {
             descLabel.textColor = .systemGray2
             descLabel.textAlignment = .center
             
-            containerView.addSubview(pointLabel)
+            containerView.addSubview(pointRow)
             containerView.addSubview(descLabel)
             
-            pointLabel.snp.makeConstraints {
-                $0.top.leading.trailing.equalToSuperview()
+            pointRow.snp.makeConstraints {
+                $0.top.equalToSuperview().offset(6)
+                $0.leading.trailing.equalToSuperview().inset(10)
+            }
+            starIcon.snp.makeConstraints {
+                $0.width.height.equalTo(12)
             }
             
             descLabel.snp.makeConstraints {
-                $0.top.equalTo(pointLabel.snp.bottom).offset(2)
-                $0.leading.trailing.bottom.equalToSuperview()
+                $0.top.equalTo(pointRow.snp.bottom).offset(2)
+                $0.leading.trailing.equalToSuperview().inset(10)
+                $0.bottom.equalToSuperview().offset(-6)
             }
             
             labelsStackView.addArrangedSubview(containerView)
@@ -305,3 +324,4 @@ struct UIViewPreviewWrapper<T: UIView>: UIViewRepresentable {
     func updateUIView(_ uiView: T, context: Context) {}
 }
 #endif
+

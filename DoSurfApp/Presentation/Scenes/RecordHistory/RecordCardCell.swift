@@ -20,7 +20,7 @@ final class RecordCardCell: UITableViewCell {
     
     private let headerView: UIView = {
         let view = UIView()
-        view.backgroundColor = UIColor(red: 0.91, green: 0.95, blue: 1.0, alpha: 1.0)
+        view.backgroundColor = .backgroundSkyblue
         view.layer.cornerRadius = 12
         view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         return view
@@ -28,7 +28,7 @@ final class RecordCardCell: UITableViewCell {
     
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 16, weight: .semibold)
+        label.font = .systemFont(ofSize: 18, weight: .bold)
         label.textColor = .surfBlue
         return label
     }()
@@ -59,6 +59,18 @@ final class RecordCardCell: UITableViewCell {
         return button
     }()
     
+    private let addMemoButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("메모 추가하기", for: .normal)
+        button.setTitleColor(.darkGray, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 13)
+        button.setImage(UIImage(systemName: "plus"), for: .normal)
+        button.tintColor = .darkGray
+        button.semanticContentAttribute = .forceRightToLeft
+        button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: -4)
+        return button
+    }()
+    
     private let chartTableView: UITableView = {
         let tableView = UITableView()
         tableView.backgroundColor = .clear
@@ -68,9 +80,15 @@ final class RecordCardCell: UITableViewCell {
         return tableView
     }()
     
+    private let columnHeaderView: ColumnHeaderView = {
+        let view = ColumnHeaderView()
+        return view
+    }()
+    
     // MARK: - Callbacks
     var onMoreButtonTap: (() -> Void)?
     var onMemoButtonTap: (() -> Void)?
+    var onAddMemoButtonTap: (() -> Void)?
     
     // MARK: - Properties
     private var charts: [Chart] = []
@@ -96,6 +114,8 @@ final class RecordCardCell: UITableViewCell {
         headerView.addSubview(ratingLabel)
         headerView.addSubview(moreButton)
         headerView.addSubview(memoButton)
+        headerView.addSubview(addMemoButton)
+        containerView.addSubview(columnHeaderView)
         containerView.addSubview(chartTableView)
         
         chartTableView.dataSource = self
@@ -115,6 +135,12 @@ final class RecordCardCell: UITableViewCell {
             $0.height.equalTo(80)
         }
         
+        columnHeaderView.snp.makeConstraints {
+            $0.top.equalTo(headerView.snp.bottom)
+            $0.leading.trailing.equalToSuperview()
+            $0.height.equalTo(28)
+        }
+        
         dateLabel.snp.makeConstraints {
             $0.top.equalToSuperview().offset(12)
             $0.leading.equalToSuperview().offset(16)
@@ -132,17 +158,25 @@ final class RecordCardCell: UITableViewCell {
         }
         
         memoButton.snp.makeConstraints {
-            $0.centerY.equalTo(moreButton)
-            $0.trailing.equalTo(moreButton.snp.leading).offset(-8)
+            $0.top.equalTo(moreButton.snp.bottom).offset(8)
+            $0.trailing.equalTo(moreButton)
+            $0.bottom.lessThanOrEqualToSuperview().offset(-12)
+        }
+        
+        addMemoButton.snp.makeConstraints {
+            $0.top.equalTo(moreButton.snp.bottom).offset(8)
+            $0.trailing.equalTo(moreButton)
+            $0.bottom.lessThanOrEqualToSuperview().offset(-12)
         }
         
         chartTableView.snp.makeConstraints {
-            $0.top.equalTo(headerView.snp.bottom)
+            $0.top.equalTo(columnHeaderView.snp.bottom)
             $0.leading.trailing.bottom.equalToSuperview()
         }
         
         moreButton.addTarget(self, action: #selector(moreButtonTapped), for: .touchUpInside)
         memoButton.addTarget(self, action: #selector(memoButtonTapped), for: .touchUpInside)
+        addMemoButton.addTarget(self, action: #selector(addMemoButtonTapped), for: .touchUpInside)
     }
     
     // MARK: - Actions
@@ -154,21 +188,54 @@ final class RecordCardCell: UITableViewCell {
         onMemoButtonTap?()
     }
     
+    @objc private func addMemoButtonTapped() {
+        onAddMemoButtonTap?()
+    }
+    
     // MARK: - Configuration
     func configure(with viewModel: RecordCardViewModel) {
         dateLabel.text = "\(viewModel.date) \(viewModel.dayOfWeek)"
         
-        let ratingStars = String(repeating: "⭐", count: viewModel.rating)
-        ratingLabel.text = "\(ratingStars) \(viewModel.rating)점, \(viewModel.ratingText)"
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: ratingLabel.font.pointSize, weight: .medium)
+        let starImage = UIImage(systemName: "star.fill", withConfiguration: symbolConfig)?
+            .withTintColor(.surfBlue, renderingMode: .alwaysOriginal)
+
+        if let starImage = starImage {
+            let attachment = NSTextAttachment()
+            attachment.image = starImage
+            // Optional baseline tweak for alignment:
+            // attachment.bounds = CGRect(x: 0, y: -1, width: starImage.size.width, height: starImage.size.height)
+
+            let attachmentString = NSMutableAttributedString(attachment: attachment)
+            let space = NSAttributedString(string: " ")
+
+            let text = "\(viewModel.rating)점, \(viewModel.ratingText)"
+            let textAttributes: [NSAttributedString.Key: Any] = [
+                .font: ratingLabel.font as Any,
+                .foregroundColor: ratingLabel.textColor as Any
+            ]
+            let textString = NSAttributedString(string: text, attributes: textAttributes)
+
+            let finalString = NSMutableAttributedString()
+            finalString.append(attachmentString)
+            finalString.append(space)
+            finalString.append(textString)
+
+            ratingLabel.attributedText = finalString
+        } else {
+            ratingLabel.text = "\(viewModel.rating)점, \(viewModel.ratingText)"
+        }
         
-        memoButton.isHidden = (viewModel.memo == nil || viewModel.memo?.isEmpty == true)
+        let hasMemo = !(viewModel.memo?.isEmpty ?? true)
+        memoButton.isHidden = !hasMemo
+        addMemoButton.isHidden = hasMemo
         
         charts = viewModel.charts
         chartTableView.reloadData()
         chartTableView.layoutIfNeeded()
         let height = chartTableView.contentSize.height
         chartTableView.snp.remakeConstraints {
-            $0.top.equalTo(headerView.snp.bottom)
+            $0.top.equalTo(columnHeaderView.snp.bottom)
             $0.leading.trailing.bottom.equalToSuperview()
             $0.height.equalTo(height)
         }
@@ -206,3 +273,4 @@ extension RecordCardCell: UITableViewDelegate {
         return UITableView.automaticDimension
     }
 }
+
