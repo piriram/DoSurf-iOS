@@ -13,6 +13,7 @@
         <relationship name="record" maxCount="1" deletionRule="Nullify" destinationEntity="SurfRecord" inverseName="charts" inverseEntity="SurfRecord"/>
     </entity>
     <entity name="SurfRecord" representedClassName="SurfRecord" syncable="YES" codeGenerationType="class">
+        <attribute name="beachId" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="endTime" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isPin" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="memo" optional="YES" attributeType="String"/>

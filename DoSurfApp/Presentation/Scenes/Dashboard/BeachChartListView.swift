@@ -174,18 +174,7 @@ final class BeachChartListView: UIView {
     
     private func scrollToUpcomingChart() {
         guard !groupedCharts.isEmpty else { return }
-        // let now = Date() // 서버 이슈로 현재 시간 사용 중단
-        // 임시 기준 시각: 2025-09-28 10:00 (Asia/Seoul)
-        let calendar = Calendar(identifier: .gregorian)
-        var comps = DateComponents()
-        comps.year = 2025
-        comps.month = 9
-        comps.day = 28
-        comps.hour = 10
-        comps.minute = 0
-        comps.second = 0
-        comps.timeZone = TimeZone(identifier: "Asia/Seoul")
-        let now = calendar.date(from: comps) ?? Date()
+        let now = Date() // 현재 시간 기준으로 복구
         var targetIndexPath: IndexPath?
 
         // Find the first chart whose time is now or in the future

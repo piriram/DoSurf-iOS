@@ -2,7 +2,6 @@ import UIKit
 import SnapKit
 import RxSwift
 import RxCocoa
-internal import CoreData
 
 // MARK: - ViewController
 final class SurfRecordViewController: BaseViewController {
@@ -40,12 +39,21 @@ final class SurfRecordViewController: BaseViewController {
     // State
     private var memoOpened = false
     private let disposeBag = DisposeBag()
-    private lazy var context: NSManagedObjectContext = {
-        CoreDataStack.shared.viewContext
-    }()
     
-    // VM
+    // Dependencies
+    private let surfRecordUseCase: SurfRecordUseCaseProtocol
     private let viewModel = SurfRecordViewModel()
+    
+    // MARK: - Dependency Injection Initializer
+    init(surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+        self.surfRecordUseCase = surfRecordUseCase
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        self.surfRecordUseCase = SurfRecordUseCase()
+        super.init(coder: coder)
+    }
     
     // 서핑 시간 데이터
     private var surfStartTime: Date?
@@ -54,18 +62,18 @@ final class SurfRecordViewController: BaseViewController {
     // 테이블 고정 높이
     private let tableFixedHeight: CGFloat = 260
     
-    // MARK: - Initializers
+    // MARK: - Convenience Initializers
     /// 서핑 시작/종료 + 차트 목록 주입 이니셜라이저
-    convenience init(startTime: Date?, endTime: Date?, charts: [Chart]) {
-        self.init()
+    convenience init(startTime: Date?, endTime: Date?, charts: [Chart], surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+        self.init(surfRecordUseCase: surfRecordUseCase)
         self.surfStartTime = startTime
         self.surfEndTime = endTime
         self.injectedCharts = charts
     }
     
     /// 필요 시 2-파라미터 이니셜라이저도 지원
-    convenience init(startTime: Date?, endTime: Date?) {
-        self.init()
+    convenience init(startTime: Date?, endTime: Date?, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+        self.init(surfRecordUseCase: surfRecordUseCase)
         self.surfStartTime = startTime
         self.surfEndTime = endTime
         self.injectedCharts = nil
@@ -432,58 +440,46 @@ final class SurfRecordViewController: BaseViewController {
         emptyChartLabel.isHidden = !charts.isEmpty
     }
     
-    // MARK: - CoreData Save Logic
+    // MARK: - Data Persistence
     private func saveSurfRecordToCoreData() {
-        guard let entity = NSEntityDescription.entity(forEntityName: "SurfRecord", in: context) else { return }
-        let record = NSManagedObject(entity: entity, insertInto: context)
-        record.setValue(datePicker.date, forKey: "surfDate")
-        record.setValue(startTimePicker.date, forKey: "startTime")
-        record.setValue(endTimePicker.date, forKey: "endTime")
-        record.setValue(ratingCardView.selectedRating.value, forKey: "rating")
-        record.setValue(memoTextView.text.isEmpty ? nil : memoTextView.text, forKey: "memo")
-        record.setValue(false, forKey: "isPin")
-
-        // 차트 배열 저장: 예시로 Record-Chart 관계를 1:N로 가정
-        let chartEntity = NSEntityDescription.entity(forEntityName: "SurfChart", in: context)
-        let chartObjects = charts.compactMap { chart -> NSManagedObject? in
-            guard let chartEntity = chartEntity else { return nil }
-            let chartObj = NSManagedObject(entity: chartEntity, insertInto: context)
-            chartObj.setValue(chart.time, forKey: "time")
-            chartObj.setValue(chart.windSpeed, forKey: "windSpeed")
-            chartObj.setValue(chart.windDirection, forKey: "windDirection")
-            chartObj.setValue(chart.waveHeight, forKey: "waveHeight")
-            chartObj.setValue(chart.wavePeriod, forKey: "wavePeriod")
-            chartObj.setValue(chart.waveDirection, forKey: "waveDirection")
-            chartObj.setValue(chart.airTemperature, forKey: "airTemperature")
-            chartObj.setValue(chart.waterTemperature, forKey: "waterTemperature")
-            chartObj.setValue(chart.weather.iconName, forKey: "weatherIconName")
-           
-            // 관계 연결 (record.addToCharts(chartObj))
-            return chartObj
-        }
-        // Record와 차트들 관계 연결 (to-many)
-        record.setValue(NSSet(array: chartObjects), forKey: "charts")
-
-        do {
-            try context.save()
-            print("✅ 기록이 CoreData에 성공적으로 저장되었습니다.")
-            // 저장 성공 시 화면 닫기 (pop 또는 dismiss)
-            DispatchQueue.main.async {
-                if let nav = self.navigationController {
-                    // 네비게이션 스택에 있을 경우 pop
-                    if nav.viewControllers.first === self, self.presentingViewController != nil {
-                        // 모달 네비게이션의 루트인 경우 dismiss
-                        self.dismiss(animated: true)
-                    } else {
-                        nav.popViewController(animated: true)
-                    }
-                } else if self.presentingViewController != nil {
-                    // 네비게이션이 없고 모달로 표시된 경우 dismiss
-                    self.dismiss(animated: true)
-                }
+        let beachID = charts.first?.beachID ?? injectedCharts?.first?.beachID ?? 0
+        surfRecordUseCase.saveSurfRecord(
+            surfDate: datePicker.date,
+            startTime: startTimePicker.date,
+            endTime: endTimePicker.date,
+            beachID: beachID,
+            rating: Int16(ratingCardView.selectedRating.value),
+            memo: memoTextView.text.isEmpty ? nil : memoTextView.text,
+            isPin: false,
+            charts: charts
+        )
+        .observe(on: MainScheduler.instance)
+        .subscribe(
+            onSuccess: { [weak self] in
+                print("✅ 기록이 성공적으로 저장되었습니다.")
+                self?.handleSaveSuccess()
+            },
+            onFailure: { error in
+                print("❌ 기록 저장 실패: \(error.localizedDescription)")
+                // TODO: 사용자에게 에러 알림 표시
             }
-        } catch {
-            print("❌ CoreData 저장 실패: \(error)")
+        )
+        .disposed(by: disposeBag)
+    }
+    
+    private func handleSaveSuccess() {
+        // 저장 성공 시 화면 닫기 (pop 또는 dismiss)
+        if let nav = navigationController {
+            // 네비게이션 스택에 있을 경우 pop
+            if nav.viewControllers.first === self, presentingViewController != nil {
+                // 모달 네비게이션의 루트인 경우 dismiss
+                dismiss(animated: true)
+            } else {
+                nav.popViewController(animated: true)
+            }
+        } else if presentingViewController != nil {
+            // 네비게이션이 없고 모달로 표시된 경우 dismiss
+            dismiss(animated: true)
         }
     }
 }

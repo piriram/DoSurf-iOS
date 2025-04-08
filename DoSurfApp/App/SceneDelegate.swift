@@ -6,7 +6,6 @@
 //
 
 import UIKit
-internal import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
@@ -20,10 +19,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
         let vc = CustomTabBarController()
-//        let nav = UINavigationController(rootViewController: vc)
-        if let url = CoreDataStack.shared.persistentContainer.persistentStoreCoordinator.persistentStores.first?.url {
-            print("💾 Core Data store URL:", url.path)
-        }
         window?.rootViewController = vc
         window?.makeKeyAndVisible()
         
