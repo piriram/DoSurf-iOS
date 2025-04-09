@@ -12,6 +12,7 @@ final class DashboardViewModel {
     
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
+    private let surfRecordUseCase: SurfRecordUseCaseProtocol
     
     // MARK: - Input
     struct Input {
@@ -25,6 +26,7 @@ final class DashboardViewModel {
         let beachData: Observable<BeachData>  // 변경
         let dashboardCards: Observable<[DashboardCardData]>
         let groupedCharts: Observable<[(date: Date, charts: [Chart])]>
+        let recentRecordCharts: Observable<[Chart]>
         let isLoading: Observable<Bool>
         let error: Observable<Error>
     }
@@ -37,8 +39,9 @@ final class DashboardViewModel {
     private let disposeBag = DisposeBag()
     
     // MARK: - Initialize
-    init(fetchBeachDataUseCase: FetchBeachDataUseCase) {
+    init(fetchBeachDataUseCase: FetchBeachDataUseCase, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
+        self.surfRecordUseCase = surfRecordUseCase
     }
     
     // MARK: - Transform
@@ -123,13 +126,114 @@ final class DashboardViewModel {
                 return self.groupChartsByDate(beachData.charts)
             }
         
+        // CoreData에서 최근 기록 차트 가져오기
+        let recentRecordCharts = currentBeachId
+            .distinctUntilChanged()
+            .flatMapLatest { [weak self] beachID -> Observable<[Chart]> in
+                guard let self = self else { return .just([]) }
+                
+                // beachID를 Int로 변환
+                let beachIDInt = Int(beachID) ?? 0
+                
+                return self.surfRecordUseCase.fetchSurfRecords(for: beachIDInt)
+                    .asObservable()
+                    .map { records -> [Chart] in
+                        // 최근 10개 기록의 차트만 가져오기
+                        let recentRecords = records.prefix(10)
+                        
+                        return recentRecords.flatMap { record in
+                            record.charts.map { chartData in
+                                Chart(
+                                    beachID: beachIDInt,
+                                    time: chartData.time,
+                                    windDirection: chartData.windDirection,
+                                    windSpeed: chartData.windSpeed,
+                                    waveDirection: chartData.waveDirection,
+                                    waveHeight: chartData.waveHeight,
+                                    wavePeriod: chartData.wavePeriod,
+                                    waterTemperature: chartData.waterTemperature,
+                                    weather: self.convertWeatherIconNameToWeatherType(chartData.weatherIconName),
+                                    airTemperature: chartData.airTemperature
+                                )
+                            }
+                        }.sorted { $0.time > $1.time } // 최신 순으로 정렬
+                    }
+                    .catch { error in
+                        print("Failed to fetch recent record charts: \(error)")
+                        return .just([])
+                    }
+            }
+            .share(replay: 1)
+        
+        // CoreData에서 고정 차트 가져오기
+        let pinnedCharts = currentBeachId
+            .distinctUntilChanged()
+            .flatMapLatest { [weak self] beachID -> Observable<[Chart]> in
+                guard let self = self else { return .just([]) }
+                
+                // beachID를 Int로 변환
+                let beachIDInt = Int(beachID) ?? 0
+                
+                return self.surfRecordUseCase.fetchSurfRecords(for: beachIDInt)
+                    .asObservable()
+                    .map { records -> [Chart] in
+                        // 고정된 기록만 필터링
+                        let pinnedRecords = records.filter { $0.isPin }
+                        
+                        return pinnedRecords.flatMap { record in
+                            record.charts.map { chartData in
+                                Chart(
+                                    beachID: beachIDInt,
+                                    time: chartData.time,
+                                    windDirection: chartData.windDirection,
+                                    windSpeed: chartData.windSpeed,
+                                    waveDirection: chartData.waveDirection,
+                                    waveHeight: chartData.waveHeight,
+                                    wavePeriod: chartData.wavePeriod,
+                                    waterTemperature: chartData.waterTemperature,
+                                    weather: self.convertWeatherIconNameToWeatherType(chartData.weatherIconName),
+                                    airTemperature: chartData.airTemperature
+                                )
+                            }
+                        }.sorted { $0.time > $1.time } // 최신 순으로 정렬
+                    }
+                    .catch { error in
+                        print("Failed to fetch pinned charts: \(error)")
+                        return .just([])
+                    }
+            }
+            .share(replay: 1)
+        
         return Output(
             beachData: beachData,
             dashboardCards: dashboardCards,
             groupedCharts: groupedCharts,
+            recentRecordCharts: recentRecordCharts,
             isLoading: isLoadingRelay.asObservable(),
             error: errorRelay.asObservable()
         )
+    }
+    
+    // MARK: - Private Helpers
+    private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
+        switch iconName {
+        case "sun":
+            return .clear
+        case "cloudLittleSun":
+            return .cloudLittleSun
+        case "cloudMuchSun":
+            return .cloudMuchSun
+        case "cloud":
+            return .cloudy
+        case "rain":
+            return .rain
+        case "forg":
+            return .forg
+        case "snow":
+            return .snow
+        default:
+            return .unknown
+        }
     }
     
     private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
