@@ -20,7 +20,7 @@ class DashboardViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: DashboardViewModel
     private let disposeBag = DisposeBag()
-    private let storageService: SurfingStorageService = UserDefaultsSurfingStorageService()
+    private let storageService: SurfingRecordService = UserDefaultsService()
     
     private var currentBeachData: BeachData?
     private let viewDidLoadSubject = PublishSubject<Void>()
@@ -301,7 +301,7 @@ class DashboardViewController: BaseViewController {
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
         
-        if let savedID = storageService.loadSelectedBeachID() {
+        if let savedID = storageService.readSelectedBeachID() {
             beachSelectedSubject.onNext(savedID)
         }
         
