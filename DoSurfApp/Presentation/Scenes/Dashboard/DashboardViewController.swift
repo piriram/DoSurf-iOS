@@ -42,14 +42,14 @@ class DashboardViewController: BaseViewController {
         let button = UIButton(type: .system)
         button.setTitle("해변 선택", for: .normal)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
-        button.tintColor = .white
+        button.tintColor = .white.withAlphaComponent(0.7)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.semanticContentAttribute = .forceRightToLeft
         button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
         return button
     }()
     
-    private lazy var locationHeaderView: UIView = {
+    private lazy var beachSelectHeaderView: UIView = {
         let view = UIView()
         view.addSubview(beachSelectButton)
         beachSelectButton.snp.makeConstraints { make in
@@ -113,7 +113,6 @@ class DashboardViewController: BaseViewController {
         pageControl.currentPage = 0
         pageControl.pageIndicatorTintColor = .white.withAlphaComponent(0.4)
         pageControl.currentPageIndicatorTintColor = .white
-        pageControl.hidesForSinglePage = true
         return pageControl
     }()
     
@@ -164,7 +163,7 @@ class DashboardViewController: BaseViewController {
     override func configureUI() {
         view.backgroundColor = .systemBackground
         view.addSubview(backgroundImageView)
-        view.addSubview(locationHeaderView)
+        view.addSubview(beachSelectHeaderView)
         view.addSubview(statisticsHeaderView)
         view.addSubview(dashboardPageView)
         view.addSubview(pageControl)
@@ -174,13 +173,13 @@ class DashboardViewController: BaseViewController {
     }
     override func configureLayout() {
         backgroundImageView.snp.makeConstraints { $0.edges.equalToSuperview() }
-        locationHeaderView.snp.makeConstraints {
+        beachSelectHeaderView.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide)
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.height.equalTo(40)
         }
         statisticsHeaderView.snp.makeConstraints {
-            $0.top.equalTo(locationHeaderView.snp.bottom).offset(6)
+            $0.top.equalTo(beachSelectHeaderView.snp.bottom).offset(6)
             $0.leading.trailing.equalToSuperview()
             $0.height.equalTo(28)
         }
