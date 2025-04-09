@@ -14,17 +14,19 @@ import RxCocoa
 final class ChartListPage: UIView {
     
     // MARK: - Properties
-    private let showsHeader: Bool
-    private let headerView: ChartListHeaderView
+    private let showsTableHeader: Bool
+    private let tableHeaderView: UIView
     private let tableContainerView = UIView()
     private let surfRecordUseCase: SurfRecordUseCaseProtocol
     private let disposeBag = DisposeBag()
     private var currentBeachID: Int = 4001
+    private let isPinnedChart: Bool
     
     // MARK: - Initialization
-    init(title: String, showsHeader: Bool = true, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
-        self.showsHeader = showsHeader
-        self.headerView = ChartListHeaderView(title: title)
+    init(title: String, showsTableHeader: Bool = true, isPinnedChart: Bool = false, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+        self.showsTableHeader = showsTableHeader
+        self.isPinnedChart = isPinnedChart
+        self.tableHeaderView = isPinnedChart ? PinnedChartTableHeaderView() : ChartTableHeaderView()
         self.surfRecordUseCase = surfRecordUseCase
         super.init(frame: .zero)
         configureUI()
@@ -41,20 +43,23 @@ final class ChartListPage: UIView {
         layer.cornerRadius = 20
         clipsToBounds = true
         
-        if showsHeader {
-            addSubview(headerView)
+        if showsTableHeader {
+            print("🔍 ChartListPage: Adding table header view")
+            addSubview(tableHeaderView)
+        } else {
+            print("🔍 ChartListPage: Table header is disabled")
         }
         addSubview(tableContainerView)
     }
     
     private func configureLayout() {
-        if showsHeader {
-            headerView.snp.makeConstraints { make in
+        if showsTableHeader {
+            tableHeaderView.snp.makeConstraints { make in
                 make.top.leading.trailing.equalToSuperview()
-                make.height.equalTo(52)
+                make.height.equalTo(40)
             }
             tableContainerView.snp.makeConstraints { make in
-                make.top.equalTo(headerView.snp.bottom)
+                make.top.equalTo(tableHeaderView.snp.bottom)
                 make.leading.trailing.bottom.equalToSuperview()
             }
         } else {
@@ -92,11 +97,7 @@ final class ChartListPage: UIView {
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = 1
-        stackView.distribution = .fill
-        
-        // 헤더 추가
-        let headerView = ChartHeaderView()
-        stackView.addArrangedSubview(headerView)
+        stackView.distribution = .fillEqually
         
         // 최대 3개의 차트 표시
         let chartsToShow = Array(charts.prefix(3))
@@ -116,84 +117,6 @@ final class ChartListPage: UIView {
         }
         
         print("📋 ChartListPage: Configuration completed")
-    }
-    
-    // MARK: - Recent Charts Methods
-    func configureWithRecentRecords(beachID: Int) {
-        self.currentBeachID = beachID
-        fetchRecentRecords()
-    }
-    
-    private func fetchRecentRecords() {
-        print("📊 Fetching recent records for beachID: \(currentBeachID)")
-        
-        surfRecordUseCase.fetchSurfRecords(for: currentBeachID)
-            .subscribe(
-                onSuccess: { [weak self] records in
-                    guard let self = self else { return }
-                    
-                    print("📊 Found \(records.count) total records for recent")
-                    
-                    // 최근 10개 기록
-                    let recentRecords = records
-                        .sorted { $0.surfDate > $1.surfDate }
-                        .prefix(10)
-                    
-                    print("📊 Using \(recentRecords.count) recent records")
-                    
-                    // 모든 차트 데이터를 Chart 객체로 변환
-                    let charts = recentRecords.flatMap { record in
-                        record.charts.map { chartData in
-                            Chart(
-                                beachID: self.currentBeachID,
-                                time: chartData.time,
-                                windDirection: chartData.windDirection,
-                                windSpeed: chartData.windSpeed,
-                                waveDirection: chartData.waveDirection,
-                                waveHeight: chartData.waveHeight,
-                                wavePeriod: chartData.wavePeriod,
-                                waterTemperature: chartData.waterTemperature,
-                                weather: self.convertWeatherIconNameToWeatherType(chartData.weatherIconName),
-                                airTemperature: chartData.airTemperature
-                            )
-                        }
-                    }.sorted { $0.time > $1.time } // 최신 순으로 정렬
-                    
-                    print("📊 Generated \(charts.count) charts from recent records")
-                    
-                    DispatchQueue.main.async {
-                        self.configure(with: charts)
-                    }
-                },
-                onFailure: { [weak self] error in
-                    print("❌ Failed to fetch recent records: \(error)")
-                    DispatchQueue.main.async {
-                        self?.configure(with: []) // 빈 배열로 처리
-                    }
-                }
-            )
-            .disposed(by: disposeBag)
-    }
-    
-    private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
-        switch iconName {
-        case "sun":
-            return .clear
-        case "cloudLittleSun":
-            return .cloudLittleSun
-        case "cloudMuchSun":
-            return .cloudMuchSun
-        case "cloud":
-            return .cloudy
-        case "rain":
-            return .rain
-        case "forg":
-            return .forg
-        case "snow":
-            return .snow
-        default:
-            return .unknown
-        }
     }
     
     // MARK: - Pinned Charts Methods
@@ -251,11 +174,7 @@ final class ChartListPage: UIView {
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = 1
-        stackView.distribution = .fill
-        
-        // 고정 차트용 헤더 추가
-        let headerView = PinnedChartHeaderView()
-        stackView.addArrangedSubview(headerView)
+        stackView.distribution = .fillEqually
         
         records.enumerated().forEach { index, record in
             let rowView = PinnedChartRowView()
@@ -604,51 +523,51 @@ final class PinnedChartRowView: UIView {
     }
 }
 
-// MARK: - ChartHeaderView (차트 헤더)
-final class ChartHeaderView: UIView {
+// MARK: - ChartTableHeaderView (일반 차트용 테이블 헤더)
+final class ChartTableHeaderView: UIView {
     
     private let timeLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "시간"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "시간"
         return label
     }()
     
     private let windLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "바람"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "바람"
         return label
     }()
     
     private let waveLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "파도"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "파도"
         return label
     }()
     
     private let temperatureLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "수온"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "수온"
         return label
     }()
     
     private let ratingLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "평가"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "평가"
         return label
     }()
     
@@ -663,7 +582,7 @@ final class ChartHeaderView: UIView {
     }
     
     private func configureUI() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.12)
+        backgroundColor = UIColor.white.withAlphaComponent(0.15)
         
         addSubview(timeLabel)
         addSubview(windLabel)
@@ -702,58 +621,54 @@ final class ChartHeaderView: UIView {
             make.trailing.equalToSuperview().inset(8)
             make.centerY.equalToSuperview()
         }
-        
-        snp.makeConstraints { make in
-            make.height.equalTo(36)
-        }
     }
 }
 
-// MARK: - PinnedChartHeaderView (고정 차트 헤더)
-final class PinnedChartHeaderView: UIView {
+// MARK: - PinnedChartTableHeaderView (고정 차트용 테이블 헤더)
+final class PinnedChartTableHeaderView: UIView {
     
-    private let pinLabel: UILabel = {
+    private let pinnedLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
+        label.text = "고정"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.textColor = .systemYellow
         label.textAlignment = .center
-        label.text = "📌"
         return label
     }()
     
     private let windLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "바람"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "바람"
         return label
     }()
     
     private let waveLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "파도"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "파도"
         return label
     }()
     
     private let temperatureLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "수온"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "수온"
         return label
     }()
     
     private let ratingLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
+        label.text = "평가"
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
-        label.text = "평가"
         return label
     }()
     
@@ -768,9 +683,9 @@ final class PinnedChartHeaderView: UIView {
     }
     
     private func configureUI() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.12)
+        backgroundColor = UIColor.white.withAlphaComponent(0.15)
         
-        addSubview(pinLabel)
+        addSubview(pinnedLabel)
         addSubview(windLabel)
         addSubview(waveLabel)
         addSubview(temperatureLabel)
@@ -778,14 +693,15 @@ final class PinnedChartHeaderView: UIView {
     }
     
     private func configureLayout() {
-        pinLabel.snp.makeConstraints { make in
+        // PinnedChartRowView와 동일한 레이아웃으로 정렬
+        pinnedLabel.snp.makeConstraints { make in
             make.leading.equalToSuperview().inset(12)
             make.centerY.equalToSuperview()
-            make.width.equalTo(20)
+            make.width.equalTo(44) // 핀 아이콘 + 텍스트 공간
         }
         
         windLabel.snp.makeConstraints { make in
-            make.leading.equalTo(pinLabel.snp.trailing).offset(16)
+            make.leading.equalTo(pinnedLabel.snp.trailing).offset(16)
             make.centerY.equalToSuperview()
             make.width.equalTo(60)
         }
@@ -806,10 +722,6 @@ final class PinnedChartHeaderView: UIView {
             make.leading.equalTo(temperatureLabel.snp.trailing).offset(16)
             make.trailing.equalToSuperview().inset(12)
             make.centerY.equalToSuperview()
-        }
-        
-        snp.makeConstraints { make in
-            make.height.equalTo(36)
         }
     }
 }

@@ -215,10 +215,9 @@ class DashboardViewController: BaseViewController {
         let output = viewModel.transform(input: input)
         
         // 페이지 구성 - 명확한 순서 보장
-        let surfRecordUseCase = DIContainer.shared.makeSurfRecordUseCase()
         let page1 = PreferredChartPage() // 첫 번째: 선호하는 차트 통계
-        let page2 = ChartListPage(title: "최근 기록 차트", showsHeader: false, surfRecordUseCase: surfRecordUseCase) // 두 번째: 최근 기록 차트
-        let page3 = ChartListPage(title: "고정 차트", showsHeader: false, surfRecordUseCase: surfRecordUseCase) // 세 번째: 고정 차트
+        let page2 = ChartListPage(title: "최근 기록 차트", showsTableHeader: true, isPinnedChart: false) // 두 번째: 최근 기록 차트
+        let page3 = ChartListPage(title: "고정 차트", showsTableHeader: true, isPinnedChart: true) // 세 번째: 고정 차트
         dashboardPageView.configure(pages: [page1, page2, page3])
 
         // 페이지 컨트롤 초기 설정
@@ -262,13 +261,6 @@ class DashboardViewController: BaseViewController {
                     self.beachSelectButton.setTitle(title, for: .normal)
                 } else {
                     self.beachSelectButton.setTitle("\(beachData.metadata.name)해변", for: .normal)
-                }
-                
-                // 최근 기록 차트 페이지에 새 데이터 요청
-                if let page2 = self.dashboardPageView.getPage(at: 1) as? ChartListPage {
-                    let beachIDInt = Int(beachID) ?? 4001
-                    page2.configureWithRecentRecords(beachID: beachIDInt)
-                    print("📊 Updated recent charts for beachID: \(beachIDInt)")
                 }
                 
                 // 고정 차트 페이지에 새 데이터 요청
@@ -380,18 +372,7 @@ extension DashboardViewController: DashboardChartProviding {
 
 extension DIContainer {
     func makeDashboardViewModel() -> DashboardViewModel {
-        DashboardViewModel(
-            fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
-            surfRecordUseCase: makeSurfRecordUseCase()
-        )
-    }
-    
-    func makeSurfRecordUseCase() -> SurfRecordUseCaseProtocol {
-        SurfRecordUseCase(repository: makeSurfRecordRepository())
-    }
-    
-    func makeSurfRecordRepository() -> SurfRecordRepositoryProtocol {
-        SurfRecordRepository()
+        DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
     }
 }
 
