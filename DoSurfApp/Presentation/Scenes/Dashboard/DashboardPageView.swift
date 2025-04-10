@@ -85,14 +85,14 @@ final class DashboardPageView: UIView {
             .distinctUntilChanged()
             .bind(to: currentPage)
             .disposed(by: disposeBag)
-            
+        
         // 스크롤 끝남 감지를 위한 추가 바인딩
         scrollView.rx.didEndDecelerating
             .subscribe(onNext: { [weak self] in
                 self?.updateCurrentPageFromContentOffset()
             })
             .disposed(by: disposeBag)
-            
+        
         scrollView.rx.didEndDragging
             .filter { !$0 } // willDecelerate가 false인 경우 (바로 멈춤)
             .subscribe(onNext: { [weak self] _ in

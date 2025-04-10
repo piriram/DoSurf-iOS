@@ -56,7 +56,7 @@ final class ChartListPage: UIView {
         if showsTableHeader {
             tableHeaderView.snp.makeConstraints { make in
                 make.top.leading.trailing.equalToSuperview()
-                make.height.equalTo(40)
+                make.height.equalTo(23)
             }
             tableContainerView.snp.makeConstraints { make in
                 make.top.equalTo(tableHeaderView.snp.bottom)
@@ -113,7 +113,7 @@ final class ChartListPage: UIView {
         
         tableContainerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(12)
+            make.edges.equalToSuperview()
         }
         
         print("📋 ChartListPage: Configuration completed")
@@ -302,6 +302,14 @@ final class ChartRowView: UIView {
         return label
     }()
     
+    private let ratingImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
+        imageView.tintColor = .systemYellow
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         configureUI()
@@ -320,6 +328,7 @@ final class ChartRowView: UIView {
         addSubview(waveLabel)
         addSubview(temperatureLabel)
         addSubview(ratingLabel)
+        addSubview(ratingImageView)
     }
     
     private func configureLayout() {
@@ -347,8 +356,14 @@ final class ChartRowView: UIView {
             make.width.equalTo(60)
         }
         
-        ratingLabel.snp.makeConstraints { make in
+        ratingImageView.snp.makeConstraints { make in
             make.leading.equalTo(temperatureLabel.snp.trailing).offset(8)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(16)
+        }
+        
+        ratingLabel.snp.makeConstraints { make in
+            make.leading.equalTo(ratingImageView.snp.trailing).offset(4)
             make.trailing.equalToSuperview().inset(8)
             make.centerY.equalToSuperview()
         }
@@ -382,8 +397,7 @@ final class ChartRowView: UIView {
         
         // 평점 (예시로 랜덤 점수 표시, 실제로는 데이터에 따라 결정)
         let rating = Int.random(in: 1...5)
-        let stars = String(repeating: "⭐️", count: rating)
-        ratingLabel.text = "\(stars) \(rating)점"
+        ratingLabel.text = "\(rating)점"
         
         print("🔧 ChartRowView: Configuration completed - \(dateString) \(timeString), Wind: \(chart.windSpeed)m/s, Wave: \(chart.waveHeight)m")
     }
@@ -433,6 +447,14 @@ final class PinnedChartRowView: UIView {
         return label
     }()
     
+    private let ratingImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
+        imageView.tintColor = .systemYellow
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         configureUI()
@@ -451,6 +473,7 @@ final class PinnedChartRowView: UIView {
         addSubview(waveLabel)
         addSubview(temperatureLabel)
         addSubview(ratingLabel)
+        addSubview(ratingImageView)
     }
     
     private func configureLayout() {
@@ -478,8 +501,14 @@ final class PinnedChartRowView: UIView {
             make.width.equalTo(60)
         }
         
-        ratingLabel.snp.makeConstraints { make in
+        ratingImageView.snp.makeConstraints { make in
             make.leading.equalTo(temperatureLabel.snp.trailing).offset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(16)
+        }
+        
+        ratingLabel.snp.makeConstraints { make in
+            make.leading.equalTo(ratingImageView.snp.trailing).offset(4)
             make.trailing.equalToSuperview().inset(12)
             make.centerY.equalToSuperview()
         }
@@ -725,3 +754,4 @@ final class PinnedChartTableHeaderView: UIView {
         }
     }
 }
+

@@ -178,25 +178,19 @@ final class DashboardViewModel {
                 return self.groupChartsByDate(beachData.charts)
             }
         
-        // CoreData에서 최근 기록 차트 가져오기
-        let recentRecordCharts = currentBeachId
-            .distinctUntilChanged()
-            .flatMapLatest { [weak self] beachID -> Observable<[Chart]> in
+        // CoreData에서 모든 비치의 최근 기록 차트 가져오기
+        let recentRecordCharts = loadTrigger
+            .flatMapLatest { [weak self] _ -> Observable<[Chart]> in
                 guard let self = self else { return .just([]) }
-                
-                // beachID를 Int로 변환
-                let beachIDInt = Int(beachID) ?? 0
-                
-                return self.surfRecordUseCase.fetchSurfRecords(for: beachIDInt)
+                return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
                     .map { records -> [Chart] in
-                        // 최근 10개 기록의 차트만 가져오기
-                        let recentRecords = records.prefix(10)
-                        
+                        // 서핑 날짜 기준 최신 기록 순으로 정렬 후, 최근 10개 기록만 사용
+                        let recentRecords = records.sorted { $0.surfDate > $1.surfDate }.prefix(10)
                         return recentRecords.flatMap { record in
                             record.charts.map { chartData in
                                 Chart(
-                                    beachID: beachIDInt,
+                                    beachID: record.beachID,
                                     time: chartData.time,
                                     windDirection: chartData.windDirection,
                                     windSpeed: chartData.windSpeed,
@@ -208,10 +202,11 @@ final class DashboardViewModel {
                                     airTemperature: chartData.airTemperature
                                 )
                             }
-                        }.sorted { $0.time > $1.time } // 최신 순으로 정렬
+                        }
+                        .sorted { $0.time > $1.time } // 최신 순으로 정렬
                     }
                     .catch { error in
-                        print("Failed to fetch recent record charts: \(error)")
+                        print("Failed to fetch recent record charts (all beaches): \(error)")
                         return .just([])
                     }
             }
