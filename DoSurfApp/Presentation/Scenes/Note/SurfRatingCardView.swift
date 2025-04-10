@@ -39,12 +39,9 @@ final class SurfRatingCardView: UIView {
         return imageView
     }()
     
-    private let labelsStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.distribution = .equalSpacing
-        return stackView
-    }()
+    private let labelsContainerView = UIView()
+    private var labelContainers: [UIView] = []
+    private var labelCenterXConstraints: [Constraint] = []
     
     private let ratingDescriptions = [
         "별로에요",
@@ -78,7 +75,7 @@ final class SurfRatingCardView: UIView {
         
         addSubview(titleLabel)
         addSubview(trackContainerView)
-        addSubview(labelsStackView)
+        addSubview(labelsContainerView)
         
         trackContainerView.addSubview(trackLineView)
         
@@ -99,7 +96,7 @@ final class SurfRatingCardView: UIView {
             $0.height.equalTo(4)
         }
         
-        labelsStackView.snp.makeConstraints {
+        labelsContainerView.snp.makeConstraints {
             $0.top.equalTo(trackContainerView.snp.bottom).offset(8)
             $0.leading.trailing.equalTo(trackContainerView)
             $0.bottom.equalToSuperview().offset(-20)
@@ -153,24 +150,19 @@ final class SurfRatingCardView: UIView {
             
             let pointLabel = UILabel()
             pointLabel.text = "\(index + 1)점"
-            pointLabel.font = .systemFont(ofSize: 14, weight: .semibold)
-            pointLabel.textColor = .systemGray
+            pointLabel.font = .systemFont(ofSize: 14, weight: .bold)
+            pointLabel.textColor = .surfBlue
             pointLabel.textAlignment = .center
             
-            let starIcon = UIImageView()
-            starIcon.image = UIImage(systemName: "star.fill")
-            starIcon.tintColor = .surfBlue
-            starIcon.contentMode = .scaleAspectFit
-            
-            let pointRow = UIStackView(arrangedSubviews: [starIcon, pointLabel])
+            let pointRow = UIStackView(arrangedSubviews: [pointLabel])
             pointRow.axis = .horizontal
             pointRow.alignment = .center
             pointRow.spacing = 4
             
             let descLabel = UILabel()
             descLabel.text = description
-            descLabel.font = .systemFont(ofSize: 10)
-            descLabel.textColor = .systemGray2
+            descLabel.font = .systemFont(ofSize: 12)
+            descLabel.textColor = .surfBlue
             descLabel.textAlignment = .center
             
             containerView.addSubview(pointRow)
@@ -180,9 +172,6 @@ final class SurfRatingCardView: UIView {
                 $0.top.equalToSuperview().offset(6)
                 $0.leading.trailing.equalToSuperview().inset(10)
             }
-            starIcon.snp.makeConstraints {
-                $0.width.height.equalTo(12)
-            }
             
             descLabel.snp.makeConstraints {
                 $0.top.equalTo(pointRow.snp.bottom).offset(2)
@@ -190,13 +179,27 @@ final class SurfRatingCardView: UIView {
                 $0.bottom.equalToSuperview().offset(-6)
             }
             
-            labelsStackView.addArrangedSubview(containerView)
+            labelsContainerView.addSubview(containerView)
+
+            // Position the label container; centerX will be updated after layout to match circle positions
+            containerView.snp.makeConstraints {
+                $0.top.bottom.equalToSuperview()
+                let c = $0.centerX.equalTo(labelsContainerView.snp.leading).offset(0).constraint
+                labelCenterXConstraints.append(c)
+            }
+
+            // Ensure the container sizes to its content and doesn't stretch unexpectedly
+            containerView.setContentHuggingPriority(.required, for: .horizontal)
+            containerView.setContentCompressionResistancePriority(.required, for: .horizontal)
+
+            labelContainers.append(containerView)
         }
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         updateCirclePositions()
+        updateLabelPositions()
         updateStarPosition(for: selectedRating.value, animated: false)
     }
     
@@ -219,6 +222,15 @@ final class SurfRatingCardView: UIView {
             }
         }
         
+        layoutIfNeeded()
+    }
+    
+    private func updateLabelPositions() {
+        guard circlePositions.count == numberOfSteps, labelCenterXConstraints.count == numberOfSteps else { return }
+        for (index, constraint) in labelCenterXConstraints.enumerated() {
+            let x = circlePositions[index]
+            constraint.update(offset: x)
+        }
         layoutIfNeeded()
     }
     
