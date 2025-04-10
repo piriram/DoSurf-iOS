@@ -11,7 +11,6 @@
 		2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39D2E8CDF8C00682B29 /* RxDataSources */; };
 		21E7A4952E843062008EFDDA /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 21E7A4942E843062008EFDDA /* .gitignore */; };
 		21E7A4AA2E8435EA008EFDDA /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 21E7A4A92E8435EA008EFDDA /* SnapKit */; };
-		21FE04CE2E850272004EFEE3 /* RealmSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04CD2E850272004EFEE3 /* RealmSwift */; };
 		21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */; };
 		21FE04D52E8503E8004EFEE3 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04D42E8503E8004EFEE3 /* FirebaseFirestore */; };
 		21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052C2E85358E004EFEE3 /* RxCocoa */; };
@@ -51,7 +50,6 @@
 			files = (
 				2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */,
 				21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */,
-				21FE04CE2E850272004EFEE3 /* RealmSwift in Frameworks */,
 				21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */,
 				21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */,
 				2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */,
@@ -101,7 +99,6 @@
 			name = DoSurfApp;
 			packageProductDependencies = (
 				21E7A4A92E8435EA008EFDDA /* SnapKit */,
-				21FE04CD2E850272004EFEE3 /* RealmSwift */,
 				21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */,
 				21FE04D42E8503E8004EFEE3 /* FirebaseFirestore */,
 				21FE052C2E85358E004EFEE3 /* RxCocoa */,
@@ -139,7 +136,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				21E7A4A82E8435EA008EFDDA /* XCRemoteSwiftPackageReference "SnapKit" */,
-				21FE04CC2E850272004EFEE3 /* XCRemoteSwiftPackageReference "realm-swift" */,
 				21FE04D12E8503E8004EFEE3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */,
 				2193B39A2E8CDF8C00682B29 /* XCRemoteSwiftPackageReference "RxDataSources" */,
@@ -183,9 +179,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = F5WP2FDW4U;
+				DEVELOPMENT_TEAM = 557346W8SC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/DoSurfApp/App/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "두섭이";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -196,7 +193,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "New-T-Do-Surf";
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -219,9 +216,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = F5WP2FDW4U;
+				DEVELOPMENT_TEAM = 557346W8SC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "$(SRCROOT)/DoSurfApp/App/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "두섭이";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -232,7 +230,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "New-T-Do-Surf";
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -407,14 +405,6 @@
 				minimumVersion = 5.7.1;
 			};
 		};
-		21FE04CC2E850272004EFEE3 /* XCRemoteSwiftPackageReference "realm-swift" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/realm/realm-swift";
-			requirement = {
-				kind = exactVersion;
-				version = 20.0.3;
-			};
-		};
 		21FE04D12E8503E8004EFEE3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -448,11 +438,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 21E7A4A82E8435EA008EFDDA /* XCRemoteSwiftPackageReference "SnapKit" */;
 			productName = SnapKit;
-		};
-		21FE04CD2E850272004EFEE3 /* RealmSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 21FE04CC2E850272004EFEE3 /* XCRemoteSwiftPackageReference "realm-swift" */;
-			productName = RealmSwift;
 		};
 		21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
