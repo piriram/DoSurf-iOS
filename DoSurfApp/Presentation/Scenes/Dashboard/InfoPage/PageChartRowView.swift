@@ -4,29 +4,45 @@
 //
 //  Created by 잠만보김쥬디 on 10/4/25.
 //
+
+// MARK: - ChartColumnRatio
 import UIKit
 import SnapKit
 import RxSwift
+import RxCocoa
+
+enum ChartRatio {
+    static let first: CGFloat = 0.3
+    static let second: CGFloat = 0.55
+    static let third: CGFloat = 0.54
+    static let fourth: CGFloat = 0.32
+    static let fifth: CGFloat = 0.42
+}
+
 // MARK: - ChartColumnRatio
 enum ChartColumnRatio {
-    private static let rawTime: CGFloat = 0.3
-    private static let rawWind: CGFloat = 0.55
-    private static let rawWave: CGFloat = 0.54
-    private static let rawTemperature: CGFloat = 0.32
-    private static let rawRating: CGFloat = 0.42
+    private static let rawFirst: CGFloat = ChartRatio.first
+    private static let rawWind: CGFloat = ChartRatio.second
+    private static let rawWave: CGFloat = ChartRatio.third
+    private static let rawTemperature: CGFloat = ChartRatio.fourth
+    private static let rawRating: CGFloat = ChartRatio.fifth
     
-    private static let total: CGFloat = rawTime + rawWind + rawWave + rawTemperature + rawRating
+    private static let total: CGFloat = rawFirst + rawWind + rawWave + rawTemperature + rawRating
     private static let contentFraction: CGFloat = 0.90
     
-    static let time: CGFloat = (rawTime / total) * contentFraction
+    static let first: CGFloat = (rawFirst / total) * contentFraction
     static let wind: CGFloat = (rawWind / total) * contentFraction
     static let wave: CGFloat = (rawWave / total) * contentFraction
     static let temperature: CGFloat = (rawTemperature / total) * contentFraction
     static let rating: CGFloat = (rawRating / total) * contentFraction
 }
 
-final class RecentChartRowView: UIView {
+// MARK: - ChartRowView
+final class ChartRowView: UIView {
     
+    private let isTimeMode: Bool
+    
+    // Time mode components
     private let dateLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.semibold)
@@ -49,6 +65,15 @@ final class RecentChartRowView: UIView {
         sv.spacing = 0
         sv.alignment = .center
         return sv
+    }()
+    
+    // Pin mode component
+    private let pinImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(systemName: "pin.fill")
+        imageView.tintColor = .pinBlue
+        imageView.contentMode = .scaleAspectFit
+        return imageView
     }()
     
     private let windLabel: UILabel = {
@@ -132,7 +157,6 @@ final class RecentChartRowView: UIView {
     private let ratingImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: AssetImage.ratingStarFill)
-        imageView.tintColor = .systemYellow
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
@@ -145,7 +169,7 @@ final class RecentChartRowView: UIView {
         return sv
     }()
     
-    private let timeColumn = UIView()
+    private let firstColumn = UIView()
     private let windColumn = UIView()
     private let waveColumn = UIView()
     private let tempColumn = UIView()
@@ -153,7 +177,7 @@ final class RecentChartRowView: UIView {
     
     private lazy var columnStackView: UIStackView = {
         let sv = UIStackView(arrangedSubviews: [
-            timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
+            firstColumn, windColumn, waveColumn, tempColumn, ratingColumn
         ])
         sv.axis = .horizontal
         sv.distribution = .equalSpacing
@@ -161,11 +185,15 @@ final class RecentChartRowView: UIView {
         return sv
     }()
     
+    private var columnCenterYConstraint: Constraint?
+    private var columnTopConstraint: Constraint?
+    
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
     private var configureBag = DisposeBag()
     
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    init(isTimeMode: Bool) {
+        self.isTimeMode = isTimeMode
+        super.init(frame: .zero)
         configureUI()
         configureLayout()
     }
@@ -177,7 +205,14 @@ final class RecentChartRowView: UIView {
     private func configureUI() {
         backgroundColor = UIColor.white.withAlphaComponent(0.08)
         
-        timeColumn.addSubview(timeStack)
+        if isTimeMode {
+            firstColumn.addSubview(timeStack)
+            ratingImageView.tintColor = .systemYellow
+        } else {
+            firstColumn.addSubview(pinImageView)
+            ratingImageView.tintColor = .white
+        }
+        
         windColumn.addSubview(windStack)
         waveColumn.addSubview(waveStack)
         tempColumn.addSubview(temperatureLabel)
@@ -192,11 +227,21 @@ final class RecentChartRowView: UIView {
     private func configureLayout() {
         columnStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
+            self.columnCenterYConstraint = make.centerY.equalToSuperview().constraint
+            self.columnTopConstraint = make.top.equalToSuperview().offset(8).constraint
+            make.bottom.greaterThanOrEqualToSuperview().offset(-8)
         }
         
-        timeColumn.snp.makeConstraints { make in
-            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.time)
+        if isTimeMode {
+            columnTopConstraint?.deactivate()
+            columnCenterYConstraint?.activate()
+        } else {
+            columnCenterYConstraint?.deactivate()
+            columnTopConstraint?.activate()
+        }
+        
+        firstColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.first)
         }
         
         windColumn.snp.makeConstraints { make in
@@ -215,11 +260,18 @@ final class RecentChartRowView: UIView {
             make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.rating)
         }
         
-        timeStack.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.leading.greaterThanOrEqualToSuperview().priority(.high)
-            make.trailing.lessThanOrEqualToSuperview().priority(.high)
-            make.width.lessThanOrEqualToSuperview()
+        if isTimeMode {
+            timeStack.snp.makeConstraints { make in
+                make.center.equalToSuperview()
+                make.leading.greaterThanOrEqualToSuperview().priority(.high)
+                make.trailing.lessThanOrEqualToSuperview().priority(.high)
+                make.width.lessThanOrEqualToSuperview()
+            }
+        } else {
+            pinImageView.snp.makeConstraints { make in
+                make.center.equalToSuperview()
+                make.width.height.equalTo(23)
+            }
         }
         
         windStack.snp.makeConstraints { make in
@@ -267,13 +319,27 @@ final class RecentChartRowView: UIView {
         }
     }
     
+    func setAlignTop(_ alignTop: Bool) {
+        if alignTop {
+            columnCenterYConstraint?.deactivate()
+            columnTopConstraint?.activate()
+        } else {
+            columnTopConstraint?.deactivate()
+            columnCenterYConstraint?.activate()
+        }
+        setNeedsLayout()
+        layoutIfNeeded()
+    }
+    
     func configure(with chart: Chart) {
         configureBag = DisposeBag()
         
-        let dateString = chart.time.toFormattedString(format: "M/d")
-        let timeString = chart.time.toFormattedString(format: "HH시")
-        dateLabel.text = dateString
-        hourLabel.text = timeString
+        if isTimeMode {
+            let dateString = chart.time.toFormattedString(format: "M/d")
+            let timeString = chart.time.toFormattedString(format: "HH시")
+            dateLabel.text = dateString
+            hourLabel.text = timeString
+        }
         
         windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
         waveHeightLabel.text = String(format: "%.1fm", chart.waveHeight)
@@ -301,19 +367,40 @@ final class RecentChartRowView: UIView {
                 self?.ratingLabel.text = "—점"
             })
             .disposed(by: configureBag)
+    }
+    
+    func configure(with record: SurfRecordData) {
+        var avgWindSpeed: Double = 0
+        var avgWaveHeight: Double = 0
+        var avgWavePeriod: Double = 0
+        var avgWaterTemperature: Double = 0
         
-        print("🔧 ChartRowView: Configuration completed - \(dateString) \(timeString), Wind: \(chart.windSpeed)m/s, Wave: \(chart.waveHeight)m")
+        if !record.charts.isEmpty {
+            avgWindSpeed = record.charts.map { $0.windSpeed }.reduce(0, +) / Double(record.charts.count)
+            avgWaveHeight = record.charts.map { $0.waveHeight }.reduce(0, +) / Double(record.charts.count)
+            avgWavePeriod = record.charts.map { $0.wavePeriod }.reduce(0, +) / Double(record.charts.count)
+            avgWaterTemperature = record.charts.map { $0.waterTemperature }.reduce(0, +) / Double(record.charts.count)
+        }
+        
+        windLabel.text = String(format: "%.1fm/s", avgWindSpeed)
+        waveHeightLabel.text = String(format: "%.1fm", avgWaveHeight)
+        wavePeriodLabel.text = String(format: "%.1fs", avgWavePeriod)
+        temperatureLabel.text = String(format: "%.0f°C", avgWaterTemperature)
+        
+        let rating = Int(record.rating)
+        ratingLabel.text = "\(rating)점"
     }
 }
 
 // MARK: - ChartTableHeaderView
 final class ChartTableHeaderView: UIView {
     
-    private let timeLabel: UILabel = {
+    private let isTimeMode: Bool
+    
+    private let firstLabel: UILabel = {
         let label = UILabel()
-        label.text = "시간"
-        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.textColor = .white
         label.textAlignment = .center
         return label
     }()
@@ -321,7 +408,7 @@ final class ChartTableHeaderView: UIView {
     private let windLabel: UILabel = {
         let label = UILabel()
         label.text = "바람"
-        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -330,7 +417,7 @@ final class ChartTableHeaderView: UIView {
     private let waveLabel: UILabel = {
         let label = UILabel()
         label.text = "파도"
-        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -339,7 +426,7 @@ final class ChartTableHeaderView: UIView {
     private let temperatureLabel: UILabel = {
         let label = UILabel()
         label.text = "수온"
-        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -348,13 +435,13 @@ final class ChartTableHeaderView: UIView {
     private let ratingLabel: UILabel = {
         let label = UILabel()
         label.text = "평가"
-        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
     }()
     
-    private let timeColumn = UIView()
+    private let firstColumn = UIView()
     private let windColumn = UIView()
     private let waveColumn = UIView()
     private let tempColumn = UIView()
@@ -362,7 +449,7 @@ final class ChartTableHeaderView: UIView {
     
     private lazy var columnStackView: UIStackView = {
         let sv = UIStackView(arrangedSubviews: [
-            timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
+            firstColumn, windColumn, waveColumn, tempColumn, ratingColumn
         ])
         sv.axis = .horizontal
         sv.distribution = .equalSpacing
@@ -370,8 +457,12 @@ final class ChartTableHeaderView: UIView {
         return sv
     }()
     
-    override init(frame: CGRect) {
-        super.init(frame: frame)
+    private var headerCenterYConstraint: Constraint?
+    private var headerTopConstraint: Constraint?
+    
+    init(isTimeMode: Bool) {
+        self.isTimeMode = isTimeMode
+        super.init(frame: .zero)
         configureUI()
         configureLayout()
     }
@@ -383,7 +474,14 @@ final class ChartTableHeaderView: UIView {
     private func configureUI() {
         backgroundColor = UIColor.white.withAlphaComponent(0.15)
         
-        timeColumn.addSubview(timeLabel)
+        firstLabel.text = isTimeMode ? "시간" : "고정"
+        if isTimeMode {
+            firstLabel.textColor = .white.withAlphaComponent(0.8)
+        } else {
+            firstLabel.textColor = .white
+        }
+        
+        firstColumn.addSubview(firstLabel)
         windColumn.addSubview(windLabel)
         waveColumn.addSubview(waveLabel)
         tempColumn.addSubview(temperatureLabel)
@@ -395,11 +493,21 @@ final class ChartTableHeaderView: UIView {
     private func configureLayout() {
         columnStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
+            self.headerCenterYConstraint = make.centerY.equalToSuperview().constraint
+            self.headerTopConstraint = make.top.equalToSuperview().offset(8).constraint
+            make.bottom.greaterThanOrEqualToSuperview().offset(-8)
         }
         
-        timeColumn.snp.makeConstraints { make in
-            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.time)
+        if isTimeMode {
+            headerTopConstraint?.deactivate()
+            headerCenterYConstraint?.activate()
+        } else {
+            headerCenterYConstraint?.deactivate()
+            headerTopConstraint?.activate()
+        }
+        
+        firstColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.first)
         }
         
         windColumn.snp.makeConstraints { make in
@@ -418,7 +526,7 @@ final class ChartTableHeaderView: UIView {
             make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.rating)
         }
         
-        timeLabel.snp.makeConstraints { make in
+        firstLabel.snp.makeConstraints { make in
             make.center.equalToSuperview()
         }
         
@@ -438,5 +546,16 @@ final class ChartTableHeaderView: UIView {
             make.center.equalToSuperview()
         }
     }
+    
+    func setAlignTop(_ alignTop: Bool) {
+        if alignTop {
+            headerCenterYConstraint?.deactivate()
+            headerTopConstraint?.activate()
+        } else {
+            headerTopConstraint?.deactivate()
+            headerCenterYConstraint?.activate()
+        }
+        setNeedsLayout()
+        layoutIfNeeded()
+    }
 }
-

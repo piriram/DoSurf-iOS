@@ -68,6 +68,7 @@ extension UIColor {
     static var iconWaterOrange: UIColor { UIColor(hex: 0xFFB891) } // #FFB891
     static var iconStarOrange: UIColor { UIColor(hex: 0xEA8F5B) }  // #EA8F5B
     static var lableBlack: UIColor { UIColor(hex:0x222222) }
+    static var pinBlue: UIColor { UIColor(hex: 0x007AF7) }        
     
     // MARK: Background / Neutrals
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
