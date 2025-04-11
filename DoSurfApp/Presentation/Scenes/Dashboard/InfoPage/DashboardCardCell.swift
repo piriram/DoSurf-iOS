@@ -29,7 +29,7 @@ class DashboardCardCell: UICollectionViewCell {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: FontSize.seventeen, weight: .medium)
         label.textColor = .black
         return label
     }()

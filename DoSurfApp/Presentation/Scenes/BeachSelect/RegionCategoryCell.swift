@@ -15,7 +15,7 @@ final class RegionCategoryCell: UITableViewCell {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 18, weight: .semibold)
+        label.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.semibold)
         label.textColor = .black.withAlphaComponent(0.5)
         return label
     }()
@@ -51,6 +51,5 @@ final class RegionCategoryCell: UITableViewCell {
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
         titleLabel.textColor = selected ? .surfBlue : .black.withAlphaComponent(0.5)
-        titleLabel.font = selected ? .systemFont(ofSize: 18, weight: .semibold) : .systemFont(ofSize: 18, weight: .semibold)
     }
 }

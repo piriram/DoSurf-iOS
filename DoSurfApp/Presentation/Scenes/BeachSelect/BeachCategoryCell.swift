@@ -12,7 +12,7 @@ final class BeachCategoryCell: UITableViewCell {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 16)
+        label.font = .systemFont(ofSize: FontSize.fifteen)
         label.textColor = .black.withAlphaComponent(0.5)
         return label
     }()
@@ -40,6 +40,6 @@ final class BeachCategoryCell: UITableViewCell {
     func configure(with location: LocationDTO, isSelected: Bool) {
         titleLabel.text = location.displayText
         titleLabel.textColor = isSelected ? .surfBlue : .black.withAlphaComponent(0.5)
-        titleLabel.font = isSelected ? .systemFont(ofSize: 16, weight: .semibold) : .systemFont(ofSize: 16)
+        titleLabel.font = isSelected ? .systemFont(ofSize: FontSize.sixteen, weight: FontSize.semibold) : .systemFont(ofSize: 16)
     }
 }

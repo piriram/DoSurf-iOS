@@ -389,7 +389,7 @@ class TypographyPreviewViewController: UIViewController {
             let deviceConfig = TypographySystem.configuration(for: style)
             let infoLabel = UILabel()
             infoLabel.text = "Size: \(deviceConfig.fontSize)pt, Line: \(deviceConfig.lineHeight)pt, Spacing: \(deviceConfig.letterSpacing)%"
-            infoLabel.font = UIFont.systemFont(ofSize: 12)
+            infoLabel.font = UIFont.systemFont(ofSize: FontSize.twelve)
             infoLabel.textColor = .secondaryLabel
             stackView.addArrangedSubview(infoLabel)
         }

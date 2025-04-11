@@ -62,7 +62,7 @@ final class BeachSelectViewController: BaseViewController {
     private let confirmButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("선택 완료", for: .normal)
-        b.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
+        b.titleLabel?.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.bold)
         b.backgroundColor = .backgroundGray
         b.setTitleColor(.white, for: .normal)
         b.layer.cornerRadius = 26

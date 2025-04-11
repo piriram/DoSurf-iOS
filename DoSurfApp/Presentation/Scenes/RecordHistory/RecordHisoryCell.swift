@@ -1,16 +1,22 @@
+//
+//  RecordHisoryCell.swift
+//  DoSurfApp
+//
+//  Created by 잠만보김쥬디 on 10/5/25.
+//
+
 import UIKit
 import SnapKit
 
-// MARK: - RecordCardCell
-final class RecordCardCell: UITableViewCell {
+final class RecordHistoryCell: UITableViewCell {
     
-    static let identifier = "RecordCardCell"
+    static let identifier = "RecordHistoryCell"
     
     // MARK: - UI Components
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemBackground
-        view.layer.cornerRadius = 12
+        view.backgroundColor = .white
+        view.layer.cornerRadius = 24
         view.layer.shadowColor = UIColor.black.cgColor
         view.layer.shadowOpacity = 0.05
         view.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -18,33 +24,23 @@ final class RecordCardCell: UITableViewCell {
         return view
     }()
     
-    private let headerView: UIView = {
+    private let topHeaderView: UIView = {
         let view = UIView()
-        view.backgroundColor = .backgroundSkyblue
-        view.layer.cornerRadius = 12
+        view.backgroundColor = .surfBlue.withAlphaComponent(0.3)
+        view.layer.cornerRadius = 24
         view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         return view
     }()
     
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 18, weight: .bold)
+        label.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.bold)
         label.textColor = .surfBlue
         return label
     }()
     
-    private let ratingLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .darkGray
-        return label
-    }()
-    
-    private let ratingBackgroundView: UIView = {
-        let view = UIView()
-        view.backgroundColor = .white
-        view.layer.cornerRadius = 6
-        view.layer.masksToBounds = true
+    private let ratingBadgeView: RatingBadgeView = {
+        let view = RatingBadgeView(badgeColor: .white.withAlphaComponent(0.6))
         return view
     }()
     
@@ -58,7 +54,7 @@ final class RecordCardCell: UITableViewCell {
     private let memoButton: UIButton = {
         let button = UIButton()
         button.setTitle("메모 확인하기", for: .normal)
-        button.setTitleColor(.darkGray, for: .normal)
+        button.setTitleColor(UIColor.black.withAlphaComponent(0.8), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 13)
         button.setImage(UIImage(systemName: "chevron.right"), for: .normal)
         button.tintColor = .darkGray
@@ -117,13 +113,12 @@ final class RecordCardCell: UITableViewCell {
         selectionStyle = .none
         
         contentView.addSubview(containerView)
-        containerView.addSubview(headerView)
-        headerView.addSubview(dateLabel)
-        headerView.addSubview(ratingBackgroundView)
-        headerView.addSubview(ratingLabel)
-        headerView.addSubview(moreButton)
-        headerView.addSubview(memoButton)
-        headerView.addSubview(addMemoButton)
+        containerView.addSubview(topHeaderView)
+        topHeaderView.addSubview(dateLabel)
+        topHeaderView.addSubview(ratingBadgeView)
+        topHeaderView.addSubview(moreButton)
+        topHeaderView.addSubview(memoButton)
+        topHeaderView.addSubview(addMemoButton)
         containerView.addSubview(columnHeaderView)
         containerView.addSubview(chartTableView)
         
@@ -139,32 +134,25 @@ final class RecordCardCell: UITableViewCell {
             $0.bottom.equalToSuperview().offset(-4)
         }
         
-        headerView.snp.makeConstraints {
+        topHeaderView.snp.makeConstraints {
             $0.top.leading.trailing.equalToSuperview()
-            $0.height.equalTo(80)
+            $0.height.equalTo(88)
         }
         
         columnHeaderView.snp.makeConstraints {
-            $0.top.equalTo(headerView.snp.bottom)
+            $0.top.equalTo(topHeaderView.snp.bottom)
             $0.leading.trailing.equalToSuperview()
-            $0.height.equalTo(28)
+            $0.height.equalTo(22)
         }
         
         dateLabel.snp.makeConstraints {
-            $0.top.equalToSuperview().offset(12)
+            $0.top.equalToSuperview().offset(16)
+            $0.leading.equalToSuperview().offset(21)
+        }
+        
+        ratingBadgeView.snp.makeConstraints {
+            $0.top.equalTo(dateLabel.snp.bottom).offset(8)
             $0.leading.equalToSuperview().offset(16)
-        }
-        
-        ratingLabel.snp.makeConstraints {
-            $0.top.equalTo(dateLabel.snp.bottom).offset(4)
-            $0.leading.equalTo(dateLabel)
-        }
-        
-        ratingBackgroundView.snp.makeConstraints {
-            $0.top.equalTo(ratingLabel).offset(-4)
-            $0.leading.equalTo(ratingLabel).offset(-8)
-            $0.bottom.equalTo(ratingLabel).offset(4)
-            $0.trailing.equalTo(ratingLabel).offset(8)
         }
         
         moreButton.snp.makeConstraints {
@@ -212,35 +200,7 @@ final class RecordCardCell: UITableViewCell {
     func configure(with viewModel: RecordCardViewModel) {
         dateLabel.text = "\(viewModel.date) \(viewModel.dayOfWeek)"
         
-        let symbolConfig = UIImage.SymbolConfiguration(pointSize: ratingLabel.font.pointSize, weight: .medium)
-        let starImage = UIImage(systemName: "star.fill", withConfiguration: symbolConfig)?
-            .withTintColor(.surfBlue, renderingMode: .alwaysOriginal)
-
-        if let starImage = starImage {
-            let attachment = NSTextAttachment()
-            attachment.image = starImage
-            // Optional baseline tweak for alignment:
-            // attachment.bounds = CGRect(x: 0, y: -1, width: starImage.size.width, height: starImage.size.height)
-
-            let attachmentString = NSMutableAttributedString(attachment: attachment)
-            let space = NSAttributedString(string: " ")
-
-            let text = "\(viewModel.rating)점, \(viewModel.ratingText)"
-            let textAttributes: [NSAttributedString.Key: Any] = [
-                .font: ratingLabel.font as Any,
-                .foregroundColor: ratingLabel.textColor as Any
-            ]
-            let textString = NSAttributedString(string: text, attributes: textAttributes)
-
-            let finalString = NSMutableAttributedString()
-            finalString.append(attachmentString)
-            finalString.append(space)
-            finalString.append(textString)
-
-            ratingLabel.attributedText = finalString
-        } else {
-            ratingLabel.text = "\(viewModel.rating)점, \(viewModel.ratingText)"
-        }
+        ratingBadgeView.configure(rating: viewModel.rating, ratingText: viewModel.ratingText, starColor: .surfBlue)
         
         let hasMemo = !(viewModel.memo?.isEmpty ?? true)
         memoButton.isHidden = !hasMemo
@@ -265,7 +225,7 @@ final class RecordCardCell: UITableViewCell {
 }
 
 // MARK: - RecordCardCell + UITableViewDataSource
-extension RecordCardCell: UITableViewDataSource {
+extension RecordHistoryCell: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return charts.count
     }
@@ -284,8 +244,9 @@ extension RecordCardCell: UITableViewDataSource {
 }
 
 // MARK: - RecordCardCell + UITableViewDelegate
-extension RecordCardCell: UITableViewDelegate {
+extension RecordHistoryCell: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return UITableView.automaticDimension
     }
 }
+

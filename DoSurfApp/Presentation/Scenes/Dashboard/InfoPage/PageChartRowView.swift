@@ -45,7 +45,7 @@ final class ChartRowView: UIView {
     // Time mode components
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.semibold)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -53,7 +53,7 @@ final class ChartRowView: UIView {
     
     private let hourLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -78,7 +78,7 @@ final class ChartRowView: UIView {
     
     private let windLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -86,7 +86,7 @@ final class ChartRowView: UIView {
     
     private let waveHeightLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         label.numberOfLines = 1
@@ -95,7 +95,7 @@ final class ChartRowView: UIView {
     
     private let wavePeriodLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         label.numberOfLines = 1
@@ -140,7 +140,7 @@ final class ChartRowView: UIView {
     
     private let temperatureLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -148,7 +148,7 @@ final class ChartRowView: UIView {
     
     private let ratingLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -375,7 +375,7 @@ final class ChartTableHeaderView: UIView {
     
     private let firstLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.semibold)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -384,7 +384,7 @@ final class ChartTableHeaderView: UIView {
     private let windLabel: UILabel = {
         let label = UILabel()
         label.text = "바람"
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -393,7 +393,7 @@ final class ChartTableHeaderView: UIView {
     private let waveLabel: UILabel = {
         let label = UILabel()
         label.text = "파도"
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -402,7 +402,7 @@ final class ChartTableHeaderView: UIView {
     private let temperatureLabel: UILabel = {
         let label = UILabel()
         label.text = "수온"
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
@@ -411,7 +411,7 @@ final class ChartTableHeaderView: UIView {
     private let ratingLabel: UILabel = {
         let label = UILabel()
         label.text = "평가"
-        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.semibold)
+        label.font = .systemFont(ofSize: FontSize.twelve, weight: FontSize.semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         label.textAlignment = .center
         return label
