@@ -457,6 +457,8 @@ final class SurfRecordViewController: BaseViewController {
         .subscribe(
             onSuccess: { [weak self] in
                 print("✅ 기록이 성공적으로 저장되었습니다.")
+                // 대시보드 '최근 기록 차트' 갱신 트리거
+                NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
                 self?.handleSaveSuccess()
             },
             onFailure: { error in

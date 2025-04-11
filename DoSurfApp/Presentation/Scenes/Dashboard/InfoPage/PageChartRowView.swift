@@ -207,10 +207,8 @@ final class ChartRowView: UIView {
         
         if isTimeMode {
             firstColumn.addSubview(timeStack)
-            ratingImageView.tintColor = .systemYellow
         } else {
             firstColumn.addSubview(pinImageView)
-            ratingImageView.tintColor = .white
         }
         
         windColumn.addSubview(windStack)
@@ -315,7 +313,7 @@ final class ChartRowView: UIView {
         }
         
         snp.makeConstraints { make in
-            make.height.equalTo(29)
+            make.height.equalTo(50)
         }
     }
     

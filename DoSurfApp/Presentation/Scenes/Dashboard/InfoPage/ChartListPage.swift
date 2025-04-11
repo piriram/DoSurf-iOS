@@ -89,7 +89,8 @@ final class ChartListPage: UIView {
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = 1
-        stackView.distribution = .fillEqually
+        stackView.alignment = .fill
+        stackView.distribution = .fill
         
         // 최대 3개의 차트 표시
         let chartsToShow = Array(charts.prefix(3))
@@ -103,7 +104,8 @@ final class ChartListPage: UIView {
         
         tableContainerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
+            make.top.leading.trailing.equalToSuperview()
+            make.bottom.lessThanOrEqualToSuperview()
         }
         
     }
@@ -157,7 +159,8 @@ final class ChartListPage: UIView {
         let stackView = UIStackView()
         stackView.axis = .vertical
         stackView.spacing = 1
-        stackView.distribution = .fillEqually
+        stackView.alignment = .fill
+        stackView.distribution = .fill
         
         records.enumerated().forEach { index, record in
             let rowView = ChartRowView(isTimeMode: false)
@@ -168,7 +171,8 @@ final class ChartListPage: UIView {
         
         tableContainerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(12)
+            make.top.leading.trailing.equalToSuperview().inset(12)
+            make.bottom.lessThanOrEqualToSuperview().inset(12)
         }
     }
     
@@ -185,6 +189,7 @@ final class ChartListPage: UIView {
         }
     }
 }
+
 
 
 
