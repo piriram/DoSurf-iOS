@@ -25,6 +25,7 @@ final class RecordHistoryViewController: BaseViewController {
     private lazy var filterScrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.showsHorizontalScrollIndicator = false
+        scrollView.showsVerticalScrollIndicator = false
         scrollView.contentInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         return scrollView
     }()
@@ -42,7 +43,6 @@ final class RecordHistoryViewController: BaseViewController {
     private let weatherFilterButton = FilterButton(title: "날짜 선택")
     private let ratingFilterButton = FilterButton(title: "별점", hasDropdown: true)
     private let sortButton = FilterButton(title: "최신순", hasDropdown: true)
-    private let createMemoButton = FilterButton(title: "메모 작성")
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
@@ -106,7 +106,7 @@ final class RecordHistoryViewController: BaseViewController {
         view.addSubview(emptyStateView)
         
         [allFilterButton, pinnedFilterButton, weatherFilterButton,
-         ratingFilterButton, sortButton, createMemoButton].forEach {
+         ratingFilterButton, sortButton].forEach {
             filterStackView.addArrangedSubview($0)
         }
         
@@ -172,7 +172,6 @@ final class RecordHistoryViewController: BaseViewController {
         sortButton.addTarget(self, action: #selector(sortButtonTapped), for: .touchUpInside)
         ratingFilterButton.addTarget(self, action: #selector(ratingButtonTapped), for: .touchUpInside)
         weatherFilterButton.addTarget(self, action: #selector(dateFilterButtonTapped), for: .touchUpInside)
-        createMemoButton.addTarget(self, action: #selector(createMemoButtonTapped), for: .touchUpInside)
     }
     
     override func configureBind() {
@@ -508,62 +507,10 @@ final class RecordHistoryViewController: BaseViewController {
         showDatePresetMenu()
     }
     
-    @objc private func createMemoButtonTapped() {
-        showCreateMemoSheet()
-    }
-    
     @objc private func handleSelectedBeachChanged(_ note: Notification) {
         guard let idStr = note.userInfo?["beachID"] as? String, let id = Int(idStr) else { return }
         selectedBeachIDRelay.accept(id)
         updateLocationButtonTitle(for: id)
-    }
-    
-    private func showCreateMemoSheet() {
-        let createVC = CreateMemoViewController()
-        createVC.onSave = { [weak self] text in
-            guard let self = self else { return }
-            guard let beachID = self.selectedBeachIDRelay.value else {
-                self.showErrorAlert(message: "해변을 먼저 선택해주세요.")
-                return
-            }
-            let now = Date()
-            let end = Calendar.current.date(byAdding: .hour, value: 1, to: now) ?? now
-            
-            self.surfRecordUseCase.saveSurfRecord(
-                surfDate: now,
-                startTime: now,
-                endTime: end,
-                beachID: beachID,
-                rating: Int16(0),
-                memo: text,
-                isPin: false,
-                charts: []
-            )
-            .observe(on: MainScheduler.instance)
-            .subscribe(
-                onSuccess: { [weak self] in
-                    // Broadcast global change so all views reload
-                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
-                    // 저장 후 목록 새로고침: 같은 beachID를 다시 방출
-                    if let relay = self?.selectedBeachIDRelay { relay.accept(relay.value) }
-                    let alert = UIAlertController(title: "메모 저장", message: "메모가 저장되었습니다.", preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "확인", style: .default))
-                    self?.present(alert, animated: true)
-                },
-                onFailure: { [weak self] error in
-                    self?.showErrorAlert(message: error.localizedDescription)
-                }
-            )
-            .disposed(by: self.disposeBag)
-        }
-        
-        let nav = UINavigationController(rootViewController: createVC)
-        nav.modalPresentationStyle = .pageSheet
-        if let sheet = nav.sheetPresentationController {
-            sheet.detents = [.medium(), .large()]
-            sheet.prefersGrabberVisible = true
-        }
-        present(nav, animated: true)
     }
     
     private func showLocationSelector() {
@@ -824,3 +771,4 @@ final class EmptyStateView: UIView {
 extension Notification.Name {
     static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }
+
