@@ -52,7 +52,7 @@ final class BeachSelectViewController: BaseViewController {
 
     private let beachTableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .plain)
-        tv.backgroundColor = .clear
+        tv.backgroundColor = .white
         tv.separatorStyle = .none
         tv.showsVerticalScrollIndicator = true
         tv.register(BeachCategoryCell.self, forCellReuseIdentifier: BeachCategoryCell.identifier)
@@ -237,7 +237,7 @@ final class BeachSelectViewController: BaseViewController {
     }
 
     private func createLocationDataSource() -> LocationDataSource {
-        LocationDataSource(tableView: beachTableView) { [weak self] tableView, indexPath, _ in
+        let ds = LocationDataSource(tableView: beachTableView) { [weak self] tableView, indexPath, _ in
             guard let cell = tableView.dequeueReusableCell(
                 withIdentifier: BeachCategoryCell.identifier, for: indexPath
             ) as? BeachCategoryCell else {
@@ -249,6 +249,8 @@ final class BeachSelectViewController: BaseViewController {
             }
             return cell
         }
+        ds.defaultRowAnimation = .fade
+        return ds
     }
 
     // MARK: - Snapshot Apply

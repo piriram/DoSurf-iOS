@@ -27,6 +27,7 @@ final class DashboardViewModel {
         let dashboardCards: Observable<[DashboardCardData]>
         let groupedCharts: Observable<[(date: Date, charts: [Chart])]>
         let recentRecordCharts: Observable<[Chart]>
+        let pinnedCharts: Observable<[Chart]>
         let isLoading: Observable<Bool>
         let error: Observable<Error>
     }
@@ -212,25 +213,19 @@ final class DashboardViewModel {
             }
             .share(replay: 1)
         
-        // CoreData에서 고정 차트 가져오기
-        let pinnedCharts = currentBeachId
-            .distinctUntilChanged()
-            .flatMapLatest { [weak self] beachID -> Observable<[Chart]> in
+        // CoreData에서 전체 비치의 고정 차트 가져오기
+        let pinnedCharts = loadTrigger
+            .flatMapLatest { [weak self] _ -> Observable<[Chart]> in
                 guard let self = self else { return .just([]) }
-                
-                // beachID를 Int로 변환
-                let beachIDInt = Int(beachID) ?? 0
-                
-                return self.surfRecordUseCase.fetchSurfRecords(for: beachIDInt)
+                return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
                     .map { records -> [Chart] in
-                        // 고정된 기록만 필터링
+                        // 고정된 기록만 필터링 (전체 비치)
                         let pinnedRecords = records.filter { $0.isPin }
-                        
                         return pinnedRecords.flatMap { record in
                             record.charts.map { chartData in
                                 Chart(
-                                    beachID: beachIDInt,
+                                    beachID: record.beachID,
                                     time: chartData.time,
                                     windDirection: chartData.windDirection,
                                     windSpeed: chartData.windSpeed,
@@ -242,10 +237,11 @@ final class DashboardViewModel {
                                     airTemperature: chartData.airTemperature
                                 )
                             }
-                        }.sorted { $0.time > $1.time } // 최신 순으로 정렬
+                        }
+                        .sorted { $0.time > $1.time } // 최신 순으로 정렬
                     }
                     .catch { error in
-                        print("Failed to fetch pinned charts: \(error)")
+                        print("Failed to fetch pinned charts (all beaches): \(error)")
                         return .just([])
                     }
             }
@@ -256,6 +252,7 @@ final class DashboardViewModel {
             dashboardCards: dashboardCards,
             groupedCharts: groupedCharts,
             recentRecordCharts: recentRecordCharts,
+            pinnedCharts: pinnedCharts,
             isLoading: isLoadingRelay.asObservable(),
             error: errorRelay.asObservable()
         )

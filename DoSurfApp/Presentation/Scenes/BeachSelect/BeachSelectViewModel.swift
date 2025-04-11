@@ -144,10 +144,10 @@ final class BeachSelectViewModel {
         let mockCategories = BeachRegion.allCases.map { CategoryDTO(region: $0) }
         
         let mockLocations = [
-            LocationDTO(id: "1001", region: .gangreung, place: "죽도"),
-            LocationDTO(id: "2001", region: .pohang, place: "월포"),
-            LocationDTO(id: "3001", region: .jeju, place: "중문"),
-            LocationDTO(id: "4001", region: .busan, place: "송정"),
+            LocationDTO(id: "1001", region: .gangreung, place: "죽도 해변"),
+            LocationDTO(id: "2001", region: .pohang, place: "월포 해변"),
+            LocationDTO(id: "3001", region: .jeju, place: "중문 해변"),
+            LocationDTO(id: "4001", region: .busan, place: "송정 해변"),
         ]
         
         categories.accept(mockCategories)
