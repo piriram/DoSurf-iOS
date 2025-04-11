@@ -238,12 +238,21 @@ final class RecordHistoryViewController: BaseViewController {
         
         output.selectedFilter
             .drive(onNext: { [weak self] filter in
-                self?.updateFilterButtons(selectedFilter: filter)
+                guard let self = self else { return }
+                self.updateFilterButtons(selectedFilter: filter)
+                // Ensure the list focuses to the top whenever the filter changes
+                self.scrollTableViewToTop(animated: true)
             })
             .disposed(by: disposeBag)
     }
     
     // MARK: - Helper Methods
+    
+    private func scrollTableViewToTop(animated: Bool = true) {
+        // Scroll to the very top, accounting for adjusted content inset
+        let topOffsetY = -tableView.adjustedContentInset.top
+        tableView.setContentOffset(CGPoint(x: 0, y: topOffsetY), animated: animated)
+    }
     
     /// 모든 필터를 기본 상태(전체)로 초기화
     func resetAllFilters() {
@@ -511,6 +520,8 @@ final class RecordHistoryViewController: BaseViewController {
         guard let idStr = note.userInfo?["beachID"] as? String, let id = Int(idStr) else { return }
         selectedBeachIDRelay.accept(id)
         updateLocationButtonTitle(for: id)
+        // Scroll to top when beach changes (external change)
+        scrollTableViewToTop(animated: true)
     }
     
     private func showLocationSelector() {
@@ -522,15 +533,21 @@ final class RecordHistoryViewController: BaseViewController {
         
         // '전체' 옵션 추가
         let allAction = UIAlertAction(title: "전체", style: .default) { [weak self] _ in
-            self?.locationButton.setTitle("전체 해변", for: .normal)
-            self?.selectedBeachIDRelay.accept(nil)
+            guard let self = self else { return }
+            self.locationButton.setTitle("전체 해변", for: .normal)
+            self.selectedBeachIDRelay.accept(nil)
+            // Scroll to top when beach changes (via selector)
+            self.scrollTableViewToTop(animated: true)
         }
         alertController.addAction(allAction)
         
         SurfBeach.allCases.forEach { beach in
             let action = UIAlertAction(title: beach.displayName, style: .default) { [weak self] _ in
-                self?.locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
-                self?.selectedBeachIDRelay.accept(beach.rawValue)
+                guard let self = self else { return }
+                self.locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
+                self.selectedBeachIDRelay.accept(beach.rawValue)
+                // Scroll to top when beach changes (via selector)
+                self.scrollTableViewToTop(animated: true)
             }
             alertController.addAction(action)
         }
@@ -561,7 +578,10 @@ final class RecordHistoryViewController: BaseViewController {
         
         sortOptions.forEach { title, _ in
             let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
-                self?.sortButton.setTitle(title, for: .normal)
+                guard let self = self else { return }
+                self.sortButton.setTitle(title, for: .normal)
+                // Scroll to top when sort changes
+                self.scrollTableViewToTop(animated: true)
             }
             alertController.addAction(action)
         }
@@ -771,4 +791,3 @@ final class EmptyStateView: UIView {
 extension Notification.Name {
     static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }
-
