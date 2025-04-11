@@ -320,6 +320,7 @@ final class RecordHistoryViewController: BaseViewController {
         let pinTitle = viewModel.isPin ? "핀 해제" : "핀 고정"
         let pinAction = UIAlertAction(title: pinTitle, style: .default) { _ in
             pinSubject.onNext(objectID)
+            NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
         }
         
         let editAction = UIAlertAction(title: "수정", style: .default) { _ in
