@@ -225,17 +225,7 @@ final class ChartRowView: UIView {
     private func configureLayout() {
         columnStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(8)
-            self.columnCenterYConstraint = make.centerY.equalToSuperview().constraint
-            self.columnTopConstraint = make.top.equalToSuperview().offset(8).constraint
-            make.bottom.greaterThanOrEqualToSuperview().offset(-8)
-        }
-        
-        if isTimeMode {
-            columnTopConstraint?.deactivate()
-            columnCenterYConstraint?.activate()
-        } else {
-            columnCenterYConstraint?.deactivate()
-            columnTopConstraint?.activate()
+            make.centerY.equalToSuperview()  // 항상 중앙 정렬
         }
         
         firstColumn.snp.makeConstraints { make in
@@ -315,18 +305,6 @@ final class ChartRowView: UIView {
         snp.makeConstraints { make in
             make.height.equalTo(50)
         }
-    }
-    
-    func setAlignTop(_ alignTop: Bool) {
-        if alignTop {
-            columnCenterYConstraint?.deactivate()
-            columnTopConstraint?.activate()
-        } else {
-            columnTopConstraint?.deactivate()
-            columnCenterYConstraint?.activate()
-        }
-        setNeedsLayout()
-        layoutIfNeeded()
     }
     
     func configure(with chart: Chart) {
@@ -457,6 +435,7 @@ final class ChartTableHeaderView: UIView {
     
     private var headerCenterYConstraint: Constraint?
     private var headerTopConstraint: Constraint?
+    private var headerBottomConstraint: Constraint?
     
     init(isTimeMode: Bool) {
         self.isTimeMode = isTimeMode
@@ -473,11 +452,7 @@ final class ChartTableHeaderView: UIView {
         backgroundColor = UIColor.white.withAlphaComponent(0.15)
         
         firstLabel.text = isTimeMode ? "시간" : "고정"
-        if isTimeMode {
-            firstLabel.textColor = .white.withAlphaComponent(0.8)
-        } else {
-            firstLabel.textColor = .white
-        }
+        firstLabel.textColor = .white.withAlphaComponent(0.8)
         
         firstColumn.addSubview(firstLabel)
         windColumn.addSubview(windLabel)
@@ -491,17 +466,7 @@ final class ChartTableHeaderView: UIView {
     private func configureLayout() {
         columnStackView.snp.makeConstraints { make in
             make.leading.trailing.equalToSuperview().inset(8)
-            self.headerCenterYConstraint = make.centerY.equalToSuperview().constraint
-            self.headerTopConstraint = make.top.equalToSuperview().offset(8).constraint
-            make.bottom.greaterThanOrEqualToSuperview().offset(-8)
-        }
-        
-        if isTimeMode {
-            headerTopConstraint?.deactivate()
-            headerCenterYConstraint?.activate()
-        } else {
-            headerCenterYConstraint?.deactivate()
-            headerTopConstraint?.activate()
+            make.centerY.equalToSuperview()  // 항상 중앙 정렬
         }
         
         firstColumn.snp.makeConstraints { make in
@@ -544,16 +509,5 @@ final class ChartTableHeaderView: UIView {
             make.center.equalToSuperview()
         }
     }
-    
-    func setAlignTop(_ alignTop: Bool) {
-        if alignTop {
-            headerCenterYConstraint?.deactivate()
-            headerTopConstraint?.activate()
-        } else {
-            headerTopConstraint?.deactivate()
-            headerCenterYConstraint?.activate()
-        }
-        setNeedsLayout()
-        layoutIfNeeded()
-    }
 }
+

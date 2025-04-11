@@ -573,13 +573,12 @@ private extension SurfRecordViewController {
         f.locale = Locale(identifier: "ko_KR")
         f.timeZone = TimeZone(identifier: "Asia/Seoul")
         f.dateFormat = "yyyy-MM-dd HH:mm"
-        print("🧪 3시간 간격 점검 시작")
-        for i in 1..<charts.count {
-            let dt = charts[i].time.timeIntervalSince(charts[i-1].time)
-            if abs(dt - threeHours) > 1 {
-                print("⚠️ 간격 이상: \(f.string(from: charts[i-1].time)) -> \(f.string(from: charts[i].time)) = \(dt/3600)시간")
-            }
-        }
+//        for i in 1..<charts.count {
+//            let dt = charts[i].time.timeIntervalSince(charts[i-1].time)
+//            if abs(dt - threeHours) > 1 {
+//                print("⚠️ 간격 이상: \(f.string(from: charts[i-1].time)) -> \(f.string(from: charts[i].time)) = \(dt/3600)시간")
+//            }
+//        }
     }
     
     /// ✅ 시작시간을 3시간 슬롯으로 내림(KST), 종료시간 이하는 포함(<=)
@@ -612,9 +611,9 @@ private extension SurfRecordViewController {
         f.locale = Locale(identifier: "ko_KR")
         f.timeZone = TimeZone(identifier: "Asia/Seoul")
         f.dateFormat = "yyyy-MM-dd HH:mm"
-        print("⏱ 경계(KST) start(slot↓): \(f.string(from: lowerBound))  ~  end(≤): \(f.string(from: upperBound))")
-        print("📊 필터링된 차트 시간대(KST):")
-        filtered.forEach { print(" - \(f.string(from: $0.time))") }
+//        print("⏱ 경계(KST) start(slot↓): \(f.string(from: lowerBound))  ~  end(≤): \(f.string(from: upperBound))")
+//        print("📊 필터링된 차트 시간대(KST):")
+//        filtered.forEach { print(" - \(f.string(from: $0.time))") }
         
         // (선택) 간격 검증
         debugCheckThreeHourSpacing(filtered)
