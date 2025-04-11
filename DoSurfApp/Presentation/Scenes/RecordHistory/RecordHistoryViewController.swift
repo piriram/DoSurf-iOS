@@ -349,8 +349,8 @@ final class RecordHistoryViewController: BaseViewController {
             NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
         }
         
-        let editAction = UIAlertAction(title: "수정", style: .default) { _ in
-            editSubject.onNext(objectID)
+        let editAction = UIAlertAction(title: "수정", style: .default) { [weak self] _ in
+            self?.presentEditRecord(for: objectID)
         }
         
         let deleteAction = UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
@@ -485,6 +485,32 @@ final class RecordHistoryViewController: BaseViewController {
                 let alert = UIAlertController(title: "메모 저장", message: "메모가 저장되었습니다.", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "확인", style: .default))
                 self?.present(alert, animated: true)
+            }, onFailure: { [weak self] error in
+                self?.showErrorAlert(message: error.localizedDescription)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func presentEditRecord(for objectID: NSManagedObjectID) {
+        surfRecordUseCase.fetchSurfRecord(by: objectID)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] recordOpt in
+                guard let self = self else { return }
+                guard let record = recordOpt else {
+                    self.showErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
+                    return
+                }
+                // 편집 모드로 SurfRecordViewController 구성
+                let editorVC = SurfRecordViewController(editing: record)
+                editorVC.title = "기록 수정"
+                editorVC.hidesBottomBarWhenPushed = true
+                if let nav = self.navigationController {
+                    nav.pushViewController(editorVC, animated: true)
+                } else {
+                    let nav = UINavigationController(rootViewController: editorVC)
+                    nav.modalPresentationStyle = .fullScreen
+                    self.present(nav, animated: true)
+                }
             }, onFailure: { [weak self] error in
                 self?.showErrorAlert(message: error.localizedDescription)
             })
