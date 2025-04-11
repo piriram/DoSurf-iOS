@@ -116,7 +116,7 @@ class DashboardViewController: BaseViewController {
         )
         let output = viewModel.transform(input: input)
         
-        let page1 = PreferredChartPage()
+        let page1 = PreferredPage()
         let page2 = ChartListPage(title: "최근 기록 차트", showsTableHeader: true, isPinnedChart: false)
         let page3 = ChartListPage(title: "고정 차트", showsTableHeader: true, isPinnedChart: true)
         headerView.configurePages([page1, page2, page3])
@@ -147,7 +147,7 @@ class DashboardViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
                 guard let self = self else { return }
-                if let page1 = self.headerView.getPage(at: 0) as? PreferredChartPage {
+                if let page1 = self.headerView.getPage(at: 0) as? PreferredPage {
                     page1.configure(with: cards)
                 }
             })

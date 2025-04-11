@@ -9,7 +9,7 @@ import UIKit
 import RxSwift
 import SnapKit
 // MARK: - Page 1: 선호하는 차트 통계
-final class PreferredChartPage: UIView {
+final class PreferredPage: UIView {
     
     // MARK: - Properties
     private let disposeBag = DisposeBag()
@@ -22,8 +22,8 @@ final class PreferredChartPage: UIView {
         return stackView
     }()
     
-    private let windCard = StatCardView()
-    private let waveCard = StatCardView()
+    private let windCard = PreferredCardView()
+    private let waveCard = PreferredCardView()
     
     // MARK: - Initialization
     override init(frame: CGRect) {

@@ -12,7 +12,6 @@ import RxCocoa
 // MARK: - Page 2 & 3: 차트 리스트 페이지
 final class ChartListPage: UIView {
     
-    // MARK: - Properties
     private let showsTableHeader: Bool
     private let tableHeaderView: UIView
     private let tableContainerView = UIView()
@@ -43,10 +42,7 @@ final class ChartListPage: UIView {
         clipsToBounds = true
         
         if showsTableHeader {
-            print("🔍 ChartListPage: Adding table header view")
             addSubview(tableHeaderView)
-        } else {
-            print("🔍 ChartListPage: Table header is disabled")
         }
         addSubview(tableContainerView)
     }
@@ -70,8 +66,6 @@ final class ChartListPage: UIView {
     
     // MARK: - Public Methods
     func configure(with charts: [Chart]) {
-        print("📋 ChartListPage: configure called with \(charts.count) charts")
-        
         // 기존 차트 뷰 제거
         tableContainerView.subviews.forEach { view in
             view.removeFromSuperview()
@@ -79,7 +73,6 @@ final class ChartListPage: UIView {
         
         // 차트가 없는 경우 처리
         guard !charts.isEmpty else {
-            print("📋 ChartListPage: No charts, showing empty message")
             let emptyLabel = UILabel()
             emptyLabel.text = "차트 데이터가 없습니다"
             emptyLabel.textColor = .white.withAlphaComponent(0.7)
@@ -100,14 +93,12 @@ final class ChartListPage: UIView {
         
         // 최대 3개의 차트 표시
         let chartsToShow = Array(charts.prefix(3))
-        print("📋 ChartListPage: Showing \(chartsToShow.count) charts")
         
         chartsToShow.enumerated().forEach { index, chart in
-            let rowView = ChartRowView()
+            let rowView = RecentChartRowView()
             rowView.tag = index
             rowView.configure(with: chart)
             stackView.addArrangedSubview(rowView)
-            print("📋 Added chart row \(index) with time: \(chart.time)")
         }
         
         tableContainerView.addSubview(stackView)
@@ -115,7 +106,6 @@ final class ChartListPage: UIView {
             make.edges.equalToSuperview()
         }
         
-        print("📋 ChartListPage: Configuration completed")
     }
     
     // MARK: - Pinned Charts Methods
@@ -125,18 +115,14 @@ final class ChartListPage: UIView {
     }
     
     private func fetchPinnedRecords() {
-        print("📌 Fetching pinned records for beachID: \(currentBeachID)")
         
         surfRecordUseCase.fetchSurfRecords(for: currentBeachID)
             .subscribe(
                 onSuccess: { [weak self] records in
                     guard let self = self else { return }
                     
-                    print("📌 Found \(records.count) total records")
-                    
                     // isPin이 true인 기록만 필터링
                     let pinnedRecords = records.filter { $0.isPin }
-                    print("📌 Found \(pinnedRecords.count) pinned records")
                     
                     // 최근 날짜순으로 정렬하고 최대 3개만
                     let recentPinnedRecords = pinnedRecords
@@ -148,7 +134,6 @@ final class ChartListPage: UIView {
                     }
                 },
                 onFailure: { [weak self] error in
-                    print("❌ Failed to fetch pinned records: \(error)")
                     DispatchQueue.main.async {
                         self?.showEmptyState()
                     }
@@ -158,7 +143,6 @@ final class ChartListPage: UIView {
     }
     
     private func displayPinnedRecords(_ records: [SurfRecordData]) {
-        print("📌 Displaying \(records.count) pinned records")
         
         // 기존 뷰 제거
         tableContainerView.subviews.forEach { view in
@@ -180,15 +164,12 @@ final class ChartListPage: UIView {
             rowView.tag = index
             rowView.configure(with: record)
             stackView.addArrangedSubview(rowView)
-            print("📌 Added pinned row \(index) for date: \(record.surfDate)")
         }
         
         tableContainerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
             make.edges.equalToSuperview().inset(12)
         }
-        
-        print("📌 Pinned records display completed")
     }
     
     private func showEmptyState() {
@@ -278,163 +259,6 @@ final class ChartListHeaderView: UIView {
             nextResponder = responder.next
         }
         return nil
-    }
-}
-
-// MARK: - ChartRowView (기존 차트용)
-final class ChartRowView: UIView {
-    
-    private let timeLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.textColor = .white
-        label.numberOfLines = 2
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let windLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let waveLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        label.numberOfLines = 2
-        return label
-    }()
-    
-    private let temperatureLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let ratingLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let ratingImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
-        imageView.tintColor = .systemYellow
-        imageView.contentMode = .scaleAspectFit
-        return imageView
-    }()
-    
-    private lazy var ratingStack: UIStackView = {
-        let sv = UIStackView(arrangedSubviews: [ratingImageView, ratingLabel])
-        sv.axis = .horizontal
-        sv.spacing = 4
-        sv.alignment = .center
-        return sv
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        configureUI()
-        configureLayout()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func configureUI() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.08)
-        
-        addSubview(timeLabel)
-        addSubview(windLabel)
-        addSubview(waveLabel)
-        addSubview(temperatureLabel)
-        addSubview(ratingStack)
-
-        // Keep star and text snug; prevent label from stretching
-        ratingLabel.setContentHuggingPriority(.required, for: .horizontal)
-        ratingLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        ratingImageView.setContentHuggingPriority(.required, for: .horizontal)
-    }
-    
-    private func configureLayout() {
-        // ChartTableHeaderView와 동일한 레이아웃
-        timeLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(50)
-        }
-        
-        windLabel.snp.makeConstraints { make in
-            make.leading.equalTo(timeLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        waveLabel.snp.makeConstraints { make in
-            make.leading.equalTo(windLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        temperatureLabel.snp.makeConstraints { make in
-            make.leading.equalTo(waveLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        ratingStack.snp.makeConstraints { make in
-            make.leading.equalTo(temperatureLabel.snp.trailing).offset(8)
-            make.trailing.lessThanOrEqualToSuperview().inset(8)
-            make.centerY.equalToSuperview()
-        }
-        
-        ratingImageView.snp.makeConstraints { make in
-            make.width.height.equalTo(16)
-        }
-        
-        snp.makeConstraints { make in
-            make.height.equalTo(56)
-        }
-    }
-    
-    func configure(with chart: Chart) {
-        print("🔧 ChartRowView: Configuring with chart at time: \(chart.time)")
-        
-        // 시간 포맷팅
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "M/d"
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "HH시"
-        
-        let dateString = dateFormatter.string(from: chart.time)
-        let timeString = timeFormatter.string(from: chart.time)
-        timeLabel.text = "\(dateString)\n\(timeString)"
-        
-        // 바람 속도
-        windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
-        
-        // 파도 높이와 주기
-        waveLabel.text = String(format: "%.1fm\n%.1fs", chart.waveHeight, chart.wavePeriod)
-        
-        // 수온
-        temperatureLabel.text = String(format: "%.0f°C", chart.waterTemperature)
-        
-        // 평점 (예시로 랜덤 점수 표시, 실제로는 데이터에 따라 결정)
-        let rating = Int.random(in: 1...5)
-        ratingLabel.text = "\(rating)점"
-        
-        print("🔧 ChartRowView: Configuration completed - \(dateString) \(timeString), Wind: \(chart.windSpeed)m/s, Wave: \(chart.waveHeight)m")
     }
 }
 
@@ -594,8 +418,6 @@ final class PinnedChartRowView: UIView {
         // 평가 점수 (SurfRecord의 rating 사용)
         let rating = Int(record.rating)
         ratingLabel.text = "\(rating)점"
-        
-        print("📌 PinnedChartRowView: Configuration completed - Wind: \(avgWindSpeed)m/s, Wave: \(avgWaveHeight)m, Rating: \(rating)점")
     }
 }
 
