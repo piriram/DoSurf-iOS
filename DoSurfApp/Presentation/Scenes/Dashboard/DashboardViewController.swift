@@ -32,7 +32,7 @@ class DashboardViewController: BaseViewController {
     // MARK: - UI Components
     private lazy var backgroundImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "backgroundMain")
+        imageView.image = UIImage(named: AssetImage.backgroundMain)
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         return imageView

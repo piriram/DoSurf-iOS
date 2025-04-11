@@ -27,14 +27,14 @@ final class SurfRatingCardView: UIView {
     
     private let trackLineView: UIImageView = {
         let view = UIImageView()
-        view.image = UIImage(named: "line")
+        view.image = UIImage(named: AssetImage.line)
         view.contentMode = .scaleToFill
         return view
     }()
     
     private let starImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "ratingStar")
+        imageView.image = UIImage(named: AssetImage.ratingStarFill)
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
@@ -117,7 +117,7 @@ final class SurfRatingCardView: UIView {
     private func setupCircles() {
         for i in 0..<numberOfSteps {
             let circleView = UIImageView()
-            circleView.image = UIImage(named: "ellipse")
+            circleView.image = UIImage(named: AssetImage.ellipse)
             circleView.contentMode = .scaleAspectFit
             circleView.tag = i + 1
             
@@ -302,7 +302,7 @@ final class SurfRatingCardView: UIView {
     private func updateCircleColors(for rating: Int) {
         circleViews.enumerated().forEach { index, imageView in
             let isActive = index < rating
-            let templateImage = UIImage(named: "ellipse")
+            let templateImage = UIImage(named: AssetImage.ellipse)
             imageView.image = templateImage
             
         }

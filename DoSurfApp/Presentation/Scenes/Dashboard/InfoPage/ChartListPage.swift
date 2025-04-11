@@ -308,7 +308,7 @@ final class PinnedChartRowView: UIView {
     
     private let ratingImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
+        imageView.image = UIImage(named: AssetImage.ratingStarFill) 
         imageView.tintColor = .systemYellow
         imageView.contentMode = .scaleAspectFit
         return imageView
@@ -421,106 +421,6 @@ final class PinnedChartRowView: UIView {
     }
 }
 
-// MARK: - ChartTableHeaderView (일반 차트용 테이블 헤더)
-final class ChartTableHeaderView: UIView {
-    
-    private let timeLabel: UILabel = {
-        let label = UILabel()
-        label.text = "시간"
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let windLabel: UILabel = {
-        let label = UILabel()
-        label.text = "바람"
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let waveLabel: UILabel = {
-        let label = UILabel()
-        label.text = "파도"
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let temperatureLabel: UILabel = {
-        let label = UILabel()
-        label.text = "수온"
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let ratingLabel: UILabel = {
-        let label = UILabel()
-        label.text = "평가"
-        label.font = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .white.withAlphaComponent(0.8)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        configureUI()
-        configureLayout()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func configureUI() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.15)
-        
-        addSubview(timeLabel)
-        addSubview(windLabel)
-        addSubview(waveLabel)
-        addSubview(temperatureLabel)
-        addSubview(ratingLabel)
-    }
-    
-    private func configureLayout() {
-        timeLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(50)
-        }
-        
-        windLabel.snp.makeConstraints { make in
-            make.leading.equalTo(timeLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        waveLabel.snp.makeConstraints { make in
-            make.leading.equalTo(windLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        temperatureLabel.snp.makeConstraints { make in
-            make.leading.equalTo(waveLabel.snp.trailing).offset(8)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(60)
-        }
-        
-        ratingLabel.snp.makeConstraints { make in
-            make.leading.equalTo(temperatureLabel.snp.trailing).offset(8)
-            make.trailing.equalToSuperview().inset(8)
-            make.centerY.equalToSuperview()
-        }
-    }
-}
 
 // MARK: - PinnedChartTableHeaderView (고정 차트용 테이블 헤더)
 final class PinnedChartTableHeaderView: UIView {
