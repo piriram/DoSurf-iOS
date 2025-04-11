@@ -31,7 +31,7 @@ final class RecordHistoryViewModel {
         let deleteRecord: Observable<NSManagedObjectID>
         let pinRecord: Observable<NSManagedObjectID>
         let editRecord: Observable<NSManagedObjectID>
-        let selectedBeachID: Observable<Int>
+        let selectedBeachID: Observable<Int?>
     }
     
     struct Output {
@@ -45,6 +45,7 @@ final class RecordHistoryViewModel {
     // MARK: - Properties
     private let useCase: SurfRecordUseCaseProtocol
     private let disposeBag = DisposeBag()
+    private let storageService: SurfingRecordService
     
     private let recordsRelay = BehaviorRelay<[SurfRecordData]>(value: [])
     private let filterRelay = BehaviorRelay<RecordFilter>(value: .all)
@@ -54,21 +55,43 @@ final class RecordHistoryViewModel {
     private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: nil)
     
     // MARK: - Initializer
-    init(useCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+    init(useCase: SurfRecordUseCaseProtocol = SurfRecordUseCase(), storageService: SurfingRecordService = UserDefaultsService()) {
         self.useCase = useCase
+        self.storageService = storageService
     }
     
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
+        // Seed selected beach from persistent storage on first load
+        input.viewDidLoad
+            .take(1)
+            .subscribe(onNext: { [weak self] in
+                guard let self = self else { return }
+                if let saved = self.storageService.readSelectedBeachID(), let id = Int(saved) {
+                    self.selectedBeachIDRelay.accept(id)
+                }
+            })
+            .disposed(by: disposeBag)
+        
+        // Observe beach selection changes broadcast from Dashboard
+        NotificationCenter.default.rx.notification(.selectedBeachIDDidChange)
+            .compactMap { $0.userInfo?["beachID"] as? String }
+            .compactMap { Int($0) }
+            .subscribe(onNext: { [weak self] id in
+                self?.selectedBeachIDRelay.accept(id)
+            })
+            .disposed(by: disposeBag)
+        
         input.selectedBeachID
             .bind(to: selectedBeachIDRelay)
             .disposed(by: disposeBag)
         
-        // Load records when view loads or beach changes
+        // Load records when view loads or beach changes or records change notification
         let loadTrigger = Observable.merge(
             input.viewDidLoad.map { () },
-            selectedBeachIDRelay.asObservable().map { _ in () }
+            selectedBeachIDRelay.asObservable().map { _ in () },
+            NotificationCenter.default.rx.notification(.surfRecordsDidChange).map { _ in () }
         )
         loadTrigger
             .withLatestFrom(selectedBeachIDRelay.asObservable())
@@ -127,11 +150,14 @@ final class RecordHistoryViewModel {
                     })
                     .catch { _ in .empty() }
             }
-            .flatMapLatest { [weak self] _ -> Observable<[SurfRecordData]> in
+            .withLatestFrom(selectedBeachIDRelay.asObservable())
+            .flatMapLatest { [weak self] selectedBeachID -> Observable<[SurfRecordData]> in
                 guard let self = self else { return .empty() }
-                return self.useCase.fetchAllSurfRecords()
-                    .asObservable()
-                    .catch { _ in .just([]) }
+                if let beachID = selectedBeachID {
+                    return self.useCase.fetchSurfRecords(for: beachID).asObservable().catch { _ in .just([]) }
+                } else {
+                    return self.useCase.fetchAllSurfRecords().asObservable().catch { _ in .just([]) }
+                }
             }
             .bind(to: recordsRelay)
             .disposed(by: disposeBag)
@@ -353,3 +379,6 @@ struct RecordCardViewModel {
     }
 }
 
+extension Notification.Name {
+    static let selectedBeachIDDidChange = Notification.Name("selectedBeachIDDidChange")
+}

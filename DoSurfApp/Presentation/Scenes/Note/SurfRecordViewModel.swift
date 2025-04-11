@@ -7,6 +7,7 @@
 
 import RxSwift
 import RxCocoa
+import Foundation
 
 final class SurfRecordViewModel {
     struct Input {
@@ -24,7 +25,11 @@ final class SurfRecordViewModel {
         // 여기서 실제 저장 로직/DI 주입 가능
         let savedRelay = PublishRelay<Void>()
         input.saveTap
-            .drive(onNext: { savedRelay.accept(()) })
+            .drive(onNext: {
+                // Broadcast that surf records changed so all views can reload from Core Data
+                NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                savedRelay.accept(())
+            })
             .disposed(by: disposeBag)
         
         return Output(saved: savedRelay.asDriver(onErrorDriveWith: .empty()))
