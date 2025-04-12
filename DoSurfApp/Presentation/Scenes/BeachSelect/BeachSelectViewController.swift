@@ -23,6 +23,14 @@ final class BeachSelectViewController: BaseViewController {
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
     private let storageService: SurfingRecordService = UserDefaultsService()
+    
+    // Persist last selected category index
+    private let lastCategoryIndexKey = "BeachSelectViewController.lastCategoryIndex"
+    private var didEmitInitialCategorySelection = false
+
+    // Subjects to emit initial selections programmatically
+    private let initialCategorySelection = PublishSubject<IndexPath>()
+    private let initialLocationSelection = PublishSubject<IndexPath>()
 
     var onBeachSelected: ((LocationDTO) -> Void)?
 
@@ -81,15 +89,6 @@ final class BeachSelectViewController: BaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
-        
-        if let savedID = storageService.readSelectedBeachID(),
-           let index = currentLocations.firstIndex(where: { $0.id == savedID }) {
-            selectedLocationId = savedID
-            selectedLocation = currentLocations[index]
-            beachTableView.reloadData()
-            confirmButton.isEnabled = true
-            confirmButton.backgroundColor = .surfBlue
-        }
     }
 
     // MARK: - Base Overrides
@@ -128,9 +127,19 @@ final class BeachSelectViewController: BaseViewController {
     }
 
     override func configureBind() {
+        let categorySelection = Observable.merge(
+            regionTableView.rx.itemSelected.asObservable(),
+            initialCategorySelection.asObservable()
+        )
+
+        let locationSelection = Observable.merge(
+            beachTableView.rx.itemSelected.asObservable(),
+            initialLocationSelection.asObservable()
+        )
+
         let input = BeachSelectViewModel.Input(
-            categorySelected: regionTableView.rx.itemSelected.asObservable(),
-            locationSelected: beachTableView.rx.itemSelected.asObservable(),
+            categorySelected: categorySelection,
+            locationSelected: locationSelection,
             confirmButtonTapped: confirmButton.rx.tap.asObservable()
         )
 
@@ -148,10 +157,25 @@ final class BeachSelectViewController: BaseViewController {
         output.locations
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] locations in
-                // 새로운 위치 목록이 로드될 때 선택 상태 초기화
-                self?.selectedLocationId = nil
-                self?.selectedLocation = nil
-                self?.applyLocations(locations)
+                guard let self = self else { return }
+                self.applyLocations(locations)
+
+                // Try to restore saved beach selection for the currently selected category
+                if let savedID = self.storageService.readSelectedBeachID(),
+                   let index = locations.firstIndex(where: { $0.id == savedID }) {
+                    self.selectedLocationId = savedID
+                    self.selectedLocation = locations[index]
+                    self.beachTableView.reloadData()
+                    let indexPath = IndexPath(row: index, section: 0)
+                    // Emit programmatic selection so ViewModel updates canConfirm, etc.
+                    self.initialLocationSelection.onNext(indexPath)
+                    // Optional scroll to the selected row for better UX
+                    self.beachTableView.scrollToRow(at: indexPath, at: .middle, animated: false)
+                } else {
+                    // No saved beach in this category; clear selection state
+                    self.selectedLocationId = nil
+                    self.selectedLocation = nil
+                }
             })
             .disposed(by: disposeBag)
 
@@ -161,6 +185,8 @@ final class BeachSelectViewController: BaseViewController {
             .subscribe(onNext: { [weak self] index in
                 let indexPath = IndexPath(row: index, section: 0)
                 self?.regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+                // Persist last selected category index
+                UserDefaults.standard.set(index, forKey: self?.lastCategoryIndexKey ?? "BeachSelectViewController.lastCategoryIndex")
             })
             .disposed(by: disposeBag)
 
@@ -262,8 +288,14 @@ final class BeachSelectViewController: BaseViewController {
         categoryDataSource.apply(snapshot, animatingDifferences: false)
 
         if !categories.isEmpty {
-            let indexPath = IndexPath(row: 0, section: 0)
+            let savedIndex = (UserDefaults.standard.object(forKey: lastCategoryIndexKey) as? Int) ?? 0
+            let clampedIndex = max(0, min(savedIndex, categories.count - 1))
+            let indexPath = IndexPath(row: clampedIndex, section: 0)
             regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+            if !didEmitInitialCategorySelection {
+                didEmitInitialCategorySelection = true
+                initialCategorySelection.onNext(indexPath)
+            }
         }
     }
 
