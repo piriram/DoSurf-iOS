@@ -12,14 +12,14 @@ final class SurfRatingCardView: UIView {
     private var circlePositions: [CGFloat] = []
     
     // MARK: - Observables
-    let selectedRating = BehaviorRelay<Int>(value: 1)
+    let selectedRating = BehaviorRelay<Int>(value: 3)
     
     // MARK: - UI Components
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "오늘의 파도 평가"
-        label.font = .systemFont(ofSize: 18, weight: .bold)
-        label.textColor = .black
+        label.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.bold)
+        label.textColor = .surfBlue
         return label
     }()
     
@@ -150,7 +150,7 @@ final class SurfRatingCardView: UIView {
             
             let pointLabel = UILabel()
             pointLabel.text = "\(index + 1)점"
-            pointLabel.font = .systemFont(ofSize: 14, weight: .bold)
+            pointLabel.font = .systemFont(ofSize: FontSize.body2Size, weight: FontSize.bold)
             pointLabel.textColor = .surfBlue
             pointLabel.textAlignment = .center
             
@@ -161,7 +161,7 @@ final class SurfRatingCardView: UIView {
             
             let descLabel = UILabel()
             descLabel.text = description
-            descLabel.font = .systemFont(ofSize: 12)
+            descLabel.font = .systemFont(ofSize: FontSize.body2Size,weight: FontSize.medium)
             descLabel.textColor = .surfBlue
             descLabel.textAlignment = .center
             
@@ -181,14 +181,12 @@ final class SurfRatingCardView: UIView {
             
             labelsContainerView.addSubview(containerView)
 
-            // Position the label container; centerX will be updated after layout to match circle positions
             containerView.snp.makeConstraints {
                 $0.top.bottom.equalToSuperview()
                 let c = $0.centerX.equalTo(labelsContainerView.snp.leading).offset(0).constraint
                 labelCenterXConstraints.append(c)
             }
 
-            // Ensure the container sizes to its content and doesn't stretch unexpectedly
             containerView.setContentHuggingPriority(.required, for: .horizontal)
             containerView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
@@ -308,32 +306,3 @@ final class SurfRatingCardView: UIView {
         }
     }
 }
-
-// MARK: - Preview
-#if DEBUG
-import SwiftUI
-
-struct SurfRatingCardViewPreview: PreviewProvider {
-    static var previews: some View {
-        UIViewPreviewWrapper {
-            let view = SurfRatingCardView()
-            view.backgroundColor = .systemGray6
-            return view
-        }
-        .frame(height: 160)
-        .previewLayout(.sizeThatFits)
-        .padding()
-    }
-}
-
-struct UIViewPreviewWrapper<T: UIView>: UIViewRepresentable {
-    let viewBuilder: () -> T
-    
-    func makeUIView(context: Context) -> T {
-        viewBuilder()
-    }
-    
-    func updateUIView(_ uiView: T, context: Context) {}
-}
-#endif
-
