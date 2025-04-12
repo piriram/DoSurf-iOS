@@ -89,6 +89,9 @@ final class DashboardViewModel {
                         return .empty()
                     }
             }
+            .do(onNext: { [weak self] data in
+                self?.debugLogCharts("[BeachData]", charts: data.charts)
+            })
             .share(replay: 1)
         
         // 모든 비치의 최신 데이터를 기준으로 평균값 계산
@@ -211,6 +214,9 @@ final class DashboardViewModel {
                         return .just([])
                     }
             }
+            .do(onNext: { [weak self] charts in
+                self?.debugLogCharts("[RecentRecords]", charts: charts)
+            })
             .share(replay: 1)
         
         // CoreData에서 전체 비치의 고정 차트 가져오기
@@ -245,6 +251,9 @@ final class DashboardViewModel {
                         return .just([])
                     }
             }
+            .do(onNext: { [weak self] charts in
+                self?.debugLogCharts("[PinnedRecords]", charts: charts)
+            })
             .share(replay: 1)
         
         return Output(
@@ -273,24 +282,27 @@ final class DashboardViewModel {
     }
     
     private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
+        let type: WeatherType
         switch iconName {
         case "sun":
-            return .clear
+            type = .clear
         case "cloudLittleSun":
-            return .cloudLittleSun
+            type = .cloudLittleSun
         case "cloudMuchSun":
-            return .cloudMuchSun
+            type = .cloudMuchSun
         case "cloud":
-            return .cloudy
+            type = .cloudy
         case "rain":
-            return .rain
-        case "forg":
-            return .forg
+            type = .rain
+        case "fog", "forg":
+            type = .fog
         case "snow":
-            return .snow
+            type = .snow
         default:
-            return .unknown
+            type = .unknown
         }
+        print("[WeatherIconMap] iconName=\(iconName) -> type=\(type) asset=\(type.iconName)")
+        return type
     }
     
     private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
@@ -302,4 +314,186 @@ final class DashboardViewModel {
         return grouped.sorted { $0.key < $1.key }
             .map { (date: $0.key, charts: $0.value.sorted { $0.time < $1.time }) }
     }
+    
+    private func debugLogCharts(_ tag: String, charts: [Chart]) {
+        let counts = Dictionary(grouping: charts, by: { $0.weather.iconName }).mapValues { $0.count }
+        let iconSet = Set(charts.map { $0.weather.iconName })
+        let samples = charts.prefix(5).map { $0.weather.iconName }
+        print("[WeatherDebug] \(tag) total=\(charts.count) counts=\(counts) icons=\(iconSet) samples=\(samples)")
+    }
 }
+// MARK: - Weather Type Enum
+enum WeatherType: Int, CaseIterable, Codable {
+    case clear = 1
+    case rain = 4
+    case snow = 5
+    case cloudy = 3
+    case cloudLittleSun = 9
+    case cloudMuchSun = 10
+    case forg = 13
+    case fog = 14
+    case unknown = 999
+    
+    static func fromPtype(_ ptype: Double) -> WeatherType {
+        switch ptype {
+        case 0: return .clear
+        case 1: return .rain
+        case 2: return .snow
+        case 3: return .cloudy
+        default: return .clear
+        }
+    }
+    
+    var description: String {
+        switch self {
+        case .clear: return "맑음"
+        case .rain: return "비"
+        case .snow: return "눈"
+        case .cloudy: return "구름많음"
+        case .fog: return "안개"
+        default: return "알수없음"
+        }
+    }
+    var iconName: String {
+        switch self {
+        case .clear:
+            return "sun"
+        case .cloudLittleSun:
+            return "cloudLittleSun"
+        case .cloudMuchSun:
+            return "cloudMuchSun"
+        case .cloudy:
+            return "cloudy"
+        case .rain:
+            return "rain"
+        case .fog:
+            return "forg"
+        case .forg:
+            return "forg"
+        case .snow:
+            return "snow"
+        case .unknown:
+            return "questionmark.circle.fill"
+        }
+    }
+}
+
+// MARK: - WeatherType Enum Extension
+extension WeatherType {
+    
+    /// Firestore 데이터의 sky_condition과 precipitation_type을 기반으로 WeatherType 계산
+    /// - Parameters:
+    ///   - skyCondition: 하늘 상태 (1: 맑음, 3: 구름많음, 4: 흐림)
+    ///   - precipitationType: 강수 형태 (0: 없음, 1: 비, 2: 비/눈, 3: 눈, 4: 소나기)
+    /// - Returns: 계산된 WeatherType
+    static func from(
+        skyCondition: Int,
+        precipitationType: Int,
+        humidity: Double? = nil,
+        windSpeed: Double? = nil,
+        precipitationProbability: Double? = nil
+    ) -> WeatherType {
+        // 1) 강수 우선 로직 유지
+        if precipitationType != 0 {
+            switch precipitationType {
+            case 1: // 비
+                return .rain
+            case 2: // 비/눈 (눈으로 처리)
+                return .snow
+            case 3: // 눈
+                return .snow
+            case 4: // 소나기
+                return .rain
+            default:
+                return .unknown
+            }
+        }
+
+        // 2) 안개 휴리스틱 (습도 높고, 바람 약할 때)
+        //    임계값은 필요시 조정 가능: 습도 ≥ 95%, 풍속 ≤ 2.0 m/s
+        let h = humidity ?? -1
+        let w = windSpeed ?? Double.greatestFiniteMagnitude
+        if h >= 95, w <= 2.0 {
+            return .fog
+        }
+
+        // 3) 하늘 상태 기반
+        switch skyCondition {
+        case 1: // 맑음
+            return .clear
+        case 3: // 구름많음 → 습도/강수확률로 세분화
+            let p = precipitationProbability ?? 0
+            let isMuch = (p >= 30) || (humidity ?? 0 >= 85)
+            return isMuch ? .cloudMuchSun : .cloudLittleSun
+        case 4: // 흐림
+            return .cloudy
+        default:
+            return .unknown
+        }
+    }
+    
+    /// Firestore Document Dictionary에서 직접 WeatherType 계산
+    /// - Parameter data: Firestore document data
+    /// - Returns: 계산된 WeatherType
+    static func from(firestoreData data: [String: Any]) -> WeatherType {
+        let skyCondition = data["sky_condition"] as? Int ?? 0
+        let precipitationType = data["precipitation_type"] as? Int ?? 0
+        
+        return from(skyCondition: skyCondition, precipitationType: precipitationType)
+    }
+}
+
+// MARK: - Usage Example
+/*
+ 
+ // 예제 1: 직접 값으로 계산
+ let weatherType = WeatherType.from(skyCondition: 3, precipitationType: 0)
+ print(weatherType.description) // "구름많음"
+ print(weatherType.iconName)    // "cloudMuchSun"
+ 
+ // 예제 2: Firestore 데이터로 계산
+ let firestoreData: [String: Any] = [
+     "sky_condition": 3,
+     "precipitation_type": 0,
+     "wind_speed": 3.3,
+     // ... 기타 필드들
+ ]
+ 
+ let weatherType = WeatherType.from(firestoreData: firestoreData)
+ 
+ // 예제 3: 비가 오는 경우
+ let rainyWeather = WeatherType.from(skyCondition: 4, precipitationType: 1)
+ print(rainyWeather.description) // "비"
+ 
+ */
+
+// MARK: - 계산 로직 정리
+/*
+ 
+ 기상청 단기예보 API 기준:
+ 
+ SKY (하늘상태):
+ - 1: 맑음
+ - 3: 구름많음
+ - 4: 흐림
+ 
+ PTY (강수형태):
+ - 0: 없음
+ - 1: 비
+ - 2: 비/눈
+ - 3: 눈
+ - 4: 소나기
+ 
+ 우선순위:
+ 1. PTY ≠ 0 → 강수 타입으로 결정
+ 2. PTY == 0 → SKY로 결정
+ 
+ 매핑:
+ PTY 1, 4 → WeatherType.rain
+ PTY 2, 3 → WeatherType.snow
+ SKY 1 → WeatherType.clear
+ SKY 3 → WeatherType.cloudMuchSun
+ SKY 4 → WeatherType.cloudy
+ 
+ */
+

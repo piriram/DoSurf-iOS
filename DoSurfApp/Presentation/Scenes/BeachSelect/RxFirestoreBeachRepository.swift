@@ -127,6 +127,14 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
                             let rawWaveHeight = data["wave_height"] as? Double
                             let waveHeight = (rawWaveHeight != nil && (rawWaveHeight! <= -900 || rawWaveHeight! >= 900)) ? nil : rawWaveHeight
                             
+                            let computedWeatherCode = Self.computeWeatherCode(
+                                skyCondition: data["sky_condition"] as? Int,
+                                precipitationType: data["precipitation_type"] as? Int,
+                                humidity: data["humidity"] as? Double,
+                                windSpeed: data["wind_speed"] as? Double,
+                                precipitationProbability: data["precipitation_probability"] as? Double
+                            )
+                            
                             let forecast = FirestoreChartDTO(
                                 documentId: document.documentID,
                                 beachId: data["beach_id"] as? Int ?? Int(beachId) ?? 0,
@@ -146,7 +154,8 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
                                 snow: data["snow"] as? Double,
                                 omWaveHeight: data["om_wave_height"] as? Double,
                                 omWaveDirection: data["om_wave_direction"] as? Double,
-                                omSeaSurfaceTemperature: data["om_sea_surface_temperature"] as? Double
+                                omSeaSurfaceTemperature: data["om_sea_surface_temperature"] as? Double,
+                                weatherCode: computedWeatherCode
                             )
                             forecasts.append(forecast)
                         }
@@ -155,6 +164,47 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
                 }
             
             return Disposables.create()
+        }
+    }
+    
+    private static func computeWeatherCode(
+        skyCondition: Int?,
+        precipitationType: Int?,
+        humidity: Double?,
+        windSpeed: Double?,
+        precipitationProbability: Double?
+    ) -> Int? {
+        let sky = skyCondition ?? 0
+        let pty = precipitationType ?? 0
+
+        // 1) Precipitation priority
+        if pty != 0 {
+            switch pty {
+            case 1, 4: return WeatherType.rain.rawValue
+            case 2, 3: return WeatherType.snow.rawValue
+            default: break
+            }
+        }
+
+        // 2) Fog heuristic: humidity ≥ 95 and wind ≤ 2.0 m/s
+        let h = humidity ?? -1
+        let w = windSpeed ?? Double.greatestFiniteMagnitude
+        if h >= 95, w <= 2.0 {
+            return WeatherType.fog.rawValue
+        }
+
+        // 3) Sky-based
+        switch sky {
+        case 1:
+            return WeatherType.clear.rawValue
+        case 3:
+            let p = precipitationProbability ?? 0
+            let isMuch = (p >= 30) || (h >= 85)
+            return (isMuch ? WeatherType.cloudMuchSun : WeatherType.cloudLittleSun).rawValue
+        case 4:
+            return WeatherType.cloudy.rawValue
+        default:
+            return WeatherType.unknown.rawValue
         }
     }
 }
