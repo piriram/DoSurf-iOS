@@ -686,5 +686,6 @@ class CustomTabBar: UITabBar {
             if buttonIndex >= 2 { break }
         }
     }
+    
 }
 
