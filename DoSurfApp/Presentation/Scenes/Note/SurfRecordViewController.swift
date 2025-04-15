@@ -570,7 +570,7 @@ private extension SurfRecordViewController {
         f.dateFormat = "yyyy-MM-dd HH:mm"
     }
     
-    /// ✅ 시작시간을 3시간 슬롯으로 내림(KST), 종료시간 이하는 포함(<=)
+    /// 시작시간을 3시간 슬롯으로 내림(KST), 종료시간 이하는 포함(<=)
     func filterAndApplyCharts() {
         print("[Debug] filterAndApplyCharts called. injectedCharts count: \(injectedCharts?.count ?? -1)")
         guard let all = injectedCharts, !all.isEmpty else {
