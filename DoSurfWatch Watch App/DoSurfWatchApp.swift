@@ -45,6 +45,25 @@ struct MainWatchView: View {
                     .font(.title3)
                     .fontWeight(.semibold)
                 
+                // 추가 메트릭들
+                if manager.heartRate > 0 {
+                    Text("❤️ \(Int(manager.heartRate)) BPM")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                }
+                
+                if manager.activeCalories > 0 {
+                    Text("🔥 \(Int(manager.activeCalories)) cal")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
+                
+                if manager.strokeCount > 0 {
+                    Text("🏊‍♂️ \(manager.strokeCount) strokes")
+                        .font(.caption)
+                        .foregroundColor(.blue)
+                }
+                
                 if manager.isRunning {
                     Text("🏄‍♂️ Surfing...")
                         .font(.caption)
@@ -111,18 +130,35 @@ struct MainWatchView: View {
     }
     
     private func sendDataToiPhone() {
+        // 심박수 통계 계산
+        let maxHR = manager.heartRateHistory.max() ?? manager.heartRate
+        let avgHR = manager.heartRateHistory.isEmpty ? manager.heartRate : 
+                   manager.heartRateHistory.reduce(0, +) / Double(manager.heartRateHistory.count)
+        
         let surfData = WatchSurfSessionData(
             distance: manager.distance,
             duration: manager.elapsed,
             startTime: manager.startTime ?? Date(),
-            endTime: Date()
+            endTime: Date(),
+            maxHeartRate: maxHR,
+            avgHeartRate: avgHR,
+            activeCalories: manager.activeCalories,
+            strokeCount: manager.strokeCount
         )
         
         Task {
             do {
                 try await connectivity.sendSurfData(surfData)
                 await MainActor.run {
-                    sendResultMessage = "✅ Data sent successfully!\nDistance: \(Int(surfData.distance))m\nDuration: \(formatTime(surfData.duration))"
+                    sendResultMessage = """
+                    ✅ Data sent successfully!
+                    Distance: \(Int(surfData.distance))m
+                    Duration: \(formatTime(surfData.duration))
+                    Calories: \(Int(surfData.activeCalories))
+                    Avg HR: \(Int(avgHR)) BPM
+                    Max HR: \(Int(maxHR)) BPM
+                    Strokes: \(surfData.strokeCount)
+                    """
                     showingSendResult = true
                 }
             } catch {
