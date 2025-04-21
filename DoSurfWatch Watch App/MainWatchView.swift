@@ -16,41 +16,110 @@ struct MainWatchView: View {
         VStack(spacing: 16) {
             // 상태 표시
             VStack(spacing: 8) {
-                Text("Distance: \(Int(manager.distance)) m")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                // 주요 메트릭들 (거리, 시간, 파도)
+                HStack(spacing: 16) {
+                    VStack(spacing: 4) {
+                        Text("Distance")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text("\(Int(manager.distance)) m")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    VStack(spacing: 4) {
+                        Text("Time")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text(formatTime(manager.elapsed))
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    VStack(spacing: 4) {
+                        Text("Waves")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                        Text("\(manager.waveCount)")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .foregroundColor(.cyan)
+                    }
+                }
                 
-                Text("Time: \(formatTime(manager.elapsed))")
-                    .font(.title3)
-                    .fontWeight(.semibold)
+                // 파도 감지 상태 표시
+                if manager.isRunning && manager.waveCount > 0 {
+                    Text("🌊 Last wave detected!")
+                        .font(.caption2)
+                        .foregroundColor(.cyan)
+                        .opacity(0.8)
+                }
                 
                 // 추가 메트릭들
-                if manager.heartRate > 0 {
-                    Text("❤️ \(Int(manager.heartRate)) BPM")
-                        .font(.caption)
-                        .foregroundColor(.red)
+                VStack(spacing: 4) {
+                    HStack(spacing: 16) {
+                        if manager.currentSpeed > 0 {
+                            HStack(spacing: 4) {
+                                Text("⚡️")
+                                Text("\(String(format: "%.1f", manager.currentSpeed)) m/s")
+                                    .font(.caption)
+                                    .foregroundColor(.yellow)
+                            }
+                        }
+                        
+                        if manager.heartRate > 0 {
+                            HStack(spacing: 4) {
+                                Text("❤️")
+                                Text("\(Int(manager.heartRate)) BPM")
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
+                    
+                    HStack(spacing: 16) {
+                        if manager.activeCalories > 0 {
+                            HStack(spacing: 4) {
+                                Text("🔥")
+                                Text("\(Int(manager.activeCalories)) cal")
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                        
+                        if manager.strokeCount > 0 {
+                            HStack(spacing: 4) {
+                                Text("🏊‍♂️")
+                                Text("\(manager.strokeCount) strokes")
+                                    .font(.caption)
+                                    .foregroundColor(.blue)
+                            }
+                        }
+                    }
                 }
                 
-                if manager.activeCalories > 0 {
-                    Text("🔥 \(Int(manager.activeCalories)) cal")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                }
-                
-                if manager.strokeCount > 0 {
-                    Text("🏊‍♂️ \(manager.strokeCount) strokes")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-                
+                // 상태 메시지
                 if manager.isRunning {
-                    Text("🏄‍♂️ Surfing...")
+                    Text("🏄‍♂️ Surfing... Auto-detecting waves")
                         .font(.caption)
                         .foregroundColor(.green)
+                        .multilineTextAlignment(.center)
                 } else if manager.distance > 0 || manager.elapsed > 0 {
-                    Text("📊 Session Complete")
+                    VStack(spacing: 2) {
+                        Text("📊 Session Complete")
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                        if manager.waveCount > 0 {
+                            Text("Detected \(manager.waveCount) wave\(manager.waveCount == 1 ? "" : "s")")
+                                .font(.caption2)
+                                .foregroundColor(.cyan)
+                        }
+                    }
+                } else {
+                    Text("🌊 Ready to surf - Wave detection enabled")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
             }
             
@@ -119,6 +188,7 @@ struct MainWatchView: View {
             duration: manager.elapsed,
             startTime: manager.startTime ?? Date(),
             endTime: Date(),
+            waveCount: manager.waveCount, // 파도 횟수 추가
             maxHeartRate: maxHR,
             avgHeartRate: avgHR,
             activeCalories: manager.activeCalories,
@@ -133,6 +203,7 @@ struct MainWatchView: View {
                     ✅ Data sent successfully!
                     Distance: \(Int(surfData.distance))m
                     Duration: \(formatTime(surfData.duration))
+                    Waves: \(surfData.waveCount) 🌊
                     Calories: \(Int(surfData.activeCalories))
                     Avg HR: \(Int(avgHR)) BPM
                     Max HR: \(Int(maxHR)) BPM

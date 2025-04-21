@@ -13,7 +13,7 @@ struct WatchSurfSessionData: Codable {
     let duration: TimeInterval
     let startTime: Date
     let endTime: Date
-    let waveCount: Int = 0
+    let waveCount: Int // 기본값 제거하고 매개변수로 받음
     let maxHeartRate: Double
     let avgHeartRate: Double
     let activeCalories: Double
