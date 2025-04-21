@@ -22,14 +22,32 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     @Published var elapsed: TimeInterval = 0
     @Published var distance: Double = 0
     @Published var isRunning: Bool = false
-
+    @Published var sessionEnded: Bool = false
+    
     // MARK: - Internal states
     private var startDate = Date()
     private var lastLocation: CLLocation?
+    private var timer: Timer?
+    var startTime: Date?
+    private var isSessionActive = false  // 세션 상태 추적
+    
+    private var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #else
+        return false
+        #endif
+    }
 
     override init() {
         super.init()
         locationManager.delegate = self
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        
+        // 시뮬레이터에서는 위치 권한이 없어도 정상 작동하도록 설정
+        if !isSimulator {
+            locationManager.requestWhenInUseAuthorization()
+        }
     }
 
     // MARK: - Permissions (권한은 App 시작 시 한 번만 요청)
@@ -49,6 +67,15 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
 
     // MARK: - Session Control
     func start() {
+        // 이미 세션이 활성화된 경우 중복 실행 방지
+        guard !isSessionActive else {
+            print("⚠️ Session already active")
+            return
+        }
+        
+        // 이전 세션 정리
+        cleanupSession()
+        
         // Location
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
@@ -71,13 +98,20 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
             // 시작
             self.session = session
             self.builder = builder
+            self.isSessionActive = true
 
             startDate = Date()
+            startTime = startDate
             session.startActivity(with: startDate)
             builder.beginCollection(withStart: startDate) { [weak self] success, error in
                 DispatchQueue.main.async {
                     self?.isRunning = success
                     if let error { print("⚠️ beginCollection error:", error) }
+                    
+                    // 시뮬레이터에서는 타이머로 가상 데이터 생성
+                    if self?.isSimulator == true && success {
+                        self?.startSimulatorTimer()
+                    }
                 }
             }
         } catch {
@@ -86,11 +120,50 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     }
 
     func end() {
-        session?.end()
+        // 이미 종료된 세션인지 확인
+        guard isSessionActive, let session = self.session else {
+            print("⚠️ No active session to end")
+            return
+        }
+        
+        // 중복 종료 방지
+        isSessionActive = false
+        
+        session.end()
         locationManager.stopUpdatingLocation()
+        
+        // 시뮬레이터 타이머 정리
+        timer?.invalidate()
+        timer = nil
     }
 
     // MARK: - Private
+    private func cleanupSession() {
+        timer?.invalidate()
+        timer = nil
+        session = nil
+        builder = nil
+        isSessionActive = false
+        
+        DispatchQueue.main.async {
+            self.isRunning = false
+        }
+    }
+    
+    private func startSimulatorTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            DispatchQueue.main.async {
+                // 시간 업데이트
+                self.elapsed = Date().timeIntervalSince(self.startDate)
+                
+                // 가상 거리 증가 (초당 약 1-3미터, 서핑 속도 시뮬레이션)
+                let speedVariation = Double.random(in: 1.0...3.0)
+                self.distance += speedVariation
+            }
+        }
+    }
+    
     private func sendSummaryToPhone() {
         let summary: [String: Any] = [
             "distance": distance,
@@ -110,10 +183,44 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
 // MARK: - CLLocationManagerDelegate
 extension SurfWorkoutManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        // 시뮬레이터에서는 타이머가 처리하므로 실제 디바이스에서만 위치 기반 계산
+        guard !isSimulator else { return }
+        
         guard let new = locations.last else { return }
-        if let last = lastLocation { distance += new.distance(from: last) }
+        if let last = lastLocation { 
+            distance += new.distance(from: last) 
+        }
         lastLocation = new
         elapsed = Date().timeIntervalSince(startDate)
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        if let clError = error as? CLError {
+            switch clError.code {
+            case .locationUnknown:
+                print("ℹ️ Location unknown (normal in simulator)")
+            case .denied:
+                print("⚠️ Location access denied - using simulator mode")
+                // 시뮬레이터에서는 위치 거부되어도 계속 진행
+            case .network:
+                print("⚠️ Network error for location")
+            default:
+                print("⚠️ Location error: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+        switch status {
+        case .authorizedWhenInUse, .authorizedAlways:
+            print("✅ Location permission granted")
+        case .denied, .restricted:
+            print("⚠️ Location permission denied - using simulator mode")
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        @unknown default:
+            break
+        }
     }
 }
 
@@ -123,6 +230,21 @@ extension SurfWorkoutManager: HKWorkoutSessionDelegate {
                         didChangeTo toState: HKWorkoutSessionState,
                         from fromState: HKWorkoutSessionState,
                         date: Date) {
+        DispatchQueue.main.async {
+            switch toState {
+            case .running:
+                self.isRunning = true
+                self.isSessionActive = true
+            case .ended:
+                self.isRunning = false
+                self.sessionEnded = true // SwiftUI에 세션 종료 알림
+                // 세션 정리
+                self.cleanupSession()
+            default:
+                break
+            }
+        }
+        
         if toState == .ended {
             // 수집 종료 → 피니시 → 요약 전송
             builder?.endCollection(withEnd: Date()) { [weak self] success, error in
