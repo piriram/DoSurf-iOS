@@ -368,6 +368,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "DoSurf는 서핑 세션 분석을 위해 심박수와 활동 에너지 데이터를 사용합니다. 이 데이터는 기록 요약과 성과 인사이트 제공에 활용됩니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "서핑 기록을 위한 위치 데이터를 입력받습니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -409,6 +411,8 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "DoSurf는 서핑 세션 분석을 위해 심박수와 활동 에너지 데이터를 사용합니다. 이 데이터는 기록 요약과 성과 인사이트 제공에 활용됩니다.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "서핑 기록을 위한 위치 데이터를 입력받습니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
