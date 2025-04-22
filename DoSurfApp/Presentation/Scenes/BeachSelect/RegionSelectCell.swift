@@ -10,7 +10,7 @@ import SnapKit
 
 import Foundation
 // MARK: - CategoryCell
-final class RegionCategoryCell: UITableViewCell {
+final class RegionSelectCell: UITableViewCell {
     static let identifier = "RegionCategoryCell"
     
     private let titleLabel: UILabel = {

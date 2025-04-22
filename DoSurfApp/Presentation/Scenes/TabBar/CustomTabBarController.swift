@@ -28,14 +28,14 @@ class CustomTabBarController: BaseTabBarController {
     private var surfEndOverlay: SurfEndOverlayView?
     
     // MARK: - Initialization
-    init(storageService: SurfingRecordService = UserDefaultsService()) {
+    init(storageService: SurfingRecordService = UserDefaultsManager()) {
         self.storageService = storageService
         self.customTabBar = CustomTabBar(storageService: storageService)
         super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder: NSCoder) {
-        self.storageService = UserDefaultsService()
+        self.storageService = UserDefaultsManager()
         self.customTabBar = CustomTabBar(storageService: self.storageService)
         super.init(coder: coder)
     }
@@ -141,7 +141,7 @@ class CustomTabBarController: BaseTabBarController {
     private func createRecordListViewController() -> UIViewController {
         let repository = SurfRecordRepository()
         let useCase = SurfRecordUseCase(repository: repository)
-        let storage = UserDefaultsService()
+        let storage = UserDefaultsManager()
         let viewModel = RecordHistoryViewModel(useCase: useCase, storageService: storage)
         let vc = RecordHistoryViewController(viewModel: viewModel)
         vc.title = "기록 차트"
@@ -477,7 +477,7 @@ class CustomTabBar: UITabBar {
     }
     
     required init?(coder: NSCoder) {
-        self.storageService = UserDefaultsService()
+        self.storageService = UserDefaultsManager()
         super.init(coder: coder)
         setupCenterButton()
         loadSurfingState()

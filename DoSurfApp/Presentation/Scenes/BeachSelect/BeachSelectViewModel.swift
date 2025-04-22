@@ -23,10 +23,10 @@ final class BeachSelectViewModel {
     // MARK: - Output
     struct Output {
         let categories: Observable<[CategoryDTO]>
-        let locations: Observable<[LocationDTO]>
+        let locations: Observable<[BeachDTO]>
         let selectedCategory: Observable<Int>
         let canConfirm: Observable<Bool>
-        let dismiss: Observable<[LocationDTO]>
+        let dismiss: Observable<[BeachDTO]>
         let beachData: Observable<BeachData>
         let error: Observable<Error>
         let isLoading: Observable<Bool>
@@ -34,7 +34,7 @@ final class BeachSelectViewModel {
     
     // MARK: - Properties
     private let categories = BehaviorRelay<[CategoryDTO]>(value: [])
-    private let locations = BehaviorRelay<[LocationDTO]>(value: [])
+    private let locations = BehaviorRelay<[BeachDTO]>(value: [])
     private let selectedCategoryIndex = BehaviorRelay<Int>(value: 0)
     private let selectedLocation = BehaviorRelay<String?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
@@ -63,12 +63,12 @@ final class BeachSelectViewModel {
             })
             .disposed(by: disposeBag)
         
-        let filteredLocations: Observable<[LocationDTO]> = selectedCategoryIndex
+        let filteredLocations: Observable<[BeachDTO]> = selectedCategoryIndex
             .withLatestFrom(categories) { (index, categories) -> BeachRegion in
                 guard index < categories.count else { return .gangreung }
                 return categories[index].region
             }
-            .map { [weak self] (selectedRegion: BeachRegion) -> [LocationDTO] in
+            .map { [weak self] (selectedRegion: BeachRegion) -> [BeachDTO] in
                 guard let self = self else { return [] }
                 return self.locations.value.filter { $0.region == selectedRegion }
             }
@@ -76,7 +76,7 @@ final class BeachSelectViewModel {
         
         // 해변 선택 처리
         input.locationSelected
-            .withLatestFrom(filteredLocations) { indexPath, locations -> LocationDTO? in
+            .withLatestFrom(filteredLocations) { indexPath, locations -> BeachDTO? in
                 guard indexPath.row < locations.count else { return nil }
                 return locations[indexPath.row]
             }
@@ -122,7 +122,7 @@ final class BeachSelectViewModel {
                 locations.asObservable(),
                 selectedLocation.asObservable()
             ))
-            .map { (locations: [LocationDTO], selectedId: String?) -> [LocationDTO] in
+            .map { (locations: [BeachDTO], selectedId: String?) -> [BeachDTO] in
                 guard let selectedId = selectedId else { return [] }
                 return locations.filter { $0.id == selectedId }
             }
@@ -144,14 +144,14 @@ final class BeachSelectViewModel {
         let mockCategories = BeachRegion.allCases.map { CategoryDTO(region: $0) }
         
         let mockLocations = [
-            LocationDTO(id: "1001", region: .gangreung, place: "죽도 해변"),
-            LocationDTO(id: "1002", region: .gangreung, place: "사천진 해변"),
-            LocationDTO(id: "1003", region: .gangreung, place: "사근진 해변"),
-            LocationDTO(id: "1004", region: .gangreung, place: "사천 해변"),
-            LocationDTO(id: "2001", region: .pohang, place: "월포 해변"),
-            LocationDTO(id: "2002", region: .pohang, place: "신항만 해변"),
-            LocationDTO(id: "3001", region: .jeju, place: "중문 해변"),
-            LocationDTO(id: "4001", region: .busan, place: "송정 해변"),
+            BeachDTO(id: "1001", region: .gangreung, place: "죽도 해변"),
+            BeachDTO(id: "1002", region: .gangreung, place: "사천진 해변"),
+            BeachDTO(id: "1003", region: .gangreung, place: "사근진 해변"),
+            BeachDTO(id: "1004", region: .gangreung, place: "사천 해변"),
+            BeachDTO(id: "2001", region: .pohang, place: "월포 해변"),
+            BeachDTO(id: "2002", region: .pohang, place: "신항만 해변"),
+            BeachDTO(id: "3001", region: .jeju, place: "중문 해변"),
+            BeachDTO(id: "4001", region: .busan, place: "송정 해변"),
         ]
         
         categories.accept(mockCategories)

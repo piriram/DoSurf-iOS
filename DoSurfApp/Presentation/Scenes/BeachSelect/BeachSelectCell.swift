@@ -7,7 +7,7 @@
 import UIKit
 import SnapKit
 // MARK: - LocationCell
-final class BeachCategoryCell: UITableViewCell {
+final class BeachSelectCell: UITableViewCell {
     static let identifier = "BeachCategoryCell"
     
     private let titleLabel: UILabel = {
@@ -37,7 +37,7 @@ final class BeachCategoryCell: UITableViewCell {
         }
     }
     
-    func configure(with location: LocationDTO, isSelected: Bool) {
+    func configure(with location: BeachDTO, isSelected: Bool) {
         titleLabel.text = location.displayText
         titleLabel.textColor = isSelected ? .surfBlue : .black.withAlphaComponent(0.5)
         titleLabel.font = isSelected ? .systemFont(ofSize: FontSize.sixteen, weight: FontSize.semibold) : .systemFont(ofSize: 16)

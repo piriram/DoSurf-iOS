@@ -20,7 +20,7 @@ class DashboardViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: DashboardViewModel
     private let disposeBag = DisposeBag()
-    private let storageService: SurfingRecordService = UserDefaultsService()
+    private let storageService: SurfingRecordService = UserDefaultsManager()
     
     private var currentBeachData: BeachData?
     private let viewDidLoadSubject = PublishSubject<Void>()

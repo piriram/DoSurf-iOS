@@ -67,7 +67,7 @@ final class RecordHistoryViewController: BaseViewController {
     private var customStartDate: Date?
     private var customEndDate: Date?
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
-    private let storageService: SurfingRecordService = UserDefaultsService()
+    private let storageService: SurfingRecordService = UserDefaultsManager()
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
