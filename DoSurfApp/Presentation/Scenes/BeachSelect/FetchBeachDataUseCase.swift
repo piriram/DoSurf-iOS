@@ -55,7 +55,7 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
                 }
             }
             .catch { error in
-                .error(FirebaseAPIError.map(error))
+                    .error(FirebaseAPIError.map(error))
             }
     }
 }
@@ -94,7 +94,7 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
         case .invalidArgument(let msg): return msg ?? "요청 인자가 올바르지 않습니다."
         case .decodingFailed(let msg): return msg ?? "데이터 해석에 실패했습니다."
         case .invalidPath(let msg): return msg ?? "잘못된 경로입니다."
-        case .beachNotFoundInAnyRegion(let id): return "어느 지역에서도 비치 ID (\(id))를 찾지 못했습니다."
+        case .beachNotFoundInAnyRegion(let id): return "해변 ID를 찾지 못했습니다."
         case .unknown(let err): return err.localizedDescription
         }
     }

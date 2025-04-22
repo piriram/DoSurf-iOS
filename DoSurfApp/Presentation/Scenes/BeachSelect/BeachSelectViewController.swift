@@ -18,7 +18,7 @@ private typealias LocationSnapshot = NSDiffableDataSourceSnapshot<Int, String>
 
 // MARK: - BeachSelectViewController
 final class BeachSelectViewController: BaseViewController {
-
+    
     // MARK: - Properties
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
@@ -27,28 +27,28 @@ final class BeachSelectViewController: BaseViewController {
     // Persist last selected category index
     private let lastCategoryIndexKey = "BeachSelectViewController.lastCategoryIndex"
     private var didEmitInitialCategorySelection = false
-
+    
     // Subjects to emit initial selections programmatically
     private let initialCategorySelection = PublishSubject<IndexPath>()
     private let initialLocationSelection = PublishSubject<IndexPath>()
-
+    
     var onBeachSelected: ((LocationDTO) -> Void)?
-
+    
     private lazy var categoryDataSource = createCategoryDataSource()
     private lazy var locationDataSource = createLocationDataSource()
-
+    
     private var selectedLocationId: String?
     private var selectedLocation: LocationDTO?
     private var currentCategories: [CategoryDTO] = []
     private var currentLocations: [LocationDTO] = []
-
+    
     // MARK: - UI
     private let containerView: UIView = {
         let v = UIView()
         v.backgroundColor = .clear
         return v
     }()
-
+    
     private let regionTableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .plain)
         tv.backgroundColor = .clear
@@ -57,7 +57,7 @@ final class BeachSelectViewController: BaseViewController {
         tv.register(RegionCategoryCell.self, forCellReuseIdentifier: RegionCategoryCell.identifier)
         return tv
     }()
-
+    
     private let beachTableView: UITableView = {
         let tv = UITableView(frame: .zero, style: .plain)
         tv.backgroundColor = .white
@@ -66,85 +66,90 @@ final class BeachSelectViewController: BaseViewController {
         tv.register(BeachCategoryCell.self, forCellReuseIdentifier: BeachCategoryCell.identifier)
         return tv
     }()
-
+    
     private let confirmButton: UIButton = {
         let b = UIButton(type: .system)
         b.setTitle("선택 완료", for: .normal)
         b.titleLabel?.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.bold)
         b.backgroundColor = .backgroundGray
         b.setTitleColor(.white, for: .normal)
-        b.layer.cornerRadius = 26
         b.isEnabled = false
         return b
     }()
-
+    
     // MARK: - Init
     init(viewModel: BeachSelectViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
-
+    
     // MARK: - Lifecycle
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
     }
-
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        confirmButton.applyCornerRadius(makeCircular: true)
+    }
+    
     // MARK: - Base Overrides
     override func configureUI() {
         view.backgroundColor = .backgroundWhite
         navigationItem.title = "지역 선택"
-
+        
         view.addSubview(containerView)
         containerView.addSubview(regionTableView)
         containerView.addSubview(beachTableView)
         view.addSubview(confirmButton)
     }
-
+    
     override func configureLayout() {
-        containerView.snp.makeConstraints {
-            $0.top.equalTo(view.safeAreaLayoutGuide)
-            $0.leading.trailing.equalToSuperview()
-            $0.bottom.equalTo(confirmButton.snp.top).offset(-16)
+        containerView.snp.makeConstraints { make in
+            make.top.equalTo(view.safeAreaLayoutGuide)
+            make.leading.trailing.equalToSuperview()
+            make.bottom.equalTo(confirmButton.snp.top).offset(-16)
         }
-
-        regionTableView.snp.makeConstraints {
-            $0.top.leading.bottom.equalToSuperview()
-            $0.width.equalToSuperview().multipliedBy(0.375)
+        
+        regionTableView.snp.makeConstraints { make in
+            make.top.leading.bottom.equalToSuperview()
+            make.width.equalToSuperview().multipliedBy(0.375)
         }
-
-        beachTableView.snp.makeConstraints {
-            $0.top.trailing.bottom.equalToSuperview()
-            $0.leading.equalTo(regionTableView.snp.trailing)
+        
+        beachTableView.snp.makeConstraints { make in
+            make.top.trailing.bottom.equalToSuperview()
+            make.leading.equalTo(regionTableView.snp.trailing)
         }
-
-        confirmButton.snp.makeConstraints {
-            $0.leading.trailing.equalToSuperview().inset(16)
-            $0.bottom.equalTo(view.safeAreaLayoutGuide).offset(-16)
-            $0.height.equalTo(56)
+        
+        confirmButton.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.bottom.equalTo(view.safeAreaLayoutGuide).offset(-16)
+            make.height.equalTo(56)
         }
     }
-
+    
     override func configureBind() {
         let categorySelection = Observable.merge(
             regionTableView.rx.itemSelected.asObservable(),
             initialCategorySelection.asObservable()
         )
-
+        
         let locationSelection = Observable.merge(
             beachTableView.rx.itemSelected.asObservable(),
             initialLocationSelection.asObservable()
         )
-
+        
         let input = BeachSelectViewModel.Input(
             categorySelected: categorySelection,
             locationSelected: locationSelection,
             confirmButtonTapped: confirmButton.rx.tap.asObservable()
         )
-
+        
         let output = viewModel.transform(input: input)
-
+        
         // 카테고리 목록
         output.categories
             .observe(on: MainScheduler.instance)
@@ -152,14 +157,14 @@ final class BeachSelectViewController: BaseViewController {
                 self?.applyCategories(categories)
             })
             .disposed(by: disposeBag)
-
+        
         // 위치(비치) 목록
         output.locations
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] locations in
                 guard let self = self else { return }
                 self.applyLocations(locations)
-
+                
                 // Try to restore saved beach selection for the currently selected category
                 if let savedID = self.storageService.readSelectedBeachID(),
                    let index = locations.firstIndex(where: { $0.id == savedID }) {
@@ -178,7 +183,7 @@ final class BeachSelectViewController: BaseViewController {
                 }
             })
             .disposed(by: disposeBag)
-
+        
         // 선택된 카테고리 인덱스
         output.selectedCategory
             .observe(on: MainScheduler.instance)
@@ -189,7 +194,7 @@ final class BeachSelectViewController: BaseViewController {
                 UserDefaults.standard.set(index, forKey: self?.lastCategoryIndexKey ?? "BeachSelectViewController.lastCategoryIndex")
             })
             .disposed(by: disposeBag)
-
+        
         // 확인 버튼 활성/비활성
         output.canConfirm
             .observe(on: MainScheduler.instance)
@@ -198,7 +203,7 @@ final class BeachSelectViewController: BaseViewController {
                 self?.confirmButton.backgroundColor = canConfirm ? .surfBlue : .backgroundGray
             })
             .disposed(by: disposeBag)
-
+        
         // 닫기(확정)
         output.dismiss
             .observe(on: MainScheduler.instance)
@@ -208,11 +213,11 @@ final class BeachSelectViewController: BaseViewController {
                     self.onBeachSelected?(selectedBeach)
                     self.storageService.createSelectedBeachID(selectedBeach.id)
                 }
-
+                
                 let tabBar = self.tabBarController?.tabBar
                 tabBar?.isUserInteractionEnabled = false
                 self.navigationController?.popViewController(animated: true)
-
+                
                 if let coordinator = self.navigationController?.transitionCoordinator {
                     coordinator.animate(alongsideTransition: nil) { _ in
                         tabBar?.isUserInteractionEnabled = true
@@ -224,7 +229,7 @@ final class BeachSelectViewController: BaseViewController {
                 }
             })
             .disposed(by: disposeBag)
-
+        
         // 비치 선택 → 하이라이트/선택 상태 갱신
         beachTableView.rx.itemSelected
             .withLatestFrom(output.locations) { indexPath, locations -> LocationDTO? in
@@ -246,7 +251,36 @@ final class BeachSelectViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
     }
-
+    
+    override func configureNavigationBar() {
+        // Configure navigation bar appearance with backgroundSkyblue
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.shadowColor = .clear
+        appearance.backgroundColor = .backgroundWhite
+        appearance.titleTextAttributes = [
+            .foregroundColor: UIColor.surfBlue
+        ]
+        appearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor.surfBlue
+        ]
+        
+        navigationItem.standardAppearance = appearance
+        navigationItem.scrollEdgeAppearance = appearance
+        navigationItem.compactAppearance = appearance
+        
+        // Apply to the actual navigation bar as well
+        if let navBar = navigationController?.navigationBar {
+            navBar.standardAppearance = appearance
+            navBar.scrollEdgeAppearance = appearance
+            navBar.compactAppearance = appearance
+            navBar.tintColor = .surfBlue
+        }
+    }
+    
+    override func configureAction() {
+        
+    }
     // MARK: - Diffable DataSources
     private func createCategoryDataSource() -> CategoryDataSource {
         CategoryDataSource(tableView: regionTableView) { [weak self] tableView, indexPath, _ in
@@ -261,7 +295,7 @@ final class BeachSelectViewController: BaseViewController {
             return cell
         }
     }
-
+    
     private func createLocationDataSource() -> LocationDataSource {
         let ds = LocationDataSource(tableView: beachTableView) { [weak self] tableView, indexPath, _ in
             guard let cell = tableView.dequeueReusableCell(
@@ -278,7 +312,7 @@ final class BeachSelectViewController: BaseViewController {
         ds.defaultRowAnimation = .fade
         return ds
     }
-
+    
     // MARK: - Snapshot Apply
     private func applyCategories(_ categories: [CategoryDTO]) {
         currentCategories = categories
@@ -286,7 +320,7 @@ final class BeachSelectViewController: BaseViewController {
         snapshot.appendSections([0])
         snapshot.appendItems(categories.map { $0.id })
         categoryDataSource.apply(snapshot, animatingDifferences: false)
-
+        
         if !categories.isEmpty {
             let savedIndex = (UserDefaults.standard.object(forKey: lastCategoryIndexKey) as? Int) ?? 0
             let clampedIndex = max(0, min(savedIndex, categories.count - 1))
@@ -298,7 +332,7 @@ final class BeachSelectViewController: BaseViewController {
             }
         }
     }
-
+    
     private func applyLocations(_ locations: [LocationDTO]) {
         currentLocations = locations
         var snapshot = LocationSnapshot()

@@ -16,7 +16,7 @@ extension DateFormatter {
         df.locale = Locale(identifier: "ko_KR")
         return df
     }()
-
+    
     static func toFormattedDate(format: String, locale: Locale = .current, calendar: Calendar = .current) -> DateFormatter {
         let df = DateFormatter()
         df.dateFormat = format
@@ -40,12 +40,12 @@ public extension Date {
         df.dateFormat = "M월 d일 EEEE"
         return df
     }()
-
+    
     /// A formatted string in Korean locale like "9월 30일 화요일"
     var koreanMonthDayWeekday: String {
         return Date.koreanMonthDayWeekdayFormatter.string(from: self)
     }
-
+    
     func toFormattedString(format: String, locale: Locale = .current, calendar: Calendar = .current) -> String {
         return DateFormatter.toFormattedDate(format: format, locale: locale, calendar: calendar).string(from: self)
     }

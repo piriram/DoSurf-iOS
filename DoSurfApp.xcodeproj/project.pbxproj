@@ -49,13 +49,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		21356D9B2E957910003C84FA /* Exceptions for "SharedKit" folder in "DoSurfWatch Watch App" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				SurfSessionSummary.swift,
-			);
-			target = 21356D812E9572B4003C84FA /* DoSurfWatch Watch App */;
-		};
 		21FE051A2E851725004EFEE3 /* Exceptions for "DoSurfApp" folder in "DoSurfApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -69,14 +62,6 @@
 		21356D832E9572B4003C84FA /* DoSurfWatch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "DoSurfWatch Watch App";
-			sourceTree = "<group>";
-		};
-		21356D952E9578EF003C84FA /* SharedKit */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				21356D9B2E957910003C84FA /* Exceptions for "SharedKit" folder in "DoSurfWatch Watch App" target */,
-			);
-			path = SharedKit;
 			sourceTree = "<group>";
 		};
 		21E7A47E2E842FED008EFDDA /* DoSurfApp */ = {
@@ -117,7 +102,6 @@
 		21E7A4732E842FED008EFDDA = {
 			isa = PBXGroup;
 			children = (
-				21356D952E9578EF003C84FA /* SharedKit */,
 				21E7A4942E843062008EFDDA /* .gitignore */,
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
 				21356D832E9572B4003C84FA /* DoSurfWatch Watch App */,
@@ -174,7 +158,6 @@
 				21356D8B2E9572B6003C84FA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				21356D952E9578EF003C84FA /* SharedKit */,
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
 			);
 			name = DoSurfApp;
