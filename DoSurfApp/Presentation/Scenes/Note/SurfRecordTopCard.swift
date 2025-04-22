@@ -172,35 +172,11 @@ final class SurfRecordTopCard: UIView {
     }
     
     private func makeColumnHeader() -> UIView {
-        let headerRow = UIView()
-        headerRow.backgroundColor = .secondarySystemGroupedBackground
-        
-        let columnHeaderStack = UIStackView()
-        columnHeaderStack.axis = .horizontal
-        columnHeaderStack.distribution = .equalSpacing
-        columnHeaderStack.alignment = .center
-        columnHeaderStack.spacing = 8
-        
-        ["시간", "바람", "파도", "수온", "날씨"].forEach { text in
-            let label = UILabel()
-            label.text = text
-            label.font = .systemFont(ofSize: 12, weight: .medium)
-            label.textColor = .secondaryLabel
-            label.textAlignment = .center
-            columnHeaderStack.addArrangedSubview(label)
-        }
-        
-        headerRow.addSubview(columnHeaderStack)
-        columnHeaderStack.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(16)
-            make.centerY.equalToSuperview()
-        }
-        
-        headerRow.snp.makeConstraints { make in
+        let header = ColumnHeaderView()
+        header.snp.makeConstraints { make in
             make.height.equalTo(36)
         }
-        
-        return headerRow
+        return header
     }
     
     private func configureTableView() {
