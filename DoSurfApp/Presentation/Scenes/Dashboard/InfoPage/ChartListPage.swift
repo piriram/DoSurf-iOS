@@ -180,7 +180,7 @@ final class ChartListPage: UIView {
         let emptyLabel = UILabel()
         emptyLabel.text = "고정된 차트가 없습니다"
         emptyLabel.textColor = .white.withAlphaComponent(0.7)
-        emptyLabel.font = .systemFont(ofSize: FontSize.sixteen, weight: FontSize.medium)
+        emptyLabel.font = .systemFont(ofSize: FontSize.body1, weight: FontSize.medium)
         emptyLabel.textAlignment = .center
         
         tableContainerView.addSubview(emptyLabel)

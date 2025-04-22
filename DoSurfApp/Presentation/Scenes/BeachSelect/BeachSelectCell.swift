@@ -13,7 +13,7 @@ final class BeachSelectCell: UITableViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: FontSize.fifteen)
-        label.textColor = .black.withAlphaComponent(0.5)
+        label.textColor = .grayText
         return label
     }()
     
@@ -33,13 +33,13 @@ final class BeachSelectCell: UITableViewCell {
         
         titleLabel.snp.makeConstraints {
             $0.horizontalEdges.equalToSuperview().inset(16)
-            $0.top.bottom.equalToSuperview().inset(20)
+            $0.verticalEdges.equalToSuperview().inset(20)
         }
     }
     
     func configure(with location: BeachDTO, isSelected: Bool) {
         titleLabel.text = location.displayText
-        titleLabel.textColor = isSelected ? .surfBlue : .black.withAlphaComponent(0.5)
-        titleLabel.font = isSelected ? .systemFont(ofSize: FontSize.sixteen, weight: FontSize.semibold) : .systemFont(ofSize: 16)
+        titleLabel.textColor = isSelected ? .surfBlue : .grayText
+        titleLabel.font = isSelected ? .systemFont(ofSize: FontSize.body1, weight: FontSize.semibold) : .systemFont(ofSize: FontSize.body1, weight: FontSize.medium)
     }
 }

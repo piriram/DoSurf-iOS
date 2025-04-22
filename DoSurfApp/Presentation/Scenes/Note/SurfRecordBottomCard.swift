@@ -90,7 +90,7 @@ final class SurfRecordBottomCard: UIView {
         addMemoButton.setTitle("메모 추가  ", for: .normal)
         addMemoButton.setImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
         addMemoButton.tintColor = .surfBlue
-        addMemoButton.titleLabel?.font = .systemFont(ofSize: FontSize.sixteen, weight: FontSize.semibold)
+        addMemoButton.titleLabel?.font = .systemFont(ofSize: FontSize.body1, weight: FontSize.semibold)
         addMemoButton.semanticContentAttribute = .forceRightToLeft
         addMemoButton.backgroundColor = .white
         addMemoButton.layer.cornerRadius = 20

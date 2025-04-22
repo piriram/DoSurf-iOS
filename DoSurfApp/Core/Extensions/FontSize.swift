@@ -10,7 +10,7 @@ import UIKit
 enum FontSize {
     static let subheading: CGFloat = 18
     static let seventeen: CGFloat = 17
-    static let sixteen: CGFloat = 16
+    static let body1: CGFloat = 16
     static let fifteen: CGFloat = 15
     static let body2Size: CGFloat = 14
     static let thirteen: CGFloat = 13

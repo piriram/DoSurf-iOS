@@ -65,6 +65,7 @@ extension UIColor {
     static var iconStarOrange: UIColor { UIColor(hex: 0xEA8F5B) }  // #EA8F5B
     static var lableBlack: UIColor { UIColor(hex:0x222222) }
     static var pinBlue: UIColor { UIColor(hex: 0x007AF7) }
+    static var grayText = UIColor.black.withAlphaComponent(0.5)
     
     // MARK: Background / Neutrals
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
@@ -72,4 +73,5 @@ extension UIColor {
     static var backgroundSkyblue: UIColor { UIColor(hex: 0xCCDBF4) } // #CCDBF4
     static var backgroundWhite: UIColor { UIColor(hex:0xEEF1F6)}
     static var backgroundHeader: UIColor { UIColor(hex:0xE5EDF9)}
+    
 }
