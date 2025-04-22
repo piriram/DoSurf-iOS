@@ -14,14 +14,25 @@ final class RecordHistoryCell: UITableViewCell {
     
     // MARK: - UI Components
     private let containerView: UIView = {
+        // Shadow wrapper view (does NOT clip its subviews)
         let view = UIView()
-        view.backgroundColor = .white
+        view.backgroundColor = .clear
         view.layer.cornerRadius = 24
         view.layer.shadowColor = UIColor.black.cgColor
-        view.layer.shadowOpacity = 0.05
-        view.layer.shadowOffset = CGSize(width: 0, height: 2)
-        view.layer.shadowRadius = 4
+        view.layer.shadowOpacity = 0.1
+        view.layer.shadowOffset = CGSize(width: 5, height: 5)
+        view.layer.shadowRadius = 8
+        view.layer.masksToBounds = false
         return view
+    }()
+    
+    private let roundedContentView: UIView = {
+        // Actual content container that clips to rounded corners
+        let v = UIView()
+        v.backgroundColor = .white
+        v.layer.cornerRadius = 24
+        v.layer.masksToBounds = true
+        return v
     }()
     
     private let topHeaderView: UIView = {
@@ -113,14 +124,15 @@ final class RecordHistoryCell: UITableViewCell {
         selectionStyle = .none
         
         contentView.addSubview(containerView)
-        containerView.addSubview(topHeaderView)
+        containerView.addSubview(roundedContentView)
+        roundedContentView.addSubview(topHeaderView)
         topHeaderView.addSubview(dateLabel)
         topHeaderView.addSubview(ratingBadgeView)
         topHeaderView.addSubview(moreButton)
         topHeaderView.addSubview(memoButton)
         topHeaderView.addSubview(addMemoButton)
-        containerView.addSubview(columnHeaderView)
-        containerView.addSubview(chartTableView)
+        roundedContentView.addSubview(columnHeaderView)
+        roundedContentView.addSubview(chartTableView)
         
         chartTableView.dataSource = self
         chartTableView.delegate = self
@@ -132,6 +144,10 @@ final class RecordHistoryCell: UITableViewCell {
             $0.leading.equalToSuperview().offset(16)
             $0.trailing.equalToSuperview().offset(-16)
             $0.bottom.equalToSuperview().offset(-4)
+        }
+        
+        roundedContentView.snp.makeConstraints {
+            $0.edges.equalToSuperview()
         }
         
         topHeaderView.snp.makeConstraints {
@@ -249,4 +265,3 @@ extension RecordHistoryCell: UITableViewDelegate {
         return UITableView.automaticDimension
     }
 }
-
