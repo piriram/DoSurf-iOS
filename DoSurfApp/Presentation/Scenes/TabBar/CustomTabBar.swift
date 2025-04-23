@@ -1,7 +1,0 @@
-//
-//  CustomTabBar.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/28/25.
-//
-
