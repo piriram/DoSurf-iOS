@@ -19,7 +19,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
 //        let vc = SurfDataReceiverViewController()
-        let vc = SimpleTabBarController()
+        let vc = ButtonTabBarController()
         window?.rootViewController = vc
         window?.makeKeyAndVisible()
         
