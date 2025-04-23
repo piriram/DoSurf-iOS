@@ -87,13 +87,14 @@ final class SimpleTabBarController: UIViewController {
         // Bottom Bar
         setupBottomBar()
         
-        // Container 제약조건 (bottomBar 생성 후)
+        // Container 제약조건 - 전체 화면 사용 (push된 화면이 하단까지 사용)
         containerView.snp.makeConstraints { make in
             make.top.leading.trailing.equalToSuperview()
-            make.bottom.equalTo(bottomBar.snp.top)
+            make.bottom.equalTo(view.snp.bottom)
         }
         
         // Center Button을 가장 위로 (다른 뷰들이 덮지 않도록)
+        view.bringSubviewToFront(bottomBar)
         view.bringSubviewToFront(centerButton)
     }
     
@@ -333,8 +334,14 @@ final class SimpleTabBarController: UIViewController {
 extension SimpleTabBarController: UINavigationControllerDelegate {
     func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
         let shouldHideBottomBar = viewController.hidesBottomBarWhenPushed
-        UIView.animate(withDuration: animated ? 0.2 : 0.0, delay: 0, options: [.curveEaseInOut]) {
+        
+        UIView.animate(withDuration: animated ? 0.3 : 0.0, delay: 0, options: [.curveEaseInOut]) {
             self.bottomBar.alpha = shouldHideBottomBar ? 0 : 1
+            self.centerButton.alpha = shouldHideBottomBar ? 0 : 1
+            
+            // 완전히 숨길 때는 터치도 차단
+            self.bottomBar.isUserInteractionEnabled = !shouldHideBottomBar
+            self.centerButton.isUserInteractionEnabled = !shouldHideBottomBar
         }
     }
 }
