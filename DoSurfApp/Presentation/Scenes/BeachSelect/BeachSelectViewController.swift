@@ -38,6 +38,7 @@ final class BeachSelectViewController: BaseViewController {
     private var didEmitInitialCategorySelection = false // 초기 선택 이벤트 중복 방지 플래그
     
     // Subjects to emit initial selections programmatically
+    private let viewDidLoadSubject = PublishSubject<Void>() // viewDidLoad 트리거용
     private let initialRegionSelection = PublishSubject<IndexPath>() // 초기 카테고리 선택 (프로그램적) + 사용자 선택 병합용
     private let initialBeachSelection = PublishSubject<IndexPath>() // 초기 위치 선택 (프로그램적) + 사용자 선택 병합용
     
@@ -94,6 +95,11 @@ final class BeachSelectViewController: BaseViewController {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     
     // MARK: - Lifecycle
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        viewDidLoadSubject.onNext(())
+    }
+    
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         // 네비게이션 바 보이기
@@ -160,6 +166,7 @@ final class BeachSelectViewController: BaseViewController {
         
         // ViewModel Input 생성 및 transform 호출
         let input = BeachSelectViewModel.Input(
+            viewDidLoad: viewDidLoadSubject.asObservable(),
             categorySelected: categorySelection,
             locationSelected: locationSelection,
             confirmButtonTapped: confirmButton.rx.tap.asObservable()
@@ -170,7 +177,7 @@ final class BeachSelectViewController: BaseViewController {
         // 카테고리 목록 바인딩 - applyCategories 호출하며 초기 선택 복원 트리거
         output.categories
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] categories in
+            .subscribe(onNext: { [weak self] (categories: [CategoryDTO]) in
                 self?.applyRegions(categories)
             })
             .disposed(by: disposeBag)
@@ -178,7 +185,7 @@ final class BeachSelectViewController: BaseViewController {
         // 위치(비치) 목록 바인딩 - applyLocations 호출 후 저장된 비치 선택 복원 시도
         output.locations
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] locations in
+            .subscribe(onNext: { [weak self] (locations: [BeachDTO]) in
                 guard let self = self else { return }
                 self.applyBeaches(locations)
                 
@@ -205,7 +212,7 @@ final class BeachSelectViewController: BaseViewController {
         // 선택된 카테고리 인덱스 바인딩 - 행 선택 표시 및 UserDefaults에 저장
         output.selectedCategory
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] index in
+            .subscribe(onNext: { [weak self] (index: Int) in
                 let indexPath = IndexPath(row: index, section: 0)
                 self?.regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
                 // 마지막 선택된 카테고리 인덱스 저장 (UserDefaults)
@@ -216,7 +223,7 @@ final class BeachSelectViewController: BaseViewController {
         // 확인 버튼 활성/비활성 토글 및 색상 변경
         output.canConfirm
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] canConfirm in
+            .subscribe(onNext: { [weak self] (canConfirm: Bool) in
                 self?.confirmButton.isEnabled = canConfirm
                 self?.confirmButton.backgroundColor = canConfirm ? .surfBlue : .backgroundGray
             })
@@ -225,7 +232,7 @@ final class BeachSelectViewController: BaseViewController {
         // 선택 완료 후 처리 - 저장, 탭바 인터랙션 비활성화 후 pop, 완료시 인터랙션 복원
         output.dismiss
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] selectedLocations in
+            .subscribe(onNext: { [weak self] (selectedLocations: [BeachDTO]) in
                 guard let self = self else { return }
                 if let selectedBeach = selectedLocations.first {
                     self.onBeachSelected?(selectedBeach)
@@ -250,13 +257,14 @@ final class BeachSelectViewController: BaseViewController {
         
         // 비치 선택 시 내부 선택 상태 갱신 및 하이라이트 업데이트, 선택 해제 시각적 효과 제공
         beachTableView.rx.itemSelected
-            .withLatestFrom(output.locations) { indexPath, locations -> BeachDTO? in
+            .asObservable()
+            .withLatestFrom(output.locations) { (indexPath: IndexPath, locations: [BeachDTO]) -> BeachDTO? in
                 guard indexPath.row < locations.count else { return nil }
                 return locations[indexPath.row]
             }
             .compactMap { $0 }
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] location in
+            .subscribe(onNext: { [weak self] (location: BeachDTO) in
                 guard let self = self else { return }
                 self.selectedBeachId = location.id
                 self.selectedBeach = location
@@ -377,4 +385,3 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
-

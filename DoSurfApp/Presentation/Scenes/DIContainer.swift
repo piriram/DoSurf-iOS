@@ -23,10 +23,17 @@ final class DIContainer {
         )
     }
     
+    func makeFetchBeachListUseCase() -> FetchBeachListUseCase {
+        return DefaultFetchBeachListUseCase(
+            repository: makeBeachRepository()
+        )
+    }
+    
     // ViewModel
     func makeBeachSelectViewModel() -> BeachSelectViewModel {
         return BeachSelectViewModel(
-            fetchBeachDataUseCase: makeFetchBeachDataUseCase()
+            fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
+            fetchBeachListUseCase: makeFetchBeachListUseCase()
         )
     }
 }

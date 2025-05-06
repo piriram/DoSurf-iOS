@@ -12,6 +12,8 @@ protocol RxBeachRepository {
     func findRegion(for beachId: String, among regions: [String]) -> Single<String?>
     func fetchMetadata(beachId: String, region: String) -> Single<BeachMetadataDTO?>
     func fetchForecasts(beachId: String, region: String, since: Date, limit: Int) -> Single<[FirestoreChartDTO]>
+    func fetchBeachList(region: String) -> Single<[BeachDTO]>
+    func fetchAllBeaches() -> Single<[BeachDTO]>
 }
 
 final class RxFirestoreBeachRepository: RxBeachRepository {
@@ -174,14 +176,138 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
         }
     }
     
+    func fetchBeachList(region: String) -> Single<[BeachDTO]> {
+        return Single.create { [weak self] single in
+            guard let self = self else {
+                single(.failure(FirebaseAPIError.internalError))
+                return Disposables.create()
+            }
+            
+            print("🔍 [BeachList] Fetching beaches for region: \(region)")
+            
+            self.db.collection("regions")
+                .document(region)
+                .collection("_region_metadata")
+                .document("beaches")
+                .getDocument { document, error in
+                    if let error = error {
+                        print("❌ [BeachList] Firestore error: \(error.localizedDescription)")
+                        // Firestore 에러 발생 시 Mock 데이터로 폴백
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        print("⚠️ [BeachList] Using mock data: \(mockBeaches.count) beaches")
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    guard let document = document else {
+                        print("❌ [BeachList] Document is nil for region: \(region)")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    guard document.exists else {
+                        print("⚠️ [BeachList] Document does not exist at: regions/\(region)/_region_metadata/beaches")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        print("⚠️ [BeachList] Using mock data: \(mockBeaches.count) beaches")
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    guard let data = document.data() else {
+                        print("⚠️ [BeachList] Document exists but has no data")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    print("✅ [BeachList] Document found with keys: \(data.keys)")
+                    
+                    guard let beachIds = data["beach_ids"] as? [Int] else {
+                        print("⚠️ [BeachList] beach_ids field missing or wrong type")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    guard let displayNameMapping = data["display_name_mapping"] as? [String: String] else {
+                        print("⚠️ [BeachList] display_name_mapping field missing or wrong type")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    guard let regionEnum = BeachRegion(rawValue: region) else {
+                        print("⚠️ [BeachList] Invalid region enum: \(region)")
+                        let mockBeaches = Self.getMockBeaches(for: region)
+                        single(.success(mockBeaches))
+                        return
+                    }
+                    
+                    print("✅ [BeachList] Found \(beachIds.count) beaches in \(region)")
+                    
+                    let beaches = beachIds.map { beachId -> BeachDTO in
+                        let beachIdStr = String(beachId)
+                        let displayName = displayNameMapping[beachIdStr] ?? "알 수 없음"
+                        return BeachDTO(
+                            id: beachIdStr,
+                            region: regionEnum,
+                            place: displayName
+                        )
+                    }
+                    
+                    print("✅ [BeachList] Successfully created \(beaches.count) BeachDTOs")
+                    single(.success(beaches))
+                }
+            
+            return Disposables.create()
+        }
+    }
+    
+    func fetchAllBeaches() -> Single<[BeachDTO]> {
+        let regions = BeachRegion.allCases.map { $0.rawValue }
+        let requests = regions.map { fetchBeachList(region: $0) }
+        
+        return Single.zip(requests)
+            .map { beachLists in
+                beachLists.flatMap { $0 }
+            }
+    }
+    
+    // MARK: - Mock Data Helper
+    private static func getMockBeaches(for region: String) -> [BeachDTO] {
+        guard let regionEnum = BeachRegion(rawValue: region) else { return [] }
+        
+        switch regionEnum {
+        case .gangreung:
+            return [
+                BeachDTO(id: "1001", region: .gangreung, place: "죽도"),
+                BeachDTO(id: "1002", region: .gangreung, place: "사천진"),
+                BeachDTO(id: "1003", region: .gangreung, place: "사근진"),
+                BeachDTO(id: "1004", region: .gangreung, place: "사천")
+            ]
+        case .pohang:
+            return [
+                BeachDTO(id: "2001", region: .pohang, place: "월포"),
+                BeachDTO(id: "2002", region: .pohang, place: "신항만")
+            ]
+        case .jeju:
+            return [
+                BeachDTO(id: "3001", region: .jeju, place: "중문")
+            ]
+        case .busan:
+            return [
+                BeachDTO(id: "4001", region: .busan, place: "송정")
+            ]
+        }
+    }
+    
     private static func estimateWavePeriod(
         windSpeed: Double?,
         waveHeight: Double?,
         omWaveHeight: Double?
     ) -> Double? {
         guard let u = windSpeed, u.isFinite, u > 0 else { return nil }
-        // Pierson–Moskowitz fully developed sea approximation:
-        // Tp ≈ 0.83 * U10 (seconds), clamped to 2–18s typical surf range
         let raw = 0.83 * u
         let clamped = max(2.0, min(18.0, raw))
         return clamped
@@ -197,7 +323,6 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
         let sky = skyCondition ?? 0
         let pty = precipitationType ?? 0
         
-        // 1) Precipitation priority
         if pty != 0 {
             switch pty {
             case 1, 4: return WeatherType.rain.rawValue
@@ -206,14 +331,12 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
             }
         }
         
-        // 2) Fog heuristic: humidity ≥ 95 and wind ≤ 2.0 m/s
         let h = humidity ?? -1
         let w = windSpeed ?? Double.greatestFiniteMagnitude
         if h >= 95, w <= 2.0 {
             return WeatherType.fog.rawValue
         }
         
-        // 3) Sky-based
         switch sky {
         case 1:
             return WeatherType.clear.rawValue
