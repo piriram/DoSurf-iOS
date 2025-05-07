@@ -22,6 +22,7 @@ final class BeachSelectViewController: BaseViewController {
     private let storageService: SurfingRecordService = UserDefaultsManager()
     private let lastRegionsIndexKey = "BeachSelectViewController.lastCategoryIndex"
     private var didEmitInitialCategorySelection = false
+    private var hasSetInitialSelection = false
     
     private let viewDidLoadSubject = PublishSubject<Void>()
     private let initialRegionSelection = PublishSubject<IndexPath>()
@@ -156,8 +157,20 @@ final class BeachSelectViewController: BaseViewController {
             .subscribe(onNext: { [weak self] (locations: [BeachDTO]) in
                 guard let self = self else { return }
                 self.applyBeaches(locations)
-                self.selectedBeachId = nil
-                self.selectedBeach = nil
+                
+                if !self.hasSetInitialSelection,
+                   let initialBeach = self.viewModel.initialSelectedBeach,
+                   locations.contains(where: { $0.id == initialBeach.id }) {
+                    self.selectedBeachId = initialBeach.id
+                    self.selectedBeach = initialBeach
+                    self.hasSetInitialSelection = true
+                    DispatchQueue.main.async {
+                        self.beachTableView.reloadData()
+                    }
+                } else if self.hasSetInitialSelection {
+                    self.selectedBeachId = nil
+                    self.selectedBeach = nil
+                }
             })
             .disposed(by: disposeBag)
         
@@ -200,6 +213,15 @@ final class BeachSelectViewController: BaseViewController {
                         tabBar?.isUserInteractionEnabled = true
                     }
                 }
+            })
+            .disposed(by: disposeBag)
+        
+        // 사용자가 직접 카테고리를 탭한 경우
+        regionTableView.rx.itemSelected
+            .skip(1) // 초기 자동 선택 제외
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.hasSetInitialSelection = true
             })
             .disposed(by: disposeBag)
         
@@ -311,4 +333,3 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
-

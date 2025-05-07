@@ -1,4 +1,3 @@
-
 //
 //  BeachSelectViewModel.swift
 //  DoSurfApp
@@ -14,8 +13,7 @@ final class BeachSelectViewModel {
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
     private let fetchBeachListUseCase: FetchBeachListUseCase
-    // 초기 선택 해변 저장
-    private let initialSelectedBeach: BeachDTO?
+    let initialSelectedBeach: BeachDTO?
     
     // MARK: - Input
     struct Input {
@@ -46,6 +44,10 @@ final class BeachSelectViewModel {
     private let errorRelay = PublishRelay<Error>()
     
     private let disposeBag = DisposeBag()
+    private var hasInitialLoadCompleted = false
+    var isInitialLoad: Bool {
+        !hasInitialLoadCompleted
+    }
     
     // MARK: - Initialize
     init(
@@ -75,7 +77,6 @@ final class BeachSelectViewModel {
                             self?.isLoadingRelay.accept(false)
                             self?.allBeaches.accept(beaches)
                             
-                            // beaches에서 고유한 BeachRegion 추출하여 CategoryDTO 생성
                             let uniqueRegions = Dictionary(grouping: beaches, by: { $0.region.slug })
                                 .compactMap { _, beachesInRegion -> CategoryDTO? in
                                     guard let firstBeach = beachesInRegion.first else { return nil }
@@ -83,17 +84,14 @@ final class BeachSelectViewModel {
                                 }
                                 .sorted { $0.region.order < $1.region.order }
                             
-                            self?.categories.accept(uniqueRegions)
-                            
-                            // 해변 목록 로드 후 초기 선택 설정
                             if let self = self, let initial = self.initialSelectedBeach {
-                                // 1) 먼저 카테고리 인덱스 설정
                                 if let index = uniqueRegions.firstIndex(where: { $0.region.slug == initial.region.slug }) {
                                     self.selectedCategoryIndex.accept(index)
                                 }
-                                // 2) 그 다음 해변 선택
                                 self.selectedBeach.accept(initial)
                             }
+                            
+                            self?.categories.accept(uniqueRegions)
                         },
                         onError: { [weak self] error in
                             self?.isLoadingRelay.accept(false)
@@ -112,24 +110,38 @@ final class BeachSelectViewModel {
             .map { $0.row }
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
-
-        // categories가 로드되면 초기 필터링 트리거
+        
+        let userCategoryChanges = input.categorySelected
+            .skip(1)
+            .map { _ in () }
+        
+        userCategoryChanges
+            .subscribe(onNext: { [weak self] _ in
+                self?.selectedBeach.accept(nil)
+            })
+            .disposed(by: disposeBag)
+        
         let initialTrigger = categories
             .filter { !$0.isEmpty }
             .take(1)
             .map { _ in () }
         
         let categoryChangeTrigger = selectedCategoryIndex
-            .skip(1) // 초기값(0) 스킵
+            .skip(1)
             .map { _ in () }
         
         let filterTrigger = Observable.merge(initialTrigger, categoryChangeTrigger)
         
         let filteredLocations: Observable<[BeachDTO]> = filterTrigger
             .withLatestFrom(Observable.combineLatest(selectedCategoryIndex, categories, allBeaches))
-            .map { (index, categories, beaches) -> [BeachDTO] in
+            .map { [weak self] (index, categories, beaches) -> [BeachDTO] in
                 guard index < categories.count else { return [] }
                 let selectedRegion = categories[index].region
+                
+                if self?.hasInitialLoadCompleted == false {
+                    self?.hasInitialLoadCompleted = true
+                }
+                
                 return beaches.filter { $0.region.slug == selectedRegion.slug }
             }
             .asObservable()
