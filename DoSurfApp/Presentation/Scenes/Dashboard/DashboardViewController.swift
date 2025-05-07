@@ -24,7 +24,8 @@ class DashboardViewController: BaseViewController {
     
     private var currentBeachData: BeachData?
     private let viewDidLoadSubject = PublishSubject<Void>()
-    private let beachSelectedSubject = PublishSubject<String>()
+    // 🔧 변경: String → BeachDTO (ViewModel.Input과 일치)
+    private let beachSelectedSubject = PublishSubject<BeachDTO>()
     
     // 현재 선택된 해변의 모든 차트 스냅샷 (외부 전달용)
     private var currentCharts: [Chart] = []
@@ -93,7 +94,8 @@ class DashboardViewController: BaseViewController {
         
         chartContainerView.snp.makeConstraints {
             $0.top.equalTo(headerView.snp.bottom)
-            $0.leading.trailing.bottom.equalToSuperview()
+            $0.leading.trailing.equalToSuperview()
+            // 🔧 변경: bottom 제약 중복 제거 (둘 중 하나만 사용)
             $0.bottom.equalTo(view.safeAreaLayoutGuide)
         }
         
@@ -111,7 +113,7 @@ class DashboardViewController: BaseViewController {
     override func configureBind() {
         let input = DashboardViewModel.Input(
             viewDidLoad: viewDidLoadSubject.asObservable(),
-            beachSelected: beachSelectedSubject.asObservable(),
+            beachSelected: beachSelectedSubject.asObservable(),    // 🔧 일치
             refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable()
         )
         let output = viewModel.transform(input: input)
@@ -121,23 +123,19 @@ class DashboardViewController: BaseViewController {
         let page3 = ChartListPage(title: "고정 차트", showsTableHeader: true, isPinnedChart: true)
         headerView.configurePages([page1, page2, page3])
         
+        // 🔧 타입 명시로 추론 실패 방지
         output.beachData
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] beachData in
+            .subscribe(onNext: { [weak self] (beachData: BeachData) in
                 guard let self = self else { return }
                 
                 self.currentBeachData = beachData
-                let beachID = beachData.metadata.beachID
-                
-                if let surfBeach = SurfBeach(rawValue: beachID) {
-                    let title = surfBeach.displayName
-                    self.headerView.updateBeachTitle(title)
-                } else {
-                    self.headerView.updateBeachTitle("\(beachData.metadata.name)해변")
-                }
+                // 🔧 SurfBeach 의존 제거: metadata.name 사용
+                self.headerView.updateBeachTitle("\(beachData.metadata.name)해변")
                 
                 if let page3 = self.headerView.getPage(at: 2) as? ChartListPage {
-                    let beachIDInt = Int(beachID)
+                    // BeachMetadata에 이미 Int 변환 프로퍼티 존재
+                    let beachIDInt = beachData.metadata.beachID
                     page3.configureWithPinnedRecords(beachID: beachIDInt)
                 }
             })
@@ -145,7 +143,7 @@ class DashboardViewController: BaseViewController {
         
         output.dashboardCards
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] cards in
+            .subscribe(onNext: { [weak self] (cards: [DashboardCardData]) in
                 guard let self = self else { return }
                 if let page1 = self.headerView.getPage(at: 0) as? PreferredPage {
                     page1.configure(with: cards)
@@ -155,7 +153,7 @@ class DashboardViewController: BaseViewController {
         
         output.groupedCharts
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] grouped in
+            .subscribe(onNext: { [weak self] (grouped: [(date: Date, charts: [Chart])]) in
                 guard let self = self else { return }
                 self.chartListView.update(groupedCharts: grouped)
                 let flattened = grouped.flatMap { $0.charts }.sorted { $0.time < $1.time }
@@ -166,7 +164,7 @@ class DashboardViewController: BaseViewController {
         // 최근 기록 차트(모든 비치) 바인딩
         output.recentRecordCharts
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] charts in
+            .subscribe(onNext: { [weak self] (charts: [Chart]) in
                 guard let self = self else { return }
                 if let page2 = self.headerView.getPage(at: 1) as? ChartListPage {
                     page2.configure(with: charts)
@@ -174,6 +172,7 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
+        // 로딩/에러
         output.isLoading
             .observe(on: MainScheduler.instance)
             .bind(to: refreshControl.rx.isRefreshing)
@@ -184,20 +183,36 @@ class DashboardViewController: BaseViewController {
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
         
-        // Observe global surf record changes (add/edit/pin/delete) and refresh dashboard lists
+        // 전역 기록 변경 알림 수신 → 새로고침 트리거
         NotificationCenter.default.rx.notification(.surfRecordsDidChange)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
-                // trigger refresh flow used by dashboard to reload data
                 self.refreshControl.beginRefreshing()
                 self.refreshControl.sendActions(for: .valueChanged)
             })
             .disposed(by: disposeBag)
         
+        // 🔧 저장된 선택 복구: ID(String) → BeachDTO 변환해서 emit
         if let savedID = storageService.readSelectedBeachID() {
-            beachSelectedSubject.onNext(savedID)
-            NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": savedID])
+            DIContainer.shared.makeFetchBeachListUseCase()
+                .executeAll() // Single<[BeachDTO]>
+                .asObservable()
+                .take(1)
+                .observe(on: MainScheduler.instance)
+                .subscribe(onNext: { [weak self] (list: [BeachDTO]) in
+                    guard
+                        let self = self,
+                        let dto = list.first(where: { $0.id == savedID })
+                    else { return }
+                    self.beachSelectedSubject.onNext(dto)
+                    NotificationCenter.default.post(name: .selectedBeachIDDidChange,
+                                                    object: nil,
+                                                    userInfo: ["beachID": dto.id])
+                }, onError: { error in
+                    print("Failed to restore saved beach id: \(error)")
+                })
+                .disposed(by: disposeBag)
         }
         
         viewDidLoadSubject.onNext(())
@@ -211,9 +226,11 @@ class DashboardViewController: BaseViewController {
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
         vc.onBeachSelected = { [weak self] (locationDTO: BeachDTO) in
-            self?.beachSelectedSubject.onNext(locationDTO.id)
-            // Broadcast selection change so RecordHistory can pick it up when user switches tabs
-            NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": locationDTO.id])
+            // 🔧 그대로 BeachDTO 흘려보내기
+            self?.beachSelectedSubject.onNext(locationDTO)
+            NotificationCenter.default.post(name: .selectedBeachIDDidChange,
+                                            object: nil,
+                                            userInfo: ["beachID": locationDTO.id])
         }
         navigationController?.pushViewController(vc, animated: true)
     }

@@ -74,7 +74,7 @@ final class BeachSelectViewModel {
                             let uniqueRegions = Dictionary(grouping: beaches, by: { $0.region.slug })
                                 .compactMap { _, beachesInRegion -> CategoryDTO? in
                                     guard let firstBeach = beachesInRegion.first else { return nil }
-                                    return CategoryDTO(region: firstBeach.region, regionName: firstBeach.regionName)
+                                    return CategoryDTO(region: firstBeach.region)
                                 }
                                 .sorted { $0.region.order < $1.region.order }
                             
