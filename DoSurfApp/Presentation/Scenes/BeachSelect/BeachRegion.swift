@@ -43,8 +43,7 @@ struct BeachDTO: Sendable, Hashable {
     let regionName: String   // "강릉", "포항", "제주", "부산" - 백엔드에서 가져옴
     let place: String        // "죽도", "월포", "중문", "송정"
     
-    var displayText: String { place }
-    var passText: String { "\(regionName) \(place)" }
+    var displayText: String { "\(place) 해변" }
     var displayName: String { "\(regionName) \(place)해변" }
     
     static func == (lhs: BeachDTO, rhs: BeachDTO) -> Bool {

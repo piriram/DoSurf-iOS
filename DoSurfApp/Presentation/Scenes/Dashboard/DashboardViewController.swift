@@ -19,12 +19,15 @@ class DashboardViewController: BaseViewController {
     
     // MARK: - Properties
     private let viewModel: DashboardViewModel
+    private let fetchBeachListUseCase: FetchBeachListUseCase
     private let disposeBag = DisposeBag()
     private let storageService: SurfingRecordService = UserDefaultsManager()
     
     private var currentBeachData: BeachData?
+    private var currentBeach: BeachDTO?
+    private var allBeaches: [BeachDTO] = []
+    
     private let viewDidLoadSubject = PublishSubject<Void>()
-    // 🔧 변경: String → BeachDTO (ViewModel.Input과 일치)
     private let beachSelectedSubject = PublishSubject<BeachDTO>()
     
     // 현재 선택된 해변의 모든 차트 스냅샷 (외부 전달용)
@@ -53,15 +56,23 @@ class DashboardViewController: BaseViewController {
     private let refreshControl = UIRefreshControl()
     
     // MARK: - Initialization
-    init(viewModel: DashboardViewModel = DIContainer.shared.makeDashboardViewModel()) {
+    init(
+        viewModel: DashboardViewModel = DIContainer.shared.makeDashboardViewModel(),
+        fetchBeachListUseCase: FetchBeachListUseCase = DIContainer.shared.makeFetchBeachListUseCase()
+    ) {
         self.viewModel = viewModel
+        self.fetchBeachListUseCase = fetchBeachListUseCase
         super.init(nibName: nil, bundle: nil)
     }
-    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     // MARK: - Overrides
     override func viewDidLoad() {
         super.viewDidLoad()
+        loadBeachListAndRestoreSelection()
     }
     
     override func configureNavigationBar() {
@@ -95,7 +106,6 @@ class DashboardViewController: BaseViewController {
         chartContainerView.snp.makeConstraints {
             $0.top.equalTo(headerView.snp.bottom)
             $0.leading.trailing.equalToSuperview()
-            // 🔧 변경: bottom 제약 중복 제거 (둘 중 하나만 사용)
             $0.bottom.equalTo(view.safeAreaLayoutGuide)
         }
         
@@ -113,7 +123,10 @@ class DashboardViewController: BaseViewController {
     override func configureBind() {
         let input = DashboardViewModel.Input(
             viewDidLoad: viewDidLoadSubject.asObservable(),
-            beachSelected: beachSelectedSubject.asObservable(),    // 🔧 일치
+            beachSelected: beachSelectedSubject.asObservable()
+                .do(onNext: { [weak self] beach in
+                    self?.currentBeach = beach
+                }),
             refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable()
         )
         let output = viewModel.transform(input: input)
@@ -123,18 +136,19 @@ class DashboardViewController: BaseViewController {
         let page3 = ChartListPage(title: "고정 차트", showsTableHeader: true, isPinnedChart: true)
         headerView.configurePages([page1, page2, page3])
         
-        // 🔧 타입 명시로 추론 실패 방지
         output.beachData
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] (beachData: BeachData) in
+            .subscribe(onNext: { [weak self] beachData in
                 guard let self = self else { return }
                 
                 self.currentBeachData = beachData
-                // 🔧 SurfBeach 의존 제거: metadata.name 사용
-                self.headerView.updateBeachTitle("\(beachData.metadata.name)해변")
+                
+                // currentBeach의 displayName 사용 (한글 이름)
+                if let currentBeach = self.currentBeach {
+                    self.headerView.updateBeachTitle(currentBeach.displayName)
+                }
                 
                 if let page3 = self.headerView.getPage(at: 2) as? ChartListPage {
-                    // BeachMetadata에 이미 Int 변환 프로퍼티 존재
                     let beachIDInt = beachData.metadata.beachID
                     page3.configureWithPinnedRecords(beachID: beachIDInt)
                 }
@@ -143,7 +157,7 @@ class DashboardViewController: BaseViewController {
         
         output.dashboardCards
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] (cards: [DashboardCardData]) in
+            .subscribe(onNext: { [weak self] cards in
                 guard let self = self else { return }
                 if let page1 = self.headerView.getPage(at: 0) as? PreferredPage {
                     page1.configure(with: cards)
@@ -153,7 +167,7 @@ class DashboardViewController: BaseViewController {
         
         output.groupedCharts
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] (grouped: [(date: Date, charts: [Chart])]) in
+            .subscribe(onNext: { [weak self] grouped in
                 guard let self = self else { return }
                 self.chartListView.update(groupedCharts: grouped)
                 let flattened = grouped.flatMap { $0.charts }.sorted { $0.time < $1.time }
@@ -161,10 +175,9 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // 최근 기록 차트(모든 비치) 바인딩
         output.recentRecordCharts
             .observe(on: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] (charts: [Chart]) in
+            .subscribe(onNext: { [weak self] charts in
                 guard let self = self else { return }
                 if let page2 = self.headerView.getPage(at: 1) as? ChartListPage {
                     page2.configure(with: charts)
@@ -172,7 +185,6 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // 로딩/에러
         output.isLoading
             .observe(on: MainScheduler.instance)
             .bind(to: refreshControl.rx.isRefreshing)
@@ -183,7 +195,6 @@ class DashboardViewController: BaseViewController {
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
         
-        // 전역 기록 변경 알림 수신 → 새로고침 트리거
         NotificationCenter.default.rx.notification(.surfRecordsDidChange)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
@@ -192,30 +203,43 @@ class DashboardViewController: BaseViewController {
                 self.refreshControl.sendActions(for: .valueChanged)
             })
             .disposed(by: disposeBag)
-        
-        // 🔧 저장된 선택 복구: ID(String) → BeachDTO 변환해서 emit
-        if let savedID = storageService.readSelectedBeachID() {
-            DIContainer.shared.makeFetchBeachListUseCase()
-                .executeAll() // Single<[BeachDTO]>
-                .asObservable()
-                .take(1)
-                .observe(on: MainScheduler.instance)
-                .subscribe(onNext: { [weak self] (list: [BeachDTO]) in
-                    guard
-                        let self = self,
-                        let dto = list.first(where: { $0.id == savedID })
-                    else { return }
-                    self.beachSelectedSubject.onNext(dto)
-                    NotificationCenter.default.post(name: .selectedBeachIDDidChange,
-                                                    object: nil,
-                                                    userInfo: ["beachID": dto.id])
-                }, onError: { error in
-                    print("Failed to restore saved beach id: \(error)")
-                })
-                .disposed(by: disposeBag)
-        }
-        
-        viewDidLoadSubject.onNext(())
+    }
+    
+    // MARK: - Private Methods
+    
+    private func loadBeachListAndRestoreSelection() {
+        fetchBeachListUseCase.executeAll()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] beaches in
+                guard let self = self else { return }
+                self.allBeaches = beaches
+                
+                // 저장된 선택 복구 또는 기본 해변 선택
+                if let savedID = self.storageService.readSelectedBeachID(),
+                   let beach = beaches.first(where: { $0.id == savedID }) {
+                    self.selectBeach(beach)
+                } else if let firstBeach = beaches.first {
+                    // 저장된 선택이 없으면 첫 번째 해변 선택
+                    self.selectBeach(firstBeach)
+                }
+                
+                self.viewDidLoadSubject.onNext(())
+            }, onFailure: { error in
+                print("Failed to load beach list: \(error)")
+                // 에러 발생 시에도 viewDidLoad 이벤트 전송
+                self.viewDidLoadSubject.onNext(())
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    private func selectBeach(_ beach: BeachDTO) {
+        beachSelectedSubject.onNext(beach)
+        storageService.createSelectedBeachID(beach.id)
+        NotificationCenter.default.post(
+            name: .selectedBeachIDDidChange,
+            object: nil,
+            userInfo: ["beachID": beach.id]
+        )
     }
     
     private func pushBeachChoose() {
@@ -225,18 +249,18 @@ class DashboardViewController: BaseViewController {
         )
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
-        vc.onBeachSelected = { [weak self] (locationDTO: BeachDTO) in
-            // 🔧 그대로 BeachDTO 흘려보내기
-            self?.beachSelectedSubject.onNext(locationDTO)
-            NotificationCenter.default.post(name: .selectedBeachIDDidChange,
-                                            object: nil,
-                                            userInfo: ["beachID": locationDTO.id])
+        vc.onBeachSelected = { [weak self] beach in
+            self?.selectBeach(beach)
         }
         navigationController?.pushViewController(vc, animated: true)
     }
     
     private func showErrorAlert(error: Error) {
-        let alert = UIAlertController(title: "데이터 로드 실패", message: error.localizedDescription, preferredStyle: .alert)
+        let alert = UIAlertController(
+            title: "데이터 로드 실패",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
         alert.addAction(UIAlertAction(title: "확인", style: .default))
         present(alert, animated: true)
     }
@@ -245,6 +269,7 @@ class DashboardViewController: BaseViewController {
 // MARK: - Chart Providing
 extension DashboardViewController: DashboardChartProviding {
     var allChartsSnapshot: [Chart] { currentCharts }
+    
     func charts(from start: Date?, to end: Date?) -> [Chart] {
         guard !currentCharts.isEmpty else { return [] }
         guard let s = start, let e = end else { return currentCharts }
