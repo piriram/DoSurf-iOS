@@ -13,6 +13,8 @@ final class BeachSelectViewModel {
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
     private let fetchBeachListUseCase: FetchBeachListUseCase
+    // 초기 선택 해변 저장
+    private let initialSelectedBeach: BeachDTO?
     
     // MARK: - Input
     struct Input {
@@ -47,10 +49,12 @@ final class BeachSelectViewModel {
     // MARK: - Initialize
     init(
         fetchBeachDataUseCase: FetchBeachDataUseCase,
-        fetchBeachListUseCase: FetchBeachListUseCase
+        fetchBeachListUseCase: FetchBeachListUseCase,
+        initialSelectedBeach: BeachDTO? = nil
     ) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
         self.fetchBeachListUseCase = fetchBeachListUseCase
+        self.initialSelectedBeach = initialSelectedBeach
     }
     
     // MARK: - Transform
@@ -79,6 +83,16 @@ final class BeachSelectViewModel {
                                 .sorted { $0.region.order < $1.region.order }
                             
                             self?.categories.accept(uniqueRegions)
+                            
+                            // 해변 목록 로드 후 초기 선택 설정
+                            if let self = self, let initial = self.initialSelectedBeach {
+                                // 1) 먼저 카테고리 인덱스 설정
+                                if let index = uniqueRegions.firstIndex(where: { $0.region.slug == initial.region.slug }) {
+                                    self.selectedCategoryIndex.accept(index)
+                                }
+                                // 2) 그 다음 해변 선택
+                                self.selectedBeach.accept(initial)
+                            }
                         },
                         onError: { [weak self] error in
                             self?.isLoadingRelay.accept(false)
@@ -98,19 +112,38 @@ final class BeachSelectViewModel {
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
         
-        selectedCategoryIndex
+        // 사용자가 카테고리를 탭한 경우에만 선택 초기화
+        let userCategoryChanges = input.categorySelected
+            .map { _ in () }
+
+        userCategoryChanges
             .subscribe(onNext: { [weak self] _ in
-                self?.selectedBeach.accept(nil)
+                self?.selectedBeach.accept(nil)  //
             })
-            .disposed(by: disposeBag)
+        // selectedCategoryIndex
+        //     .subscribe(onNext: { [weak self] _ in
+        //         self?.selectedBeach.accept(nil)
+        //     })
+        //     .disposed(by: disposeBag)
+        // The above subscription block was removed as per instructions.
         
-        let filteredLocations: Observable<[BeachDTO]> = selectedCategoryIndex
-            .withLatestFrom(categories) { (index, categories) -> BeachRegion? in
-                guard index < categories.count else { return nil }
-                return categories[index].region
-            }
-            .withLatestFrom(allBeaches) { (selectedRegion: BeachRegion?, beaches: [BeachDTO]) -> [BeachDTO] in
-                guard let selectedRegion = selectedRegion else { return [] }
+        // categories가 로드되면 초기 필터링 트리거
+        let initialTrigger = categories
+            .filter { !$0.isEmpty }
+            .take(1)
+            .map { _ in () }
+        
+        let categoryChangeTrigger = selectedCategoryIndex
+            .skip(1) // 초기값(0) 스킵
+            .map { _ in () }
+        
+        let filterTrigger = Observable.merge(initialTrigger, categoryChangeTrigger)
+        
+        let filteredLocations: Observable<[BeachDTO]> = filterTrigger
+            .withLatestFrom(Observable.combineLatest(selectedCategoryIndex, categories, allBeaches))
+            .map { (index, categories, beaches) -> [BeachDTO] in
+                guard index < categories.count else { return [] }
+                let selectedRegion = categories[index].region
                 return beaches.filter { $0.region.slug == selectedRegion.slug }
             }
             .asObservable()
@@ -174,3 +207,4 @@ final class BeachSelectViewModel {
         )
     }
 }
+
