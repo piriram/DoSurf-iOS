@@ -1,5 +1,5 @@
 //
-//  BeachChooseViewModel.swift
+//  BeachSelectViewModel.swift
 //  DoSurfApp
 //
 //  Created by 잠만보김쥬디 on 9/29/25.
@@ -12,9 +12,12 @@ final class BeachSelectViewModel {
     
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
+    private let fetchBeachListUseCase: FetchBeachListUseCase
+    let initialSelectedBeach: BeachDTO?
     
     // MARK: - Input
     struct Input {
+        let viewDidLoad: Observable<Void>
         let categorySelected: Observable<IndexPath>
         let locationSelected: Observable<IndexPath>
         let confirmButtonTapped: Observable<Void>
@@ -34,68 +37,136 @@ final class BeachSelectViewModel {
     
     // MARK: - Properties
     private let categories = BehaviorRelay<[CategoryDTO]>(value: [])
-    private let locations = BehaviorRelay<[BeachDTO]>(value: [])
+    private let allBeaches = BehaviorRelay<[BeachDTO]>(value: [])
     private let selectedCategoryIndex = BehaviorRelay<Int>(value: 0)
-    private let selectedLocation = BehaviorRelay<String?>(value: nil)
+    private let selectedBeach = BehaviorRelay<BeachDTO?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
     
     private let disposeBag = DisposeBag()
+    private var hasInitialLoadCompleted = false
+    var isInitialLoad: Bool {
+        !hasInitialLoadCompleted
+    }
     
     // MARK: - Initialize
-    init(fetchBeachDataUseCase: FetchBeachDataUseCase) {
+    init(
+        fetchBeachDataUseCase: FetchBeachDataUseCase,
+        fetchBeachListUseCase: FetchBeachListUseCase,
+        initialSelectedBeach: BeachDTO? = nil
+    ) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
-        setupMockData()
+        self.fetchBeachListUseCase = fetchBeachListUseCase
+        self.initialSelectedBeach = initialSelectedBeach
     }
     
     // MARK: - Transform
     func transform(input: Input) -> Output {
+        
+        input.viewDidLoad
+            .do(onNext: { [weak self] _ in
+                self?.isLoadingRelay.accept(true)
+            })
+            .flatMapLatest { [weak self] _ -> Observable<[BeachDTO]> in
+                guard let self = self else { return .empty() }
+                
+                return self.fetchBeachListUseCase.executeAll()
+                    .asObservable()
+                    .do(
+                        onNext: { [weak self] beaches in
+                            self?.isLoadingRelay.accept(false)
+                            self?.allBeaches.accept(beaches)
+                            
+                            let uniqueRegions = Dictionary(grouping: beaches, by: { $0.region.slug })
+                                .compactMap { _, beachesInRegion -> CategoryDTO? in
+                                    guard let firstBeach = beachesInRegion.first else { return nil }
+                                    return CategoryDTO(region: firstBeach.region)
+                                }
+                                .sorted { $0.region.order < $1.region.order }
+                            
+                            if let self = self, let initial = self.initialSelectedBeach {
+                                if let index = uniqueRegions.firstIndex(where: { $0.region.slug == initial.region.slug }) {
+                                    self.selectedCategoryIndex.accept(index)
+                                }
+                                self.selectedBeach.accept(initial)
+                            }
+                            
+                            self?.categories.accept(uniqueRegions)
+                        },
+                        onError: { [weak self] error in
+                            self?.isLoadingRelay.accept(false)
+                            self?.errorRelay.accept(error)
+                        }
+                    )
+                    .catch { [weak self] error in
+                        self?.errorRelay.accept(error)
+                        return .just([])
+                    }
+            }
+            .subscribe()
+            .disposed(by: disposeBag)
         
         input.categorySelected
             .map { $0.row }
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
         
-        // 카테고리 변경 시 선택된 해변 초기화
-        selectedCategoryIndex
+        let userCategoryChanges = input.categorySelected
+            .skip(1)
+            .map { _ in () }
+        
+        userCategoryChanges
             .subscribe(onNext: { [weak self] _ in
-                self?.selectedLocation.accept(nil)
+                self?.selectedBeach.accept(nil)
             })
             .disposed(by: disposeBag)
         
-        let filteredLocations: Observable<[BeachDTO]> = selectedCategoryIndex
-            .withLatestFrom(categories) { (index, categories) -> BeachRegion in
-                guard index < categories.count else { return .gangreung }
-                return categories[index].region
-            }
-            .map { [weak self] (selectedRegion: BeachRegion) -> [BeachDTO] in
-                guard let self = self else { return [] }
-                return self.locations.value.filter { $0.region == selectedRegion }
+        let initialTrigger = categories
+            .filter { !$0.isEmpty }
+            .take(1)
+            .map { _ in () }
+        
+        let categoryChangeTrigger = selectedCategoryIndex
+            .skip(1)
+            .map { _ in () }
+        
+        let filterTrigger = Observable.merge(initialTrigger, categoryChangeTrigger)
+        
+        let filteredLocations: Observable<[BeachDTO]> = filterTrigger
+            .withLatestFrom(Observable.combineLatest(selectedCategoryIndex, categories, allBeaches))
+            .map { [weak self] (index, categories, beaches) -> [BeachDTO] in
+                guard index < categories.count else { return [] }
+                let selectedRegion = categories[index].region
+                
+                if self?.hasInitialLoadCompleted == false {
+                    self?.hasInitialLoadCompleted = true
+                }
+                
+                return beaches.filter { $0.region.slug == selectedRegion.slug }
             }
             .asObservable()
         
-        // 해변 선택 처리
         input.locationSelected
             .withLatestFrom(filteredLocations) { indexPath, locations -> BeachDTO? in
                 guard indexPath.row < locations.count else { return nil }
                 return locations[indexPath.row]
             }
             .compactMap { $0 }
-            .subscribe(onNext: { [weak self] location in
-                self?.selectedLocation.accept(location.id)
+            .subscribe(onNext: { [weak self] beach in
+                self?.selectedBeach.accept(beach)
             })
             .disposed(by: disposeBag)
         
-        let beachData = selectedLocation
+        let beachData = selectedBeach
             .compactMap { $0 }
-            .distinctUntilChanged()
+            .distinctUntilChanged { $0.id == $1.id }
             .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
             })
-            .flatMapLatest { [weak self] locationId -> Observable<BeachData> in
+            .flatMapLatest { [weak self] beach -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
                 
-                return self.fetchBeachDataUseCase.execute(beachId: locationId)
+                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug)
                     .asObservable()
                     .do(
                         onNext: { [weak self] _ in
@@ -113,19 +184,14 @@ final class BeachSelectViewModel {
             }
             .share(replay: 1)
         
-        let canConfirm = selectedLocation
+        let canConfirm = selectedBeach
             .map { $0 != nil }
             .asObservable()
         
         let dismiss = input.confirmButtonTapped
-            .withLatestFrom(Observable.combineLatest(
-                locations.asObservable(),
-                selectedLocation.asObservable()
-            ))
-            .map { (locations: [BeachDTO], selectedId: String?) -> [BeachDTO] in
-                guard let selectedId = selectedId else { return [] }
-                return locations.filter { $0.id == selectedId }
-            }
+            .withLatestFrom(selectedBeach.asObservable())
+            .compactMap { $0 }
+            .map { [$0] }
         
         return Output(
             categories: categories.asObservable(),
@@ -137,24 +203,5 @@ final class BeachSelectViewModel {
             error: errorRelay.asObservable(),
             isLoading: isLoadingRelay.asObservable()
         )
-    }
-    
-    // MARK: - Mock Data
-    private func setupMockData() {
-        let mockCategories = BeachRegion.allCases.map { CategoryDTO(region: $0) }
-        
-        let mockLocations = [
-            BeachDTO(id: "1001", region: .gangreung, place: "죽도 해변"),
-            BeachDTO(id: "1002", region: .gangreung, place: "사천진 해변"),
-            BeachDTO(id: "1003", region: .gangreung, place: "사근진 해변"),
-            BeachDTO(id: "1004", region: .gangreung, place: "사천 해변"),
-            BeachDTO(id: "2001", region: .pohang, place: "월포 해변"),
-            BeachDTO(id: "2002", region: .pohang, place: "신항만 해변"),
-            BeachDTO(id: "3001", region: .jeju, place: "중문 해변"),
-            BeachDTO(id: "4001", region: .busan, place: "송정 해변"),
-        ]
-        
-        categories.accept(mockCategories)
-        locations.accept(mockLocations)
     }
 }

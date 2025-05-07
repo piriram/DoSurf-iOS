@@ -17,13 +17,13 @@ final class DashboardViewModel {
     // MARK: - Input
     struct Input {
         let viewDidLoad: Observable<Void>
-        let beachSelected: Observable<String>
+        let beachSelected: Observable<BeachDTO>
         let refreshTriggered: Observable<Void>
     }
     
     // MARK: - Output
     struct Output {
-        let beachData: Observable<BeachData>  // 변경
+        let beachData: Observable<BeachData>
         let dashboardCards: Observable<[DashboardCardData]>
         let groupedCharts: Observable<[(date: Date, charts: [Chart])]>
         let recentRecordCharts: Observable<[Chart]>
@@ -33,14 +33,25 @@ final class DashboardViewModel {
     }
     
     // MARK: - Properties
-    private let currentBeachId = BehaviorRelay<String>(value: "4001")
+    private let currentBeach = BehaviorRelay<BeachDTO?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
     
     private let disposeBag = DisposeBag()
     
-    // 모든 비치 평균 계산 대상 ID 목록 (필요 시 확장)
-    private let allBeachIDs: [String] = ["1001", "2001", "3001", "4001"]
+    // 모든 비치 평균 계산 시 사용될 고정된 지역-해변 매핑
+    private let knownBeaches: [(beachId: String, region: String)] = [
+        ("1001", "gangreung"),
+        ("1002", "gangreung"),
+        ("1003", "gangreung"),
+        ("1004", "gangreung"),
+        ("2001", "pohang"),
+        ("2002", "pohang"),
+        ("3001", "jeju"),
+        ("3002", "jeju"),
+        ("3003", "jeju"),
+        ("4001", "busan")
+    ]
     
     // MARK: - Initialize
     init(fetchBeachDataUseCase: FetchBeachDataUseCase, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
@@ -51,29 +62,30 @@ final class DashboardViewModel {
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
-        // 새로운 해변이 선택될 때마다 currentBeachId 업데이트
+        // 새로운 해변이 선택될 때마다 currentBeach 업데이트
         input.beachSelected
-            .bind(to: currentBeachId)
+            .bind(to: currentBeach)
             .disposed(by: disposeBag)
         
         // 데이터를 불러오는 트리거들:
-        // 1. 뷰 로드 시 (기본 해변)
-        // 2. 해변 선택 시 (새로운 차트 데이터 로드)
-        // 3. 새로고침 시 (현재 해변 데이터 재로드)
+        // 1. 뷰 로드 시 - currentBeach가 설정될 때까지 대기
+        // 2. 해변 선택 시
+        // 3. 새로고침 시
         let loadTrigger = Observable.merge(
-            input.viewDidLoad.map { [weak self] _ in self?.currentBeachId.value ?? "4001" },
+            input.viewDidLoad.withLatestFrom(currentBeach.asObservable()).compactMap { $0 },
             input.beachSelected,
-            input.refreshTriggered.withLatestFrom(currentBeachId.asObservable())
+            input.refreshTriggered.withLatestFrom(currentBeach.asObservable()).compactMap { $0 }
         )
         
+        // 단일 해변(현재 선택) 데이터 로드
         let beachData = loadTrigger
             .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
             })
-            .flatMapLatest { [weak self] beachId -> Observable<BeachData> in
+            .flatMapLatest { [weak self] beach -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
                 
-                return self.fetchBeachDataUseCase.execute(beachId: beachId)
+                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug)
                     .asObservable()
                     .do(
                         onNext: { [weak self] _ in
@@ -98,12 +110,21 @@ final class DashboardViewModel {
         let dashboardCards = loadTrigger
             .flatMapLatest { [weak self] _ -> Observable<[DashboardCardData]> in
                 guard let self = self else { return .just([]) }
-                let requests: [Single<BeachData>] = self.allBeachIDs.map { self.fetchBeachDataUseCase.execute(beachId: $0) }
+                
+                // 각 (beachId, region)를 이용해 직접 Fetch
+                let requests: [Single<BeachData?>] = self.knownBeaches.map { pair in
+                    self.fetchBeachDataDirectly(beachId: pair.beachId, region: pair.region)
+                        .map { $0 as BeachData? }
+                        .catch { _ in .just(nil) }
+                }
+                
                 return Single.zip(requests)
                     .asObservable()
                     .map { beachDatas -> [DashboardCardData] in
-                        // 각 비치의 최신 차트(가장 최근 시간)를 사용
-                        let latestCharts: [Chart] = beachDatas.compactMap { $0.charts.last }
+                        let latestCharts: [Chart] = beachDatas
+                            .compactMap { $0 }
+                            .compactMap { $0.charts.last }
+                        
                         guard !latestCharts.isEmpty else {
                             return [
                                 DashboardCardData(
@@ -153,7 +174,7 @@ final class DashboardViewModel {
                         ]
                     }
                     .catch { error in
-                        print("Failed to fetch all beaches for averages: \(error)")
+                        print("Failed to fetch known beaches for averages: \(error)")
                         let zeroCards: [DashboardCardData] = [
                             DashboardCardData(
                                 type: .wind,
@@ -176,7 +197,6 @@ final class DashboardViewModel {
             }
             .share(replay: 1)
         
-        // 이미 Domain Chart를 사용
         let groupedCharts = beachData
             .map { beachData -> [(date: Date, charts: [Chart])] in
                 return self.groupChartsByDate(beachData.charts)
@@ -189,7 +209,6 @@ final class DashboardViewModel {
                 return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
                     .map { records -> [Chart] in
-                        // 서핑 날짜 기준 최신 기록 순으로 정렬 후, 최근 10개 기록만 사용
                         let recentRecords = records.sorted { $0.surfDate > $1.surfDate }.prefix(10)
                         return recentRecords.flatMap { record in
                             record.charts.map { chartData in
@@ -207,7 +226,7 @@ final class DashboardViewModel {
                                 )
                             }
                         }
-                        .sorted { $0.time > $1.time } // 최신 순으로 정렬
+                        .sorted { $0.time > $1.time }
                     }
                     .catch { error in
                         print("Failed to fetch recent record charts (all beaches): \(error)")
@@ -226,7 +245,6 @@ final class DashboardViewModel {
                 return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
                     .map { records -> [Chart] in
-                        // 고정된 기록만 필터링 (전체 비치)
                         let pinnedRecords = records.filter { $0.isPin }
                         return pinnedRecords.flatMap { record in
                             record.charts.map { chartData in
@@ -244,7 +262,7 @@ final class DashboardViewModel {
                                 )
                             }
                         }
-                        .sorted { $0.time > $1.time } // 최신 순으로 정렬
+                        .sorted { $0.time > $1.time }
                     }
                     .catch { error in
                         print("Failed to fetch pinned charts (all beaches): \(error)")
@@ -268,13 +286,16 @@ final class DashboardViewModel {
     }
     
     // MARK: - Private Helpers
-    // 원형 평균(벡터 평균)으로 각도(degree) 평균 계산 (0~360°)
+    
+    private func fetchBeachDataDirectly(beachId: String, region: String) -> Single<BeachData> {
+        return fetchBeachDataUseCase.execute(beachId: beachId, region: region)
+    }
+    
     private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {
         guard !degrees.isEmpty else { return nil }
         let radians = degrees.map { $0 * .pi / 180.0 }
         let sumX = radians.reduce(0.0) { $0 + cos($1) }
         let sumY = radians.reduce(0.0) { $0 + sin($1) }
-        // 합 벡터의 크기가 매우 작으면 방향이 정의되지 않음
         if abs(sumX) < 1e-6 && abs(sumY) < 1e-6 { return nil }
         var angle = atan2(sumY, sumX) * 180.0 / .pi
         if angle < 0 { angle += 360.0 }
@@ -322,6 +343,7 @@ final class DashboardViewModel {
         print("[WeatherDebug] \(tag) total=\(charts.count) counts=\(counts) icons=\(iconSet) samples=\(samples)")
     }
 }
+
 // MARK: - Weather Type Enum
 enum WeatherType: Int, CaseIterable, Codable {
     case clear = 1
@@ -381,11 +403,6 @@ enum WeatherType: Int, CaseIterable, Codable {
 // MARK: - WeatherType Enum Extension
 extension WeatherType {
     
-    /// Firestore 데이터의 sky_condition과 precipitation_type을 기반으로 WeatherType 계산
-    /// - Parameters:
-    ///   - skyCondition: 하늘 상태 (1: 맑음, 3: 구름많음, 4: 흐림)
-    ///   - precipitationType: 강수 형태 (0: 없음, 1: 비, 2: 비/눈, 3: 눈, 4: 소나기)
-    /// - Returns: 계산된 WeatherType
     static func from(
         skyCondition: Int,
         precipitationType: Int,
@@ -393,48 +410,41 @@ extension WeatherType {
         windSpeed: Double? = nil,
         precipitationProbability: Double? = nil
     ) -> WeatherType {
-        // 1) 강수 우선 로직 유지
         if precipitationType != 0 {
             switch precipitationType {
-            case 1: // 비
+            case 1:
                 return .rain
-            case 2: // 비/눈 (눈으로 처리)
+            case 2:
                 return .snow
-            case 3: // 눈
+            case 3:
                 return .snow
-            case 4: // 소나기
+            case 4:
                 return .rain
             default:
                 return .unknown
             }
         }
-
-        // 2) 안개 휴리스틱 (습도 높고, 바람 약할 때)
-        //    임계값은 필요시 조정 가능: 습도 ≥ 95%, 풍속 ≤ 2.0 m/s
+        
         let h = humidity ?? -1
         let w = windSpeed ?? Double.greatestFiniteMagnitude
         if h >= 95, w <= 2.0 {
             return .fog
         }
-
-        // 3) 하늘 상태 기반
+        
         switch skyCondition {
-        case 1: // 맑음
+        case 1:
             return .clear
-        case 3: // 구름많음 → 습도/강수확률로 세분화
+        case 3:
             let p = precipitationProbability ?? 0
             let isMuch = (p >= 30) || (humidity ?? 0 >= 85)
             return isMuch ? .cloudMuchSun : .cloudLittleSun
-        case 4: // 흐림
+        case 4:
             return .cloudy
         default:
             return .unknown
         }
     }
     
-    /// Firestore Document Dictionary에서 직접 WeatherType 계산
-    /// - Parameter data: Firestore document data
-    /// - Returns: 계산된 WeatherType
     static func from(firestoreData data: [String: Any]) -> WeatherType {
         let skyCondition = data["sky_condition"] as? Int ?? 0
         let precipitationType = data["precipitation_type"] as? Int ?? 0
@@ -442,58 +452,3 @@ extension WeatherType {
         return from(skyCondition: skyCondition, precipitationType: precipitationType)
     }
 }
-
-// MARK: - Usage Example
-/*
- 
- // 예제 1: 직접 값으로 계산
- let weatherType = WeatherType.from(skyCondition: 3, precipitationType: 0)
- print(weatherType.description) // "구름많음"
- print(weatherType.iconName)    // "cloudMuchSun"
- 
- // 예제 2: Firestore 데이터로 계산
- let firestoreData: [String: Any] = [
-     "sky_condition": 3,
-     "precipitation_type": 0,
-     "wind_speed": 3.3,
-     // ... 기타 필드들
- ]
- 
- let weatherType = WeatherType.from(firestoreData: firestoreData)
- 
- // 예제 3: 비가 오는 경우
- let rainyWeather = WeatherType.from(skyCondition: 4, precipitationType: 1)
- print(rainyWeather.description) // "비"
- 
- */
-
-// MARK: - 계산 로직 정리
-/*
- 
- 기상청 단기예보 API 기준:
- 
- SKY (하늘상태):
- - 1: 맑음
- - 3: 구름많음
- - 4: 흐림
- 
- PTY (강수형태):
- - 0: 없음
- - 1: 비
- - 2: 비/눈
- - 3: 눈
- - 4: 소나기
- 
- 우선순위:
- 1. PTY ≠ 0 → 강수 타입으로 결정
- 2. PTY == 0 → SKY로 결정
- 
- 매핑:
- PTY 1, 4 → WeatherType.rain
- PTY 2, 3 → WeatherType.snow
- SKY 1 → WeatherType.clear
- SKY 3 → WeatherType.cloudMuchSun
- SKY 4 → WeatherType.cloudy
- 
- */
-

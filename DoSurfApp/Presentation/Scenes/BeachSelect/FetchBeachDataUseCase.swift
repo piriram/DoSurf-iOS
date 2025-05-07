@@ -6,63 +6,60 @@
 //
 import UIKit
 import RxSwift
+import FirebaseFirestore
 
+// MARK: - UseCase
 protocol FetchBeachDataUseCase {
-    func execute(beachId: String) -> Single<BeachData>
+    /// beachId와 region을 알고 있을 때 사용하는 메서드
+    func execute(beachId: String, region: String) -> Single<BeachData>
 }
 
 final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
     private let repository: RxBeachRepository
-    private let knownRegions: [String]
     
-    init(
-        repository: RxBeachRepository,
-        knownRegions: [String] = BeachRegion.allCases.map { $0.rawValue }
-    ) {
+    init(repository: RxBeachRepository) {
         self.repository = repository
-        self.knownRegions = knownRegions
     }
     
-    func execute(beachId: String) -> Single<BeachData> {
-        return repository.findRegion(for: beachId, among: knownRegions)
-            .flatMap { [weak self] foundRegion -> Single<BeachData> in
-                guard let self = self, let region = foundRegion else {
-                    return .error(FirebaseAPIError.beachNotFoundInAnyRegion(beachId: beachId))
-                }
-                
-                let since = Date().addingTimeInterval(-48*60*60)
-                
-                return Single.zip(
-                    self.repository.fetchMetadata(beachId: beachId, region: region),
-                    self.repository.fetchForecasts(beachId: beachId, region: region, since: since, limit: 20)
-                )
-                .map { metadataDTO, forecastDTOs in
-                    guard let metadataDTO = metadataDTO else {
-                        throw FirebaseAPIError.notFound
-                    }
-                    
-                    // DTO → Domain 변환
-                    let metadata = metadataDTO.toDomain()
-                    let charts = forecastDTOs
-                        .map { $0.toDomain() }
-                        .sorted { $0.time < $1.time }
-                    
-                    return BeachData(
-                        metadata: metadata,
-                        charts: charts,
-                        lastUpdated: Date()
-                    )
-                }
-            }
+    // MARK: - Execute
+    func execute(beachId: String, region: String) -> Single<BeachData> {
+        return fetch(beachId: beachId, region: region)
             .catch { error in
-                    .error(FirebaseAPIError.map(error))
+                if let apiError = error as? FirebaseAPIError {
+                    return .error(apiError)
+                }
+                return .error(FirebaseAPIError.map(error))
             }
+    }
+    
+    // MARK: - Private
+    private func fetch(beachId: String, region: String) -> Single<BeachData> {
+        let since = Date().addingTimeInterval(-48*60*60)
+        
+        return Single.zip(
+            repository.fetchMetadata(beachId: beachId, region: region),
+            repository.fetchForecasts(beachId: beachId, region: region, since: since, limit: 20)
+        )
+        .map { metadataDTO, forecastDTOs in
+            guard let metadataDTO = metadataDTO else {
+                throw FirebaseAPIError.notFound
+            }
+            let metadata = metadataDTO.toDomain()
+            let charts = forecastDTOs
+                .map { $0.toDomain() }
+                .sorted { $0.time < $1.time }
+            
+            return BeachData(
+                metadata: metadata,
+                charts: charts,
+                lastUpdated: Date()
+            )
+        }
     }
 }
 
-import FirebaseFirestore
 // MARK: - Error
-enum FirebaseAPIError: Error, LocalizedError, Equatable {
+enum FirebaseAPIError: Error, LocalizedError {
     case notFound
     case permissionDenied
     case unauthenticated
@@ -94,7 +91,7 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
         case .invalidArgument(let msg): return msg ?? "요청 인자가 올바르지 않습니다."
         case .decodingFailed(let msg): return msg ?? "데이터 해석에 실패했습니다."
         case .invalidPath(let msg): return msg ?? "잘못된 경로입니다."
-        case .beachNotFoundInAnyRegion(let id): return "해변 ID를 찾지 못했습니다."
+        case .beachNotFoundInAnyRegion: return "해변 ID를 찾지 못했습니다."
         case .unknown(let err): return err.localizedDescription
         }
     }
@@ -128,7 +125,8 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
     }
 }
 
-extension FirebaseAPIError {
+// MARK: - Equatable Conformance
+extension FirebaseAPIError: Equatable {
     static func == (lhs: FirebaseAPIError, rhs: FirebaseAPIError) -> Bool {
         switch (lhs, rhs) {
         case (.notFound, .notFound),
@@ -159,4 +157,3 @@ extension FirebaseAPIError {
         }
     }
 }
-

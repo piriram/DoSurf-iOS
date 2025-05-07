@@ -12,6 +12,8 @@ protocol RxBeachRepository {
     func findRegion(for beachId: String, among regions: [String]) -> Single<String?>
     func fetchMetadata(beachId: String, region: String) -> Single<BeachMetadataDTO?>
     func fetchForecasts(beachId: String, region: String, since: Date, limit: Int) -> Single<[FirestoreChartDTO]>
+    func fetchBeachList(region: String) -> Single<[BeachDTO]>
+    func fetchAllBeaches() -> Single<[BeachDTO]>
 }
 
 final class RxFirestoreBeachRepository: RxBeachRepository {
@@ -174,14 +176,109 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
         }
     }
     
+    func fetchBeachList(region: String) -> Single<[BeachDTO]> {
+        return fetchAllBeaches()
+            .map { beaches in
+                beaches.filter { $0.region.slug == region }
+            }
+    }
+    
+    func fetchAllBeaches() -> Single<[BeachDTO]> {
+        return Single.create { [weak self] single in
+            guard let self = self else {
+                single(.failure(FirebaseAPIError.internalError))
+                return Disposables.create()
+            }
+            
+            print("🔍 [BeachList] Fetching all beaches from _global_metadata/all_beaches")
+            
+            self.db.collection("_global_metadata")
+                .document("all_beaches")
+                .getDocument { document, error in
+                    if let error = error {
+                        print("❌ [BeachList] Firestore error: \(error.localizedDescription)")
+                        single(.failure(FirebaseAPIError.map(error)))
+                        return
+                    }
+                    
+                    guard let document = document else {
+                        print("❌ [BeachList] Document is nil")
+                        single(.failure(FirebaseAPIError.notFound))
+                        return
+                    }
+                    
+                    guard document.exists else {
+                        print("⚠️ [BeachList] Document does not exist at: _global_metadata/all_beaches")
+                        single(.failure(FirebaseAPIError.notFound))
+                        return
+                    }
+                    
+                    guard let data = document.data() else {
+                        print("⚠️ [BeachList] Document exists but has no data")
+                        single(.failure(FirebaseAPIError.notFound))
+                        return
+                    }
+                    
+                    print("✅ [BeachList] Document found with keys: \(data.keys)")
+                    
+                    guard let beachesArray = data["beaches"] as? [[String: Any]] else {
+                        print("⚠️ [BeachList] beaches field missing or wrong type")
+                        single(.failure(FirebaseAPIError.decodingFailed(message: "beaches field not found")))
+                        return
+                    }
+                    
+                    print("✅ [BeachList] Found \(beachesArray.count) beaches")
+                    
+                    // BeachRegion 정보를 수집 (중복 제거)
+                    var regionMap: [String: BeachRegion] = [:]
+                    
+                    var beaches: [BeachDTO] = []
+                    for beachData in beachesArray {
+                        guard let id = beachData["id"] as? String,
+                              let regionSlug = beachData["region"] as? String,
+                              let regionName = beachData["region_name"] as? String,
+                              let regionOrder = beachData["region_order"] as? Int,
+                              let displayName = beachData["display_name"] as? String else {
+                            print("⚠️ [BeachList] Invalid beach data: \(beachData)")
+                            continue
+                        }
+                        
+                        // BeachRegion 객체 생성 또는 재사용
+                        if regionMap[regionSlug] == nil {
+                            regionMap[regionSlug] = BeachRegion(
+                                slug: regionSlug,
+                                displayName: regionName,
+                                order: regionOrder
+                            )
+                        }
+                        
+                        guard let region = regionMap[regionSlug] else { continue }
+                        
+                        let beach = BeachDTO(
+                            id: id,
+                            region: region,
+                            regionName: regionName,
+                            place: displayName
+                        )
+                        beaches.append(beach)
+                    }
+                    
+                    print("✅ [BeachList] Successfully created \(beaches.count) BeachDTOs with \(regionMap.count) regions")
+                    single(.success(beaches))
+                }
+            
+            return Disposables.create()
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
     private static func estimateWavePeriod(
         windSpeed: Double?,
         waveHeight: Double?,
         omWaveHeight: Double?
     ) -> Double? {
         guard let u = windSpeed, u.isFinite, u > 0 else { return nil }
-        // Pierson–Moskowitz fully developed sea approximation:
-        // Tp ≈ 0.83 * U10 (seconds), clamped to 2–18s typical surf range
         let raw = 0.83 * u
         let clamped = max(2.0, min(18.0, raw))
         return clamped
@@ -197,7 +294,6 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
         let sky = skyCondition ?? 0
         let pty = precipitationType ?? 0
         
-        // 1) Precipitation priority
         if pty != 0 {
             switch pty {
             case 1, 4: return WeatherType.rain.rawValue
@@ -206,14 +302,12 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
             }
         }
         
-        // 2) Fog heuristic: humidity ≥ 95 and wind ≤ 2.0 m/s
         let h = humidity ?? -1
         let w = windSpeed ?? Double.greatestFiniteMagnitude
         if h >= 95, w <= 2.0 {
             return WeatherType.fog.rawValue
         }
         
-        // 3) Sky-based
         switch sky {
         case 1:
             return WeatherType.clear.rawValue
