@@ -1,3 +1,4 @@
+
 //
 //  BeachSelectViewModel.swift
 //  DoSurfApp
@@ -111,22 +112,7 @@ final class BeachSelectViewModel {
             .map { $0.row }
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
-        
-        // 사용자가 카테고리를 탭한 경우에만 선택 초기화
-        let userCategoryChanges = input.categorySelected
-            .map { _ in () }
 
-        userCategoryChanges
-            .subscribe(onNext: { [weak self] _ in
-                self?.selectedBeach.accept(nil)  //
-            })
-        // selectedCategoryIndex
-        //     .subscribe(onNext: { [weak self] _ in
-        //         self?.selectedBeach.accept(nil)
-        //     })
-        //     .disposed(by: disposeBag)
-        // The above subscription block was removed as per instructions.
-        
         // categories가 로드되면 초기 필터링 트리거
         let initialTrigger = categories
             .filter { !$0.isEmpty }
@@ -207,4 +193,3 @@ final class BeachSelectViewModel {
         )
     }
 }
-
