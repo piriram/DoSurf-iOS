@@ -6,14 +6,15 @@
 //
 
 import Foundation
+
 final class DIContainer {
     static let shared = DIContainer()
     
     private init() {}
     
     // Repository
-    func makeBeachRepository() -> RxBeachRepository {
-        return RxFirestoreBeachRepository()
+    func makeBeachRepository() -> FirestoreProtocol {
+        return FirestoreRepository()
     }
     
     // UseCase
@@ -35,5 +36,11 @@ final class DIContainer {
             fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
             fetchBeachListUseCase: makeFetchBeachListUseCase()
         )
+    }
+}
+
+extension DIContainer {
+    func makeDashboardViewModel() -> DashboardViewModel {
+        DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
     }
 }

@@ -12,13 +12,13 @@ import RxCocoa
 
 // MARK: - SurfRecordBottomCard
 /// 하단 카드: 별점 평가 + 메모
-final class SurfRecordBottomCard: UIView {
+final class RecordBottomCardView: UIView {
     
     // MARK: - UI Components
     private let containerStack = UIStackView()
     
     // Rating
-    let ratingCardView = SurfRatingCardView()
+    let ratingCardView = NoteRatingCardView()
     
     // Comment
     private let commentCard = UIView()

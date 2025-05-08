@@ -6,6 +6,7 @@
 //
 
 import FirebaseFirestore
+
 // MARK: - Error
 enum FirebaseAPIError: Error, LocalizedError,Equatable {
     case notFound

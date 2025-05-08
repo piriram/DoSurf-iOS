@@ -13,9 +13,9 @@ protocol FetchBeachListUseCase {
 }
 
 final class DefaultFetchBeachListUseCase: FetchBeachListUseCase {
-    private let repository: RxBeachRepository
+    private let repository: FirestoreProtocol
     
-    init(repository: RxBeachRepository) {
+    init(repository: FirestoreProtocol) {
         self.repository = repository
     }
     

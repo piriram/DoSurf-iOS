@@ -9,7 +9,7 @@ final class SurfRecordViewController: BaseViewController {
     private let scrollView = UIScrollView()
     private let content = UIStackView()
     private let topCard = SurfRecordTopCard()
-    private let bottomCard = SurfRecordBottomCard()
+    private let bottomCard = RecordBottomCardView()
     private let saveButton = UIButton(type: .system)
     
     private var charts: [Chart] = []

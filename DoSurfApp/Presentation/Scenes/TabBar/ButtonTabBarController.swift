@@ -27,7 +27,7 @@ final class ButtonTabBarController: UIViewController {
     private let recordButton = TabBarButton(type: .record)
     
     // View Controllers
-    private lazy var chartViewController: UIViewController = {
+    private lazy var chartViewController: DashboardViewController = {
         let vc = DashboardViewController()
         vc.title = "파도차트"
         return vc
@@ -44,7 +44,6 @@ final class ButtonTabBarController: UIViewController {
     }()
     
     private var currentNavigationController: UINavigationController?
-    private weak var dashboardProvider: (UIViewController & DashboardChartProviding)?
     
     // State
     private let currentTab = BehaviorRelay<TabType>(value: .chart)
@@ -140,10 +139,6 @@ final class ButtonTabBarController: UIViewController {
     }
     
     private func setupInitialViewController() {
-        if let provider = chartViewController as? (UIViewController & DashboardChartProviding) {
-            dashboardProvider = provider
-        }
-        
         showViewController(chartViewController)
     }
     
@@ -309,13 +304,7 @@ final class ButtonTabBarController: UIViewController {
         let startTime = storageService.readSurfingStartTime()
         let endTime = storageService.readSurfingEndTime()
         
-        let chartsToPass: [Chart] = {
-            if let provider = dashboardProvider {
-                return provider.allChartsSnapshot
-            }
-            return []
-        }()
-        
+        let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
         let recordVC = SurfRecordViewController(
             startTime: startTime,
             endTime: endTime,

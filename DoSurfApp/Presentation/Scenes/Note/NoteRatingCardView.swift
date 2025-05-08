@@ -3,7 +3,7 @@ import SnapKit
 import RxSwift
 import RxCocoa
 
-final class SurfRatingCardView: UIView {
+final class NoteRatingCardView: UIView {
     
     // MARK: - Properties
     private let disposeBag = DisposeBag()
