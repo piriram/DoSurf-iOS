@@ -2,7 +2,7 @@
 //  BeachSelectViewModel.swift
 //  DoSurfApp
 //
-//  Created by 잠만보김쥬디 on 9/29/25.
+//  Created by 잘만보김쥬디 on 9/29/25.
 //
 import UIKit
 import RxSwift
@@ -13,6 +13,7 @@ final class BeachSelectViewModel {
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
     private let fetchBeachListUseCase: FetchBeachListUseCase
+    private let storageService: SurfingRecordService
     let initialSelectedBeach: BeachDTO?
     
     // MARK: - Input
@@ -27,9 +28,12 @@ final class BeachSelectViewModel {
     struct Output {
         let categories: Observable<[CategoryDTO]>
         let locations: Observable<[BeachDTO]>
-        let selectedCategory: Observable<Int>
+        let selectedCategoryIndex: Observable<Int>
+        let selectedBeachId: Observable<String?>
+        let shouldScrollToCategory: Observable<IndexPath>
+        let shouldReloadBeachTable: Observable<Void>
         let canConfirm: Observable<Bool>
-        let dismiss: Observable<[BeachDTO]>
+        let dismiss: Observable<BeachDTO>
         let beachData: Observable<BeachData>
         let error: Observable<Error>
         let isLoading: Observable<Bool>
@@ -40,11 +44,18 @@ final class BeachSelectViewModel {
     private let allBeaches = BehaviorRelay<[BeachDTO]>(value: [])
     private let selectedCategoryIndex = BehaviorRelay<Int>(value: 0)
     private let selectedBeach = BehaviorRelay<BeachDTO?>(value: nil)
+    private let selectedBeachId = BehaviorRelay<String?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
+    private let shouldReloadBeachTableRelay = PublishRelay<Void>()
     
     private let disposeBag = DisposeBag()
     private var hasInitialLoadCompleted = false
+    private var hasSetInitialSelection = false
+    private var didEmitInitialCategorySelection = false
+    
+    private let lastRegionsIndexKey = "BeachSelectViewController.lastCategoryIndex"
+    
     var isInitialLoad: Bool {
         !hasInitialLoadCompleted
     }
@@ -53,16 +64,19 @@ final class BeachSelectViewModel {
     init(
         fetchBeachDataUseCase: FetchBeachDataUseCase,
         fetchBeachListUseCase: FetchBeachListUseCase,
+        storageService: SurfingRecordService,
         initialSelectedBeach: BeachDTO? = nil
     ) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
         self.fetchBeachListUseCase = fetchBeachListUseCase
+        self.storageService = storageService
         self.initialSelectedBeach = initialSelectedBeach
     }
     
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
+        // viewDidLoad: 해변 데이터 로드
         input.viewDidLoad
             .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
@@ -84,14 +98,8 @@ final class BeachSelectViewModel {
                                 }
                                 .sorted { $0.region.order < $1.region.order }
                             
-                            if let self = self, let initial = self.initialSelectedBeach {
-                                if let index = uniqueRegions.firstIndex(where: { $0.region.slug == initial.region.slug }) {
-                                    self.selectedCategoryIndex.accept(index)
-                                }
-                                self.selectedBeach.accept(initial)
-                            }
-                            
                             self?.categories.accept(uniqueRegions)
+                            self?.setupInitialSelection(uniqueRegions: uniqueRegions)
                         },
                         onError: { [weak self] error in
                             self?.isLoadingRelay.accept(false)
@@ -106,21 +114,27 @@ final class BeachSelectViewModel {
             .subscribe()
             .disposed(by: disposeBag)
         
-        input.categorySelected
+        // 카테고리 선택 처리
+        let manualCategorySelection = input.categorySelected
+            .skip(1)
+            .do(onNext: { [weak self] indexPath in
+                self?.hasSetInitialSelection = true
+                self?.saveCategoryIndex(indexPath.row)
+            })
+        
+        manualCategorySelection
             .map { $0.row }
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
         
-        let userCategoryChanges = input.categorySelected
-            .skip(1)
-            .map { _ in () }
-        
-        userCategoryChanges
+        manualCategorySelection
             .subscribe(onNext: { [weak self] _ in
                 self?.selectedBeach.accept(nil)
+                self?.selectedBeachId.accept(nil)
             })
             .disposed(by: disposeBag)
         
+        // 카테고리 변경에 따른 해변 필터링
         let initialTrigger = categories
             .filter { !$0.isEmpty }
             .take(1)
@@ -144,8 +158,28 @@ final class BeachSelectViewModel {
                 
                 return beaches.filter { $0.region.slug == selectedRegion.slug }
             }
+            .do(onNext: { [weak self] locations in
+                guard let self = self else { return }
+                
+                // 초기 선택된 해변이 현재 필터링된 목록에 있는지 확인
+                if !self.hasSetInitialSelection,
+                   let initialBeach = self.initialSelectedBeach,
+                   locations.contains(where: { $0.id == initialBeach.id }) {
+                    self.selectedBeachId.accept(initialBeach.id)
+                    self.selectedBeach.accept(initialBeach)
+                    self.hasSetInitialSelection = true
+                    self.shouldReloadBeachTableRelay.accept(())
+                } else if self.hasSetInitialSelection {
+                    // 카테고리 변경 시 선택 초기화
+                    if self.selectedBeach.value != nil {
+                        self.selectedBeachId.accept(nil)
+                        self.shouldReloadBeachTableRelay.accept(())
+                    }
+                }
+            })
             .asObservable()
         
+        // 해변 선택 처리
         input.locationSelected
             .withLatestFrom(filteredLocations) { indexPath, locations -> BeachDTO? in
                 guard indexPath.row < locations.count else { return nil }
@@ -154,9 +188,12 @@ final class BeachSelectViewModel {
             .compactMap { $0 }
             .subscribe(onNext: { [weak self] beach in
                 self?.selectedBeach.accept(beach)
+                self?.selectedBeachId.accept(beach.id)
+                self?.shouldReloadBeachTableRelay.accept(())
             })
             .disposed(by: disposeBag)
         
+        // 선택된 해변 데이터 가져오기
         let beachData = selectedBeach
             .compactMap { $0 }
             .distinctUntilChanged { $0.id == $1.id }
@@ -188,20 +225,57 @@ final class BeachSelectViewModel {
             .map { $0 != nil }
             .asObservable()
         
+        // 확인 버튼 탭 처리
         let dismiss = input.confirmButtonTapped
             .withLatestFrom(selectedBeach.asObservable())
-            .compactMap { $0 }
-            .map { [$0] }
+            .compactMap { [weak self] beach -> BeachDTO? in
+                guard let beach = beach else { return nil }
+                self?.storageService.createSelectedBeachID(beach.id)
+                return beach
+            }
+        
+        let shouldScrollToCategory = selectedCategoryIndex
+            .map { IndexPath(row: $0, section: 0) }
+            .asObservable()
         
         return Output(
             categories: categories.asObservable(),
             locations: filteredLocations,
-            selectedCategory: selectedCategoryIndex.asObservable(),
+            selectedCategoryIndex: selectedCategoryIndex.asObservable(),
+            selectedBeachId: selectedBeachId.asObservable(),
+            shouldScrollToCategory: shouldScrollToCategory,
+            shouldReloadBeachTable: shouldReloadBeachTableRelay.asObservable(),
             canConfirm: canConfirm,
             dismiss: dismiss,
             beachData: beachData,
             error: errorRelay.asObservable(),
             isLoading: isLoadingRelay.asObservable()
         )
+    }
+    
+    // MARK: - Private Methods
+    private func setupInitialSelection(uniqueRegions: [CategoryDTO]) {
+        guard !uniqueRegions.isEmpty else { return }
+        
+        if let initialBeach = initialSelectedBeach,
+           let index = uniqueRegions.firstIndex(where: { $0.region.slug == initialBeach.region.slug }) {
+            selectedCategoryIndex.accept(index)
+            selectedBeach.accept(initialBeach)
+            selectedBeachId.accept(initialBeach.id)
+        } else {
+            let savedIndex = loadSavedCategoryIndex()
+            let clampedIndex = max(0, min(savedIndex, uniqueRegions.count - 1))
+            selectedCategoryIndex.accept(clampedIndex)
+        }
+        
+        didEmitInitialCategorySelection = true
+    }
+    
+    private func loadSavedCategoryIndex() -> Int {
+        (UserDefaults.standard.object(forKey: lastRegionsIndexKey) as? Int) ?? 0
+    }
+    
+    private func saveCategoryIndex(_ index: Int) {
+        UserDefaults.standard.set(index, forKey: lastRegionsIndexKey)
     }
 }

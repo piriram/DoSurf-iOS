@@ -506,9 +506,11 @@ final class RecordHistoryViewController: BaseViewController {
                     self.showErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
                     return
                 }
-                let editorVC = NoteViewController(editing: record)
-                editorVC.title = "기록 수정"
+                
+                // ✅ DIContainer를 통한 ViewController 생성
+                let editorVC = DIContainer.shared.makeSurfRecordViewController(editing: record)
                 editorVC.hidesBottomBarWhenPushed = true
+                
                 if let nav = self.navigationController {
                     nav.pushViewController(editorVC, animated: true)
                 } else {
@@ -720,105 +722,4 @@ extension RecordHistoryViewController: UIPopoverPresentationControllerDelegate {
     func adaptivePresentationStyle(for controller: UIPresentationController, traitCollection: UITraitCollection) -> UIModalPresentationStyle {
         return .none
     }
-}
-
-// MARK: - FilterButton
-final class FilterButton: UIButton {
-    
-    private let hasDropdown: Bool
-    
-    init(title: String, hasDropdown: Bool = false) {
-        self.hasDropdown = hasDropdown
-        super.init(frame: .zero)
-        setupButton(title: title)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupButton(title: String) {
-        setTitle(title, for: .normal)
-        setTitleColor(.label, for: .normal)
-        setTitleColor(.white, for: .selected)
-        titleLabel?.font = .systemFont(ofSize: FontSize.body2Size, weight: .medium)
-        
-        backgroundColor = .white
-        layer.cornerRadius = 14
-        layer.borderWidth = 0.75
-        layer.borderColor = UIColor.black.withAlphaComponent(0.1).cgColor
-        contentEdgeInsets = UIEdgeInsets(top: 2, left: 12, bottom: 2, right: 12)
-        
-        if hasDropdown {
-            setImage(UIImage(systemName: "chevron.down"), for: .normal)
-            semanticContentAttribute = .forceRightToLeft
-            imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: -4)
-            tintColor = .lableBlack
-        }
-        
-        sizeToFit()
-    }
-    
-    override var intrinsicContentSize: CGSize {
-        let size = super.intrinsicContentSize
-        return CGSize(width: size.width, height: 28)
-    }
-    
-    override var isSelected: Bool {
-        didSet {
-            backgroundColor = isSelected ? .surfBlue : .white
-            tintColor = isSelected ? .white : .label
-            layer.borderColor = isSelected ? UIColor.clear.cgColor : UIColor.black.withAlphaComponent(0.1).cgColor
-        }
-    }
-    
-}
-
-// MARK: - EmptyStateView
-final class EmptyStateView: UIView {
-    
-    private let imageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "tray")
-        imageView.tintColor = .systemGray3
-        imageView.contentMode = .scaleAspectFit
-        return imageView
-    }()
-    
-    private let label: UILabel = {
-        let label = UILabel()
-        label.text = "아직 기록이 없습니다"
-        label.textColor = .systemGray
-        label.font = .systemFont(ofSize: 16, weight: .medium)
-        label.textAlignment = .center
-        return label
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupUI() {
-        addSubview(imageView)
-        addSubview(label)
-        
-        imageView.snp.makeConstraints {
-            $0.top.centerX.equalToSuperview()
-            $0.width.height.equalTo(60)
-        }
-        
-        label.snp.makeConstraints {
-            $0.top.equalTo(imageView.snp.bottom).offset(16)
-            $0.leading.trailing.bottom.equalToSuperview()
-        }
-    }
-}
-
-extension Notification.Name {
-    static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }

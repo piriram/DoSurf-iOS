@@ -197,9 +197,7 @@ class DashboardViewController: BaseViewController {
     }
 
     private func pushBeachChoose() {
-        let viewModel = BeachSelectViewModel(
-            fetchBeachDataUseCase: DIContainer.shared.makeFetchBeachDataUseCase(),
-            fetchBeachListUseCase: DIContainer.shared.makeFetchBeachListUseCase(),
+        let viewModel = DIContainer.shared.makeBeachSelectViewModel(
             initialSelectedBeach: currentBeach
         )
         let vc = BeachSelectViewController(viewModel: viewModel)
