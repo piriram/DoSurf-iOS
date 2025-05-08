@@ -3,7 +3,8 @@ import RxSwift
 import RxCocoa
 import SnapKit
 import CoreData
-
+// TODO: actionsheet -> subview
+// TODO: 수정 기능 되살리기
 final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - UI Components
@@ -365,10 +366,10 @@ final class RecordHistoryViewController: BaseViewController {
         //                        self?.presentErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
         //                        return
         //                    }
-        //                    
+        //
         //                    let editorViewController = DIContainer.shared.makeSurfRecordViewController(editing: record)
         //                    editorViewController.hidesBottomBarWhenPushed = true
-        //                    
+        //
         //                    if let navigationController = self.navigationController {
         //                        navigationController.pushViewController(editorViewController, animated: true)
         //                    } else {
@@ -434,7 +435,7 @@ final class RecordHistoryViewController: BaseViewController {
         //                guard let self = self, let record = recordOption else {
         //                    return Single.error(RepositoryError.invalidObjectID)
         //                }
-        //                
+        //
         //                let updatedRecord = SurfRecordData(
         //                    beachID: record.beachID,
         //                    id: record.id,
@@ -446,14 +447,14 @@ final class RecordHistoryViewController: BaseViewController {
         //                    isPin: record.isPin,
         //                    charts: record.charts
         //                )
-        //                
+        //
         //                return self.surfRecordUseCase.updateSurfRecord(updatedRecord)
         //            }
         //            .observe(on: MainScheduler.instance)
         //            .subscribe(
         //                onSuccess: { [weak self] in
         //                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
-        //                    
+        //
         //                    let alertController = UIAlertController(
         //                        title: "메모 저장",
         //                        message: "메모가 저장되었습니다.",

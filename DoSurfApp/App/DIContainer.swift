@@ -15,7 +15,7 @@ final class DIContainer {
         return FirestoreRepository()
     }
     
-    func makeSurfRecordRepository() -> SurfRecordRepositoryProtocol {
+    func makeSurfRecordRepository() -> NoteRepositoryProtocol {
         return SurfRecordRepository()
     }
     

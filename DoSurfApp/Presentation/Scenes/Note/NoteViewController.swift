@@ -17,12 +17,14 @@ final class NoteViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: NoteViewModel
     private let mode: SurfRecordMode
+    private let time: TimeProvider
     private let disposeBag = DisposeBag()
     
     // MARK: - Initialization
-    init(viewModel: NoteViewModel, mode: SurfRecordMode) {
+    init(viewModel: NoteViewModel, mode: SurfRecordMode,time: TimeProvider = .shared ) {
         self.viewModel = viewModel
         self.mode = mode
+        self.time = time
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -137,7 +139,6 @@ final class NoteViewController: BaseViewController {
         
         let output = viewModel.transform(input)
         
-        // ✅ 타입 명시 추가
         output.initialData
             .drive(onNext: { [weak self] (data: NoteViewModel.InitialData) in
                 guard let self = self else { return }
@@ -149,8 +150,8 @@ final class NoteViewController: BaseViewController {
                     endTime: data.endTime
                 )
                 
-                let dayStart = self.startOfDayKST(for: data.date)
-                let dayEnd = self.endOfDayKST(for: data.date)
+                let dayStart = self.time.startOfDay(for: data.date)
+                let dayEnd = self.time.endOfDay(for: data.date)
                 self.topCard.updatePickerBounds(
                     dayStart: dayStart,
                     dayEnd: dayEnd,
@@ -181,10 +182,9 @@ final class NoteViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // ✅ 타입 명시 추가
         output.saveError
             .emit(onNext: { [weak self] (error: Error) in
-                self?.showErrorAlert(message: error.localizedDescription)
+                self?.showAlert(title: "오류", message: error.localizedDescription)
             })
             .disposed(by: disposeBag)
         
@@ -242,11 +242,11 @@ final class NoteViewController: BaseViewController {
     // MARK: - Event Handlers
     
     private func handleDateChanged(_ date: Date) {
-        let dayStart = startOfDayKST(for: date)
-        let dayEnd = endOfDayKST(for: date)
+        let dayStart = time.startOfDay(for: date)
+        let dayEnd = time.endOfDay(for: date)
         
-        let newStart = combine(date: date, withTimeOf: topCard.startTimePicker.date)
-        let newEnd = combine(date: date, withTimeOf: topCard.endTimePicker.date)
+        let newStart = time.calendar.combine(date, withTimeOf: topCard.startTimePicker.date)
+        let newEnd = time.calendar.combine(date, withTimeOf: topCard.endTimePicker.date)
         
         let clampedStart = min(max(newStart, dayStart), dayEnd)
         let clampedEnd = min(max(newEnd, clampedStart), dayEnd)
@@ -259,11 +259,11 @@ final class NoteViewController: BaseViewController {
     }
     
     private func handleStartTimeChanged(_ time: Date) {
-        let dayEnd = endOfDayKST(for: topCard.datePicker.date)
+        let dayEnd = self.time.endOfDay(for: topCard.datePicker.date)
         let start = time
         
         topCard.updatePickerBounds(
-            dayStart: startOfDayKST(for: topCard.datePicker.date),
+            dayStart: self.time.startOfDay(for: topCard.datePicker.date),
             dayEnd: dayEnd,
             startTime: start
         )
@@ -277,7 +277,7 @@ final class NoteViewController: BaseViewController {
     
     private func handleEndTimeChanged(_ time: Date) {
         let start = topCard.startTimePicker.date
-        let dayEnd = endOfDayKST(for: topCard.datePicker.date)
+        let dayEnd = self.time.endOfDay(for: topCard.datePicker.date)
         
         if time < start {
             topCard.endTimePicker.date = start
@@ -300,7 +300,7 @@ final class NoteViewController: BaseViewController {
             bottomCard.memoTextView.becomeFirstResponder()
         }
     }
-    
+    //TODO: Coordinator 만들기
     private func handleSaveSuccess() {
         if let nav = navigationController {
             if nav.viewControllers.first === self, presentingViewController != nil {
@@ -311,48 +311,6 @@ final class NoteViewController: BaseViewController {
         } else if presentingViewController != nil {
             dismiss(animated: true)
         }
-    }
-    
-    private func showErrorAlert(message: String) {
-        let alert = UIAlertController(
-            title: "오류",
-            message: message,
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "확인", style: .default))
-        present(alert, animated: true)
-    }
-    
-    // MARK: - Date Helpers
-    
-    private func combine(date: Date, withTimeOf time: Date) -> Date {
-        let calendar = Calendar.current
-        let d = calendar.dateComponents([.year, .month, .day], from: date)
-        let t = calendar.dateComponents([.hour, .minute, .second], from: time)
-        var comps = DateComponents()
-        comps.year = d.year
-        comps.month = d.month
-        comps.day = d.day
-        comps.hour = t.hour
-        comps.minute = t.minute
-        comps.second = t.second
-        return calendar.date(from: comps) ?? date
-    }
-    
-    private func kstCalendar() -> Calendar {
-        var cal = Calendar(identifier: .gregorian)
-        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
-        return cal
-    }
-    
-    private func startOfDayKST(for date: Date) -> Date {
-        kstCalendar().startOfDay(for: date)
-    }
-    
-    private func endOfDayKST(for date: Date) -> Date {
-        let cal = kstCalendar()
-        let start = cal.startOfDay(for: date)
-        return cal.date(byAdding: DateComponents(day: 1, second: -1), to: start) ?? date
     }
 }
 

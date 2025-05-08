@@ -9,7 +9,7 @@ import CoreData
 import RxSwift
 
 // MARK: - Repository Protocol
-protocol SurfRecordRepositoryProtocol {
+protocol NoteRepositoryProtocol {
     func saveSurfRecord(_ record: SurfRecordData) -> Single<Void>
     func fetchAllSurfRecords() -> Single<[SurfRecordData]>
     func fetchSurfRecords(for beachID: Int) -> Single<[SurfRecordData]>
@@ -21,7 +21,7 @@ protocol SurfRecordRepositoryProtocol {
 
 
 // MARK: - Repository Implementation
-final class SurfRecordRepository: SurfRecordRepositoryProtocol {
+final class SurfRecordRepository: NoteRepositoryProtocol {
     private let coreDataStack: CoreDataManager
     
     init(coreDataStack: CoreDataManager = .shared) {
