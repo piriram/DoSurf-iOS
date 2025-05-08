@@ -12,7 +12,7 @@ import RxCocoa
 
 // MARK: - SurfRecordTopCard
 /// 상단 카드: 날짜/시간 피커 + 차트 테이블
-final class SurfRecordTopCard: UIView {
+final class NoteTopCardView: UIView {
     
     // MARK: - UI Components
     private let containerStack = UIStackView()
@@ -172,7 +172,7 @@ final class SurfRecordTopCard: UIView {
     }
     
     private func makeColumnHeader() -> UIView {
-        let header = ColumnHeaderView()
+        let header = ChartHeaderView()
         header.snp.makeConstraints { make in
             make.height.equalTo(36)
         }

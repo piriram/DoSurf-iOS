@@ -18,8 +18,8 @@ final class BeachChartListView: UIView {
         return view
     }()
     
-    private lazy var columnHeaderView: ColumnHeaderView = {
-        let view = ColumnHeaderView()
+    private lazy var columnHeaderView: ChartHeaderView = {
+        let view = ChartHeaderView()
         return view
     }()
     

@@ -1,7 +1,7 @@
 import UIKit
 import SnapKit
 
-final class ColumnHeaderView: UIView {
+final class ChartHeaderView: UIView {
     // MARK: - Public
     var titles: [String] {
         didSet { reloadLabels() }

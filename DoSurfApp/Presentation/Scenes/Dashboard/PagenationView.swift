@@ -10,7 +10,7 @@ import RxSwift
 import RxCocoa
 
 // MARK: - DashboardPageView
-final class DashboardPageView: UIView {
+final class PagenationView: UIView {
     
     // MARK: - Properties
     private let disposeBag = DisposeBag()

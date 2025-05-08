@@ -506,7 +506,7 @@ final class RecordHistoryViewController: BaseViewController {
                     self.showErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
                     return
                 }
-                let editorVC = SurfRecordViewController(editing: record)
+                let editorVC = NoteViewController(editing: record)
                 editorVC.title = "기록 수정"
                 editorVC.hidesBottomBarWhenPushed = true
                 if let nav = self.navigationController {

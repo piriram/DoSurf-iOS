@@ -5,13 +5,26 @@
 //  Created by 잠만보김쥬디 on 10/31/25.
 //
 
-import Foundation
+import CoreData
+import RxSwift
+
+// MARK: - Repository Protocol
+protocol SurfRecordRepositoryProtocol {
+    func saveSurfRecord(_ record: SurfRecordData) -> Single<Void>
+    func fetchAllSurfRecords() -> Single<[SurfRecordData]>
+    func fetchSurfRecords(for beachID: Int) -> Single<[SurfRecordData]>
+    func fetchSurfRecord(by id: NSManagedObjectID) -> Single<SurfRecordData?>
+    func deleteSurfRecord(by id: NSManagedObjectID) -> Single<Void>
+    func updateSurfRecord(_ record: SurfRecordData) -> Single<Void>
+}
+
+
 
 // MARK: - Repository Implementation
 final class SurfRecordRepository: SurfRecordRepositoryProtocol {
-    private let coreDataStack: CoreDataStack
+    private let coreDataStack: CoreDataManager
     
-    init(coreDataStack: CoreDataStack = .shared) {
+    init(coreDataStack: CoreDataManager = .shared) {
         self.coreDataStack = coreDataStack
     }
     
