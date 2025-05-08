@@ -34,14 +34,20 @@ final class ButtonTabBarController: UIViewController {
     }()
     
     private lazy var recordViewController: UIViewController = {
-        let repository = SurfRecordRepository()
-        let useCase = SurfRecordUseCase(repository: repository)
-        let viewModel = RecordHistoryViewModel(useCase: useCase, storageService: storageService)
+        let surfRecordUseCase = DIContainer.shared.makeSurfRecordUseCase()
         let fetchBeachListUseCase = DIContainer.shared.makeFetchBeachListUseCase()
-        let vc = RecordHistoryViewController(viewModel: viewModel, fetchBeachListUseCase: fetchBeachListUseCase)
+        
+        let viewModel = RecordHistoryViewModel(
+            surfRecordUseCase: surfRecordUseCase,
+            fetchBeachListUseCase: fetchBeachListUseCase,
+            storageService: storageService
+        )
+        
+        let vc = RecordHistoryViewController(viewModel: viewModel)
         vc.title = "기록 차트"
         return vc
     }()
+    
     
     private var currentNavigationController: UINavigationController?
     
@@ -322,6 +328,7 @@ final class ButtonTabBarController: UIViewController {
             self.bottomBar.alpha = hidden ? 0 : 1
         }
     }
+    
 }
 
 // MARK: - UINavigationControllerDelegate
