@@ -1,34 +1,11 @@
 //
-//  BeachDataDump.swift
+//  FirestoreChartDTO.swift
 //  DoSurfApp
 //
-//  Created by 잠만보김쥬디 on 9/26/25.
+//  Created by 잠만보김쥬디 on 10/31/25.
 //
-import Foundation
 
-// MARK: - Firestore DTOs (Data Layer에서만 사용)
-struct BeachMetadataDTO {
-    let beachId: Int
-    let region: String
-    let beach: String
-    let lastUpdated: Date
-    let totalForecasts: Int
-    let status: String
-    let earliestForecast: Date?
-    let latestForecast: Date?
-    let nextForecastTime: Date?
-    
-    func toDomain() -> BeachMetadata {
-        return BeachMetadata(
-            id: String(beachId),
-            name: beach,
-            region: region,
-            status: status,
-            lastUpdated: lastUpdated,
-            totalForecasts: totalForecasts
-        )
-    }
-}
+import Foundation
 
 struct FirestoreChartDTO {
     let documentId: String
@@ -103,58 +80,3 @@ struct FirestoreChartDTO {
         )
     }
 }
-
-// MARK: - Domain Models (Domain/Presentation Layer에서 사용)
-struct BeachMetadata {
-    let id: String
-    let name: String
-    let region: String
-    let status: String
-    let lastUpdated: Date
-    let totalForecasts: Int
-    
-    // beachID를 Int로 반환하는 계산 속성 추가
-    var beachID: Int {
-        return Int(id) ?? 0
-    }
-}
-
-
-struct Chart: Equatable {
-    let beachID: Int
-    let time: Date
-    let windDirection: Double
-    let windSpeed: Double
-    let waveDirection: Double
-    let waveHeight: Double
-    let wavePeriod: Double
-    let waterTemperature: Double
-    let weather: WeatherType
-    let airTemperature: Double
-}
-
-struct ChartList {
-    let id: String
-    let beachID: String
-    let chartList: [Chart]
-    let lastUpdateTime: Date
-}
-
-
-struct BeachData {
-    let metadata: BeachMetadata
-    let charts: [Chart]
-    let lastUpdated: Date
-}
-
-
-extension String {
-    func toDate(dateFormat: String) -> Date?{
-        let formatter = DateFormatter()
-        formatter.dateFormat = dateFormat
-        formatter.locale = Locale(identifier: "ko_KR") //TODO: en?
-        formatter.timeZone = TimeZone.current
-        return formatter.date(from: self)
-    }
-}
-

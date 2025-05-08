@@ -77,7 +77,7 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
     }
     
     // iOS에서만 사용 가능한 메서드들
-    #if os(iOS)
+#if os(iOS)
     func sessionDidBecomeInactive(_ session: WCSession) {
         print("ℹ️ iPhone WCSession became inactive")
     }
@@ -86,7 +86,7 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
         print("ℹ️ iPhone WCSession deactivated - reactivating...")
         WCSession.default.activate()
     }
-    #endif
+#endif
     
     func sessionReachabilityDidChange(_ session: WCSession) {
         DispatchQueue.main.async {

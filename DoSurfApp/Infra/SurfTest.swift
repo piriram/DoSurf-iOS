@@ -35,10 +35,10 @@ final class SurfSessionsTestViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let identifier = "subtitleCell"
         let cell = tableView.dequeueReusableCell(withIdentifier: identifier) ?? UITableViewCell(style: .subtitle, reuseIdentifier: identifier)
-
+        
         cell.textLabel?.text = rows[indexPath.row]
         cell.detailTextLabel?.text = nil
-
+        
         return cell
     }
     

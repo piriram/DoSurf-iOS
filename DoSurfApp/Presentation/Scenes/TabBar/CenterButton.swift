@@ -57,8 +57,8 @@ final class CenterButton: UIControl {
                 var updated = button.configuration
                 updated?.title = button.isSelected ? "서핑중" : "기록하기"
                 updated?.background.backgroundColor = button.isSelected
-                    ? UIColor.surfBlue.withAlphaComponent(0.8)
-                    : .surfBlue
+                ? UIColor.surfBlue.withAlphaComponent(0.8)
+                : .surfBlue
                 button.configuration = updated
             }
             button.setNeedsUpdateConfiguration()
@@ -102,8 +102,8 @@ final class CenterButton: UIControl {
         
         // Shadow 업데이트
         layer.shadowColor = isRecording
-            ? UIColor.surfBlue.withAlphaComponent(0.6).cgColor
-            : UIColor.surfBlue.cgColor
+        ? UIColor.surfBlue.withAlphaComponent(0.6).cgColor
+        : UIColor.surfBlue.cgColor
         layer.shadowOpacity = isRecording ? 0.4 : 0.25
     }
     
@@ -111,8 +111,8 @@ final class CenterButton: UIControl {
         didSet {
             UIView.animate(withDuration: 0.1, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
                 self.button.transform = self.isHighlighted
-                    ? CGAffineTransform(scaleX: 0.95, y: 0.95)
-                    : .identity
+                ? CGAffineTransform(scaleX: 0.95, y: 0.95)
+                : .identity
                 self.layer.shadowOpacity = self.isHighlighted ? 0.1 : (self.isRecordingState ? 0.4 : 0.25)
             }
         }

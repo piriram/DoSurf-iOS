@@ -758,7 +758,7 @@ final class FilterButton: UIButton {
         
         sizeToFit()
     }
-
+    
     override var intrinsicContentSize: CGSize {
         let size = super.intrinsicContentSize
         return CGSize(width: size.width, height: 28)
@@ -771,7 +771,7 @@ final class FilterButton: UIButton {
             layer.borderColor = isSelected ? UIColor.clear.cgColor : UIColor.black.withAlphaComponent(0.1).cgColor
         }
     }
-
+    
 }
 
 // MARK: - EmptyStateView

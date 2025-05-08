@@ -180,16 +180,16 @@ final class SurfRatingCardView: UIView {
             }
             
             labelsContainerView.addSubview(containerView)
-
+            
             containerView.snp.makeConstraints {
                 $0.top.bottom.equalToSuperview()
                 let c = $0.centerX.equalTo(labelsContainerView.snp.leading).offset(0).constraint
                 labelCenterXConstraints.append(c)
             }
-
+            
             containerView.setContentHuggingPriority(.required, for: .horizontal)
             containerView.setContentCompressionResistancePriority(.required, for: .horizontal)
-
+            
             labelContainers.append(containerView)
         }
     }
