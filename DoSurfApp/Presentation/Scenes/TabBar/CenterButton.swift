@@ -7,11 +7,13 @@
 
 import UIKit
 import SnapKit
+
 // MARK: - CenterButton
 final class CenterButton: UIControl {
     
     private let button = UIButton()
     private var isRecordingState = false
+    private var gradientLayer: CAGradientLayer?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -35,45 +37,34 @@ final class CenterButton: UIControl {
         
         let startWaveImage = UIImage(named: AssetImage.startWave)
         button.setImage(startWaveImage, for: .normal)
-        button.setImage(startWaveImage, for: .selected)
+        button.setImage(nil, for: .selected)
         button.setTitleColor(.white, for: .normal)
-        button.setTitleColor(.white, for: .selected)
+        button.setTitleColor(.surfBlue, for: .selected)
         
-        if #available(iOS 15.0, *) {
-            var config = UIButton.Configuration.plain()
-            config.imagePlacement = .top
-            config.imagePadding = 6
-            config.titleAlignment = .center
-            config.contentInsets = .zero
-            config.background.cornerRadius = 33.5
-            config.background.backgroundColor = .surfBlue
-            config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
-                var out = incoming
+        var config = UIButton.Configuration.plain()
+        config.imagePlacement = .top
+        config.imagePadding = 6
+        config.titleAlignment = .center
+        config.contentInsets = .zero
+        config.background.cornerRadius = 33.5
+        config.background.backgroundColor = .surfBlue
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { [weak self] incoming in
+            var out = incoming
+            if self?.isRecordingState == true {
+                out.font = .systemFont(ofSize: 16, weight: .bold)
+            } else {
                 out.font = .systemFont(ofSize: 10, weight: .medium)
-                return out
             }
-            button.configuration = config
-            button.configurationUpdateHandler = { button in
-                var updated = button.configuration
-                updated?.title = button.isSelected ? "서핑중" : "기록하기"
-                updated?.background.backgroundColor = button.isSelected
-                ? UIColor.surfBlue.withAlphaComponent(0.8)
-                : .surfBlue
-                button.configuration = updated
-            }
-            button.setNeedsUpdateConfiguration()
-        } else {
-            button.setTitle("기록하기", for: .normal)
-            button.setTitle("서핑중", for: .selected)
-            button.contentHorizontalAlignment = .center
-            button.contentVerticalAlignment = .center
-            button.titleLabel?.textAlignment = .center
-            button.titleLabel?.font = .systemFont(ofSize: 10, weight: .medium)
-            button.contentEdgeInsets = .zero
-            button.imageEdgeInsets = UIEdgeInsets(top: -6, left: 0, bottom: 6, right: 0)
-            button.titleEdgeInsets = UIEdgeInsets(top: 24, left: 0, bottom: -4, right: 0)
-            button.layer.cornerRadius = 33.5
+            return out
         }
+        button.configuration = config
+        button.configurationUpdateHandler = { button in
+            var updated = button.configuration
+            updated?.title = button.isSelected ? "서핑중" : "기록하기"
+            updated?.image = button.isSelected ? nil : UIImage(named: AssetImage.startWave)
+            button.configuration = updated
+        }
+        button.setNeedsUpdateConfiguration()
         
         // Shadow
         layer.shadowOffset = CGSize(width: 0, height: 4)
@@ -86,25 +77,53 @@ final class CenterButton: UIControl {
         isRecordingState = isRecording
         button.isSelected = isRecording
         
-        if #available(iOS 26.0, *) {
-            // iOS 26: Configuration 업데이트
-            button.setNeedsUpdateConfiguration()
+        if isRecording {
+            button.configuration?.background.backgroundColor = .clear
+            button.setTitleColor(.surfBlue, for: .normal)
+            button.tintColor = .surfBlue
+            addRadialGradient()
         } else {
-            // iOS 26 미만: backgroundColor 직접 변경
-            UIView.transition(with: button, duration: 0.2, options: .transitionCrossDissolve) {
-                if isRecording {
-                    self.button.backgroundColor = UIColor.surfBlue.withAlphaComponent(0.8)
-                } else {
-                    self.button.backgroundColor = .surfBlue
-                }
-            }
+            button.setTitleColor(.white, for: .normal)
+            button.tintColor = .white
+            removeRadialGradient()
         }
+        
+        button.setNeedsUpdateConfiguration()
         
         // Shadow 업데이트
         layer.shadowColor = isRecording
         ? UIColor.surfBlue.withAlphaComponent(0.6).cgColor
         : UIColor.surfBlue.cgColor
-        layer.shadowOpacity = isRecording ? 0.4 : 0.25
+        layer.shadowOpacity = isRecording ? 0.0 : 0.25
+    }
+    
+    private func addRadialGradient() {
+        removeRadialGradient()
+        
+        // 배경을 투명하게 설정
+        button.backgroundColor = .clear
+        
+        // Radial Gradient 레이어 생성
+        let gradient = CAGradientLayer()
+        gradient.type = .radial
+        gradient.colors = [
+            UIColor.radialSkyBlue.cgColor,   // #91BAFF (중심)
+            UIColor.white.cgColor        // #FFFFFF (외곽)
+        ]
+        gradient.startPoint = CGPoint(x: 0.5, y: 0.5)
+        let const = 1.5
+        gradient.endPoint = CGPoint(x: const, y: const)
+        gradient.frame = button.bounds
+        gradient.cornerRadius = button.layer.cornerRadius
+        
+        button.layer.insertSublayer(gradient, at: 0)
+        self.gradientLayer = gradient
+    }
+    
+    private func removeRadialGradient() {
+        gradientLayer?.removeFromSuperlayer()
+        gradientLayer = nil
+        button.backgroundColor = .surfBlue
     }
     
     override var isHighlighted: Bool {
@@ -120,10 +139,8 @@ final class CenterButton: UIControl {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        // iOS 26 미만에서는 layoutSubviews에서 cornerRadius 재계산
-        if #unavailable(iOS 26.0) {
-            let radius = min(button.bounds.width, button.bounds.height) / 2
-            button.layer.cornerRadius = radius
-        }
+        gradientLayer?.frame = button.bounds
+        gradientLayer?.cornerRadius = button.layer.cornerRadius
+        
     }
 }
