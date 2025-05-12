@@ -30,3 +30,10 @@ extension UIView {
         }
     }
 }
+extension UIButton {
+    func makeCircular() {
+        layoutIfNeeded()
+        layer.cornerRadius = bounds.height / 2
+        clipsToBounds = true
+    }
+}

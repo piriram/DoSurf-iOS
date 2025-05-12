@@ -12,11 +12,19 @@ import RxCocoa
 
 // MARK: - Surf End Overlay View
 class SurfEndOverlayView: UIView {
-    private let blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .systemUltraThinMaterial))
+    private let gradientBlurView = GradientBlurView(
+        blurStyle: .systemThickMaterial,
+        dimAlpha: 0.2,
+        gradientStartLocation: 0.0,
+        gradientEndLocation: 1.0
+    )
     private let containerView = UIView()
     private let surfEndButton = UIButton()
     private let cancelButton = UIButton()
     private let disposeBag = DisposeBag()
+    
+    // 블러 높이 설정 (bottom부터 이 높이만큼 블러 처리)
+    private let blurHeight: CGFloat = 800
     
     // 콜백
     var onSurfEnd: (() -> Void)?
@@ -35,12 +43,13 @@ class SurfEndOverlayView: UIView {
     }
     
     private func setupUI() {
-        // 블러 백그라운드
-        blurEffectView.alpha = 0
-        addSubview(blurEffectView)
+        // 그라데이션 블러 백그라운드
+        gradientBlurView.alpha = 0
+        addSubview(gradientBlurView)
         
-        blurEffectView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
+        gradientBlurView.snp.makeConstraints { make in
+            make.leading.trailing.bottom.equalToSuperview()
+            make.height.equalTo(blurHeight)
         }
         
         // 컨테이너 뷰
@@ -48,12 +57,19 @@ class SurfEndOverlayView: UIView {
         addSubview(containerView)
         
         containerView.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.width.height.equalTo(200)
+            make.centerX.equalToSuperview()
+            make.bottom.equalToSuperview()
+            make.width.height.equalTo(300)
         }
         
         setupSurfEndButton()
         setupCancelButton()
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        surfEndButton.makeCircular()
+        cancelButton.makeCircular()
     }
     
     private func setupSurfEndButton() {
@@ -62,8 +78,8 @@ class SurfEndOverlayView: UIView {
         surfEndButton.backgroundColor = .surfBlue
         surfEndButton.setTitle("서핑 종료", for: .normal)
         surfEndButton.setTitleColor(.white, for: .normal)
-        surfEndButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        surfEndButton.layer.cornerRadius = 60
+        surfEndButton.titleLabel?.font = .systemFont(ofSize: 32, weight: .bold)
+        surfEndButton.layer.cornerRadius = 77
         
         // 그림자 효과
         surfEndButton.layer.shadowColor = UIColor.surfBlue.cgColor
@@ -75,8 +91,8 @@ class SurfEndOverlayView: UIView {
         
         surfEndButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.centerY.equalToSuperview().offset(-20)
-            make.width.height.equalTo(120)
+            make.top.equalToSuperview()
+            make.width.height.equalTo(154)
         }
     }
     
@@ -85,7 +101,7 @@ class SurfEndOverlayView: UIView {
         cancelButton.backgroundColor = .systemBackground
         cancelButton.setImage(UIImage(systemName: "xmark"), for: .normal)
         cancelButton.tintColor = .surfBlue
-        cancelButton.layer.cornerRadius = 20
+        cancelButton.layer.cornerRadius = 34
         cancelButton.layer.borderWidth = 1
         cancelButton.layer.borderColor = UIColor.surfBlue.cgColor
         
@@ -99,8 +115,8 @@ class SurfEndOverlayView: UIView {
         
         cancelButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.top.equalTo(surfEndButton.snp.bottom).offset(30)
-            make.width.height.equalTo(40)
+            make.bottom.equalToSuperview().inset(28)
+            make.width.height.equalTo(68)
         }
     }
     
@@ -162,7 +178,7 @@ class SurfEndOverlayView: UIView {
         
         UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseOut]) {
             // 블러 효과 나타내기
-            self.blurEffectView.alpha = 1
+            self.gradientBlurView.alpha = 1
         }
         
         UIView.animate(withDuration: 0.4, delay: 0.1, usingSpringWithDamping: 0.8, initialSpringVelocity: 0.3, options: [.allowUserInteraction]) {
@@ -180,7 +196,7 @@ class SurfEndOverlayView: UIView {
         }
         
         UIView.animate(withDuration: 0.3, delay: 0.1, options: [.curveEaseIn]) {
-            self.blurEffectView.alpha = 0
+            self.gradientBlurView.alpha = 0
         } completion: { _ in
             completion()
         }

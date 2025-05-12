@@ -116,7 +116,6 @@ final class BeachSelectViewModel {
         
         // 카테고리 선택 처리
         let manualCategorySelection = input.categorySelected
-            .skip(1)
             .do(onNext: { [weak self] indexPath in
                 self?.hasSetInitialSelection = true
                 self?.saveCategoryIndex(indexPath.row)
@@ -141,7 +140,6 @@ final class BeachSelectViewModel {
             .map { _ in () }
         
         let categoryChangeTrigger = selectedCategoryIndex
-            .skip(1)
             .map { _ in () }
         
         let filterTrigger = Observable.merge(initialTrigger, categoryChangeTrigger)
