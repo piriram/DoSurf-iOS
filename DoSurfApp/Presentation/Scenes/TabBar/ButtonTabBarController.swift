@@ -387,7 +387,7 @@ final class ButtonTabBarController: UIViewController {
             guard let self = self else { return }
             
             // InteractionImage 애니메이션 표시
-            FullScreenImageAnimator.show(named: "InteractionImage", on: self.view, duration: 1.0) {
+            FullScreenImageAnimator.show(named: "InteractionImage", on: self.view, duration: 2.0) {
                 // 애니메이션 완료 후 서핑 시작
                 self.startSurfing()
             }

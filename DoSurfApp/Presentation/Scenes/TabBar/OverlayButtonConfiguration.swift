@@ -21,9 +21,9 @@ struct OverlayButtonConfiguration {
         )
     }
     
-    static func outlined(title: String, tintColor: UIColor, width: CGFloat = 160, height: CGFloat = 48) -> OverlayButtonConfiguration {
+    static func capsuled(title: String, tintColor: UIColor, width: CGFloat = 130, height: CGFloat = 44) -> OverlayButtonConfiguration {
         return OverlayButtonConfiguration(
-            style: .outlined(title: title, tintColor: tintColor),
+            style: .capsule(title: title, tintColor: tintColor),
             width: width,
             height: height
         )

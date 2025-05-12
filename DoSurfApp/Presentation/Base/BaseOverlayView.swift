@@ -80,7 +80,7 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
         
         mainBtn.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.top.equalToSuperview()
+            make.bottom.equalToSuperview().inset(200)
             make.width.equalTo(main.width)
             make.height.equalTo(main.height)
         }
@@ -92,7 +92,7 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
         
         secondaryBtn.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.top.equalTo(mainBtn.snp.bottom).offset(spacing)
+            make.bottom.equalToSuperview().inset(130)
             make.width.equalTo(secondary.width)
             make.height.equalTo(secondary.height)
         }
@@ -104,7 +104,7 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
         
         cancelBtn.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
-            make.bottom.equalToSuperview().inset(28)
+            make.bottom.equalToSuperview().inset(32)
             make.width.equalTo(cancel.width)
             make.height.equalTo(cancel.height)
         }

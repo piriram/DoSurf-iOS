@@ -13,7 +13,7 @@ import RxCocoa
 enum CustomButtonStyle {
     case primary(title: String)
     case secondary(title: String)
-    case outlined(title: String, tintColor: UIColor)
+    case capsule(title: String, tintColor: UIColor)
     case icon(image: UIImage?, tintColor: UIColor)
     
     var isCircular: Bool {
@@ -30,7 +30,7 @@ final class CustomButton: UIButton {
     // MARK: - Properties
     private let style: CustomButtonStyle
     private let disposeBag = DisposeBag()
-    
+    private var gradientLayer: CAGradientLayer?
     // MARK: - Initialization
     init(style: CustomButtonStyle) {
         self.style = style
@@ -46,6 +46,7 @@ final class CustomButton: UIButton {
     // MARK: - Layout
     override func layoutSubviews() {
         super.layoutSubviews()
+        gradientLayer?.frame = bounds
         if style.isCircular {
             makeCircular()
         }
@@ -60,8 +61,8 @@ final class CustomButton: UIButton {
         case .secondary(let title):
             setupSecondaryStyle(title: title)
             
-        case .outlined(let title, let tintColor):
-            setupOutlinedStyle(title: title, tintColor: tintColor)
+        case .capsule(let title, let tintColor):
+            setupCapsuleStyle(title: title, tintColor: tintColor)
             
         case .icon(let image, let tintColor):
             setupIconStyle(image: image, tintColor: tintColor)
@@ -69,7 +70,20 @@ final class CustomButton: UIButton {
     }
     
     private func setupPrimaryStyle(title: String) {
-        backgroundColor = .surfBlue
+        // 그라데이션 레이어 생성
+        let gradient = CAGradientLayer()
+        gradient.colors = [
+            UIColor(red: 0.004, green: 0.290, blue: 0.780, alpha: 1.0).cgColor, // #004AC7 (0%)
+            UIColor(red: 0.871, green: 0.875, blue: 0.957, alpha: 1.0).cgColor  // #DEDFE4 (100%)
+        ]
+        gradient.startPoint = CGPoint(x: 0.5, y: 0)
+        gradient.endPoint = CGPoint(x: 0.5, y: 2.5)
+        gradient.frame = bounds
+        gradient.cornerRadius = 77
+        
+        layer.insertSublayer(gradient, at: 0)
+        self.gradientLayer = gradient
+        
         setTitle(title, for: .normal)
         setTitleColor(.white, for: .normal)
         titleLabel?.font = .systemFont(ofSize: 32, weight: .bold)
@@ -98,20 +112,12 @@ final class CustomButton: UIButton {
         layer.shadowOpacity = 0.1
     }
     
-    private func setupOutlinedStyle(title: String, tintColor: UIColor) {
-        backgroundColor = .systemBackground
+    private func setupCapsuleStyle(title: String, tintColor: UIColor) {
+        backgroundColor = .backgroundGray
         setTitle(title, for: .normal)
         setTitleColor(tintColor, for: .normal)
         titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         layer.cornerRadius = 24
-        layer.borderWidth = 1
-        layer.borderColor = tintColor.cgColor
-        
-        // 그림자 효과
-        layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOffset = CGSize(width: 0, height: 2)
-        layer.shadowRadius = 4
-        layer.shadowOpacity = 0.1
     }
     
     private func setupIconStyle(image: UIImage?, tintColor: UIColor) {
