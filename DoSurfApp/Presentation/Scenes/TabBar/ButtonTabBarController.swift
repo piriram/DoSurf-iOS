@@ -57,6 +57,7 @@ final class ButtonTabBarController: UIViewController {
     
     // Overlay
     private var surfEndOverlay: SurfEndOverlayView?
+    private var surfStartOverlay: SurfStartOverlayView?
     
     // MARK: - Initialization
     init(storageService: SurfingRecordService = UserDefaultsManager()) {
@@ -249,7 +250,7 @@ final class ButtonTabBarController: UIViewController {
         if storageService.readSurfingState() {
             showSurfEndOverlay()
         } else {
-            startSurfing()
+            showSurfStartOverlay()
         }
     }
     
@@ -340,6 +341,80 @@ final class ButtonTabBarController: UIViewController {
         UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
             self.bottomBar.alpha = hidden ? 0 : 1
         }
+    }
+    
+    // MARK: - Surf Start Overlay
+    private func showSurfStartOverlay() {
+        guard surfStartOverlay == nil else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        
+        let overlay = SurfStartOverlayView()
+        surfStartOverlay = overlay
+        
+        overlay.onSurfStart = { [weak self] in
+            self?.handleSurfStart()
+        }
+        overlay.onRecordDirectly = { [weak self] in
+            self?.handleRecordDirectly()
+        }
+        overlay.onCancel = { [weak self] in
+            self?.hideSurfStartOverlay()
+        }
+        
+        view.addSubview(overlay)
+        overlay.snp.makeConstraints { $0.edges.equalToSuperview() }
+        animateBottomBarVisibility(hidden: true)
+        overlay.show()
+    }
+    
+    private func hideSurfStartOverlay(completion: (() -> Void)? = nil) {
+        guard let overlay = surfStartOverlay else {
+            animateBottomBarVisibility(hidden: false)
+            completion?()
+            return
+        }
+        
+        animateBottomBarVisibility(hidden: false)
+        overlay.hide { [weak self] in
+            overlay.removeFromSuperview()
+            self?.surfStartOverlay = nil
+            completion?()
+        }
+    }
+    
+    private func handleSurfStart() {
+        hideSurfStartOverlay { [weak self] in
+            guard let self = self else { return }
+            
+            // InteractionImage 애니메이션 표시
+            FullScreenImageAnimator.show(named: "InteractionImage", on: self.view, duration: 1.0) {
+                // 애니메이션 완료 후 서핑 시작
+                self.startSurfing()
+            }
+        }
+    }
+    
+    private func handleRecordDirectly() {
+        hideSurfStartOverlay { [weak self] in
+            guard let self = self else { return }
+            
+            // InteractionImage 없이 바로 기록 화면으로 이동
+            self.pushToRecordWriteDirectly()
+        }
+    }
+    
+    private func pushToRecordWriteDirectly() {
+        let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
+        
+        let recordVC = DIContainer.shared.makeSurfRecordViewController(
+            startTime: nil,
+            endTime: nil,
+            charts: chartsToPass
+        )
+        recordVC.title = "파도 기록"
+        recordVC.hidesBottomBarWhenPushed = true
+        
+        currentNavigationController?.pushViewController(recordVC, animated: true)
     }
     
 }
