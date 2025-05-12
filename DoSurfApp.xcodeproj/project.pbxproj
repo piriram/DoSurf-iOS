@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		21356D8C2E9572B6003C84FA /* DoSurfWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39B2E8CDF8C00682B29 /* Differentiator */; };
 		2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39D2E8CDF8C00682B29 /* RxDataSources */; };
 		21E7A4952E843062008EFDDA /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 21E7A4942E843062008EFDDA /* .gitignore */; };
@@ -17,30 +16,6 @@
 		21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052C2E85358E004EFEE3 /* RxCocoa */; };
 		21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052E2E85358E004EFEE3 /* RxSwift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		21356D8A2E9572B6003C84FA /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 21E7A4742E842FED008EFDDA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 21356D812E9572B4003C84FA;
-			remoteInfo = "DoSurfWatch Watch App";
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		21356D902E9572B6003C84FA /* Embed Watch Content */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
-			dstSubfolderSpec = 16;
-			files = (
-				21356D8C2E9572B6003C84FA /* DoSurfWatch Watch App.app in Embed Watch Content */,
-			);
-			name = "Embed Watch Content";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DoSurfWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -150,12 +125,10 @@
 				21E7A4782E842FED008EFDDA /* Sources */,
 				21E7A4792E842FED008EFDDA /* Frameworks */,
 				21E7A47A2E842FED008EFDDA /* Resources */,
-				21356D902E9572B6003C84FA /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				21356D8B2E9572B6003C84FA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
@@ -252,14 +225,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		21356D8B2E9572B6003C84FA /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 21356D812E9572B4003C84FA /* DoSurfWatch Watch App */;
-			targetProxy = 21356D8A2E9572B6003C84FA /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		21356D8E2E9572B6003C84FA /* Debug */ = {
