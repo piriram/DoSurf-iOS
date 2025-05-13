@@ -1,15 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "sun.png",
+      "filename" : "sun.max.fill.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "sun.max.fill@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "sun.max.fill@3x.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

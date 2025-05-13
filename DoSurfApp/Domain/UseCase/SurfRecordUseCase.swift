@@ -59,7 +59,7 @@ final class SurfRecordUseCase: SurfRecordUseCaseProtocol {
                     waveDirection: chart.waveDirection,
                     airTemperature: chart.airTemperature,
                     waterTemperature: chart.waterTemperature,
-                    weatherIconName: chart.weather.iconName
+                    weatherIconName: String(chart.weather.rawValue)
                 )
             }
         )
@@ -87,4 +87,3 @@ final class SurfRecordUseCase: SurfRecordUseCaseProtocol {
         return repository.updateSurfRecord(record)
     }
 }
-

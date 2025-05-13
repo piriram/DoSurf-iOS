@@ -37,9 +37,40 @@ struct RecordCardViewModel {
         self.rating = Int(record.rating)
         self.ratingText = Self.ratingToText(Int(record.rating))
         
+        #if DEBUG
+        print("\n=== RecordCardViewModel Init Debug ===")
+        print("Record Date: \(record.surfDate)")
+        print("Charts count: \(record.charts.count)")
+        #endif
+        
         // Convert SurfChartData to Chart
-        self.charts = record.charts.map { chartData in
-            Chart(
+        self.charts = record.charts.enumerated().map { index, chartData in
+            // Try to parse as Int first (new format), then fallback to iconName matching (old format)
+            let weatherType: WeatherType
+            if let rawValue = Int(chartData.weatherIconName),
+               let type = WeatherType(rawValue: rawValue) {
+                // New format: rawValue stored as String
+                weatherType = type
+            } else {
+                // Old format: iconName stored as String
+                weatherType = WeatherType.allCases.first { $0.iconName == chartData.weatherIconName } ?? .unknown
+            }
+            
+            #if DEBUG
+            print("\n--- Chart[\(index)] Debug ---")
+            print("Time: \(chartData.time)")
+            print("WeatherIconName (stored): '\(chartData.weatherIconName)'")
+            print("WeatherType: \(weatherType)")
+            print("Icon name: \(weatherType.iconName)")
+            
+            if weatherType == .unknown {
+                print("⚠️ WARNING: WeatherType is .unknown!")
+                print("   Stored value: '\(chartData.weatherIconName)'")
+                print("   Could not match to any WeatherType")
+            }
+            #endif
+            
+            return Chart(
                 beachID: 0,
                 time: chartData.time,
                 windDirection: chartData.windDirection,
@@ -48,10 +79,18 @@ struct RecordCardViewModel {
                 waveHeight: chartData.waveHeight,
                 wavePeriod: chartData.wavePeriod,
                 waterTemperature: chartData.waterTemperature,
-                weather: WeatherType(rawValue: Int(chartData.weatherIconName) ?? 999) ?? .unknown,
+                weather: weatherType,
                 airTemperature: chartData.airTemperature
             )
         }
+        
+        #if DEBUG
+        print("\n=== Final Charts Summary ===")
+        let weatherCounts = Dictionary(grouping: self.charts, by: { $0.weather })
+            .mapValues { $0.count }
+        print("Weather distribution: \(weatherCounts)")
+        print("=====================================\n")
+        #endif
     }
     
     private static func ratingToText(_ rating: Int) -> String {

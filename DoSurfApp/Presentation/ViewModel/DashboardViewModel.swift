@@ -240,6 +240,7 @@ final class DashboardViewModel {
     }
 
     private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
+        print("iconName:\(iconName)")
         switch iconName {
         case "sun": return .clear
         case "cloudLittleSun": return .cloudLittleSun

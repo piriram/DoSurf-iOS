@@ -58,7 +58,7 @@ enum WeatherType: Int, CaseIterable, Codable {
         case .snow:
             return "snow"
         case .unknown:
-            return "questionmark.circle.fill"
+            return "cloudLittleMoon"
         }
     }
 }
