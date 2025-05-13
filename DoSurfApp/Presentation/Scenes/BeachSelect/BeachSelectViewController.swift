@@ -23,6 +23,8 @@ final class BeachSelectViewController: BaseViewController {
     private let viewDidLoadSubject = PublishSubject<Void>()
     
     var onBeachSelected: ((BeachDTO) -> Void)?
+    var onAllBeachesSelected: (() -> Void)?
+    var showAllButton: Bool = false
     
     private lazy var regionDataSource = createRegionDataSource()
     private lazy var beachDataSource = createBeachDataSource()
@@ -191,6 +193,17 @@ final class BeachSelectViewController: BaseViewController {
     
     override func configureNavigationBar() {
         navigationItem.title = "지역 선택"
+        
+        if showAllButton {
+            let allButton = UIBarButtonItem(
+                title: "전체",
+                style: .plain,
+                target: self,
+                action: #selector(allButtonTapped)
+            )
+            navigationItem.rightBarButtonItem = allButton
+        }
+        
         let appearance = UINavigationBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.shadowColor = .clear
@@ -207,6 +220,24 @@ final class BeachSelectViewController: BaseViewController {
             navBar.scrollEdgeAppearance = appearance
             navBar.compactAppearance = appearance
             navBar.tintColor = .surfBlue
+        }
+    }
+    
+    @objc private func allButtonTapped() {
+        onAllBeachesSelected?()
+        
+        let tabBar = tabBarController?.tabBar
+        tabBar?.isUserInteractionEnabled = false
+        navigationController?.popViewController(animated: true)
+        
+        if let coordinator = navigationController?.transitionCoordinator {
+            coordinator.animate(alongsideTransition: nil) { _ in
+                tabBar?.isUserInteractionEnabled = true
+            }
+        } else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                tabBar?.isUserInteractionEnabled = true
+            }
         }
     }
     

@@ -3,8 +3,7 @@ import RxSwift
 import RxCocoa
 import SnapKit
 import CoreData
-// TODO: actionsheet -> subview
-// TODO: 수정 기능 되살리기
+
 final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - UI Components
@@ -220,25 +219,29 @@ final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - Presentation Methods
     private func presentLocationSelector() {
-        // ViewModel의 beaches를 받아와서 처리해야 함
-        // 임시로 간단한 구현
-        let alertController = UIAlertController(title: "장소 선택", message: nil, preferredStyle: .actionSheet)
+        let selectedBeachID = viewModel.selectedBeachIDRelay.value
+        let beaches = viewModel.beachesRelay.value
+        let selectedBeach = beaches.first { Int($0.id) == selectedBeachID }
         
-        alertController.addAction(UIAlertAction(title: "전체", style: .default) { [weak self] _ in
-            self?.locationSelectionSubject.onNext(nil)
+        let beachSelectViewModel = DIContainer.shared.makeBeachSelectViewModel(
+            initialSelectedBeach: selectedBeach
+        )
+        let beachSelectViewController = BeachSelectViewController(viewModel: beachSelectViewModel)
+        beachSelectViewController.hidesBottomBarWhenPushed = true
+        beachSelectViewController.showAllButton = true
+        
+        beachSelectViewController.onBeachSelected = { [weak self] beach in
+            guard let beachID = Int(beach.id) else { return }
+            self?.locationSelectionSubject.onNext(beachID)
             self?.scrollToTop()
-        })
-        
-        // TODO: beaches를 output으로 받아서 동적으로 생성
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        
-        if let popoverController = alertController.popoverPresentationController {
-            popoverController.sourceView = filterView
-            popoverController.sourceRect = CGRect(x: 20, y: 20, width: 1, height: 1)
         }
         
-        present(alertController, animated: true)
+        beachSelectViewController.onAllBeachesSelected = { [weak self] in
+            self?.locationSelectionSubject.onNext(nil)
+            self?.scrollToTop()
+        }
+        
+        navigationController?.pushViewController(beachSelectViewController, animated: true)
     }
     
     private func presentSortMenu() {

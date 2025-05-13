@@ -17,6 +17,8 @@ final class RegionSelectCell: UITableViewCell {
         let label = UILabel()
         label.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.semibold)
         label.textColor = .grayText
+        label.adjustsFontSizeToFitWidth = true
+        label.minimumScaleFactor = 0.7
         return label
     }()
     
@@ -39,7 +41,8 @@ final class RegionSelectCell: UITableViewCell {
         
         contentView.addSubview(titleLabel)
         titleLabel.snp.makeConstraints {
-            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.leading.equalToSuperview().inset(16)
+            $0.trailing.equalToSuperview().inset(24)
             $0.top.bottom.equalToSuperview().inset(20)
         }
     }

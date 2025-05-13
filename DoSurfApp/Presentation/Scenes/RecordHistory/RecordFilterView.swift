@@ -9,7 +9,8 @@ import UIKit
 import SnapKit
 import RxSwift
 import RxCocoa
-
+// TODO: actionsheet -> subview
+// TODO: 수정 기능 되살리기
 protocol RecordFilterViewDelegate: AnyObject {
     func didTapLocation()
     func didChangeFilter(_ filter: RecordFilter)
