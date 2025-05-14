@@ -17,7 +17,8 @@ class DashboardViewController: BaseViewController {
 
     private let viewDidLoadSubject = PublishSubject<Void>()
     private let beachSelectedSubject = PublishSubject<BeachDTO>()
-    
+    private let cardsLazyTrigger = PublishSubject<Void>()
+
     // MARK: - UI
     private lazy var backgroundImageView: UIImageView = {
         let imageView = UIImageView()
@@ -25,6 +26,12 @@ class DashboardViewController: BaseViewController {
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         return imageView
+    }()
+    
+    private let bottomBackgroundView: UIView = {
+        let v = UIView()
+        v.backgroundColor = .systemBackground
+        return v
     }()
 
     private let headerView = DashboardHeaderView()
@@ -70,6 +77,7 @@ class DashboardViewController: BaseViewController {
         view.addSubview(backgroundImageView)
         view.addSubview(headerView)
         view.addSubview(chartContainerView)
+        view.addSubview(bottomBackgroundView)
         chartContainerView.addSubview(chartListView)
         chartListView.attachRefreshControl(refreshControl)
     }
@@ -84,9 +92,14 @@ class DashboardViewController: BaseViewController {
         chartContainerView.snp.makeConstraints {
             $0.top.equalTo(headerView.snp.bottom)
             $0.leading.trailing.equalToSuperview()
-            $0.bottom.equalTo(view.safeAreaLayoutGuide)
+            $0.bottom.equalTo(view.safeAreaLayoutGuide).inset(55)
         }
         chartListView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        
+        bottomBackgroundView.snp.makeConstraints {
+                $0.leading.trailing.bottom.equalToSuperview()
+                $0.top.equalTo(chartContainerView.snp.bottom)
+            }
     }
 
     override func configureAction() {
@@ -100,7 +113,8 @@ class DashboardViewController: BaseViewController {
             viewDidLoad: viewDidLoadSubject.asObservable(),
             beachSelected: beachSelectedSubject.asObservable()
                 .do(onNext: { [weak self] beach in self?.currentBeach = beach }),
-            refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable()
+            refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable(),
+            cardsLazyTrigger: cardsLazyTrigger.asObservable()
         )
         let output = viewModel.transform(input: input)
 
@@ -124,6 +138,12 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
 
+        // Trigger average cards lazy load once after first beachData arrives
+        output.beachData
+            .take(1)
+            .subscribe(onNext: { [weak self] _ in self?.cardsLazyTrigger.onNext(()) })
+            .disposed(by: disposeBag)
+
         output.dashboardCards
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] cards in
@@ -136,7 +156,6 @@ class DashboardViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] grouped in
                 self?.chartListView.update(groupedCharts: grouped)
-                // ⛔️ 삭제: flatten 및 currentCharts 보관 로직은 ViewModel로 이동
             })
             .disposed(by: disposeBag)
 
@@ -229,3 +248,4 @@ extension DashboardViewController {
         return viewModel.charts(from: start, to: end)
     }
 }
+
