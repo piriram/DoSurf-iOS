@@ -184,7 +184,7 @@ final class NoteViewController: BaseViewController {
         
         output.saveError
             .emit(onNext: { [weak self] (error: Error) in
-                self?.showAlert(title: "오류", message: error.localizedDescription)
+                self?.showErrorAlert(message: error.localizedDescription)
             })
             .disposed(by: disposeBag)
         
