@@ -22,9 +22,9 @@ final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - Dependencies
     let viewModel: RecordHistoryViewModel
-    
+
     // MARK: - Rx
-    private let disposeBag = DisposeBag()
+    let disposeBag = DisposeBag()
     let deleteRecordSubject = PublishSubject<NSManagedObjectID>()
     let pinRecordSubject = PublishSubject<NSManagedObjectID>()
     let editRecordSubject = PublishSubject<NSManagedObjectID>()
