@@ -1,10 +1,3 @@
-//
-//  ComplicationDataManager.swift
-//  DoSurfWatch Watch App
-//
-//  Created by 잠만보김쥬디 on 10/15/25.
-//
-
 import ClockKit
 
 // MARK: - Complication Data Manager

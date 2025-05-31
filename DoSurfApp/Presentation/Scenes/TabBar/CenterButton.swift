@@ -1,10 +1,3 @@
-//
-//  CenterButton.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 10/16/25.
-//
-
 import UIKit
 import SnapKit
 

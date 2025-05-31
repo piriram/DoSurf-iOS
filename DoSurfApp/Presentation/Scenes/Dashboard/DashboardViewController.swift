@@ -184,6 +184,14 @@ class DashboardViewController: BaseViewController {
                 self?.refreshControl.sendActions(for: .valueChanged)
             })
             .disposed(by: disposeBag)
+
+        // 앱이 다시 활성화될 때 현재 시간 기준으로 차트 포커싱
+        NotificationCenter.default.rx.notification(UIApplication.didBecomeActiveNotification)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                self?.chartListView.focusOnUpcomingChart()
+            })
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Private
@@ -246,6 +254,11 @@ extension DashboardViewController {
     /// 기간 필터링 차트가 필요하면 이 메서드를 사용하세요.
     func charts(from start: Date?, to end: Date?) -> [Chart] {
         return viewModel.charts(from: start, to: end)
+    }
+
+    /// 현재 선택된 해변 정보 반환
+    func getCurrentBeach() -> BeachDTO? {
+        return currentBeach
     }
 }
 

@@ -1,10 +1,3 @@
-//
-//  UserDefaultsService.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 10/3/25.
-//
-
 import Foundation
 
 // MARK: - Protocol

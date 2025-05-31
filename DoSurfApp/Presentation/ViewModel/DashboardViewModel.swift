@@ -1,9 +1,3 @@
-//
-//  DashboardViewModel.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/30/25.
-//
 import UIKit
 import RxSwift
 import RxCocoa
@@ -84,12 +78,12 @@ final class DashboardViewModel {
         .debounce(.milliseconds(120), scheduler: MainScheduler.instance)
         .share(replay: 1)
 
-        // 1) 현재 해변 데이터
+        // 1) 현재 해변 데이터 (최근 7일만 조회하여 성능 최적화)
         let beachData = loadTrigger
             .do(onNext: { [weak self] _ in self?.isLoadingRelay.accept(true) })
             .flatMapLatest { [weak self] beach -> Observable<BeachData> in
                 guard let self else { return .empty() }
-                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug)
+                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug, daysBack: 7)
                     .asObservable()
                     .subscribe(on: bg)
                     .do(onNext: { [weak self] data in
@@ -150,7 +144,7 @@ final class DashboardViewModel {
 
                 return Observable.from(targets)
                     .flatMapConcurrent(maxConcurrent: 10) { b -> Observable<BeachData?> in
-                        self.fetchBeachDataUseCase.execute(beachId: b.id, region: b.region.slug)
+                        self.fetchBeachDataUseCase.execute(beachId: b.id, region: b.region.slug, daysBack: 7)
                             .map { Optional($0) }
                             .asObservable()
                             .catch { _ in .just(nil) }
@@ -277,8 +271,8 @@ final class DashboardViewModel {
     }
 
     // MARK: - Private Helpers
-    private func fetchBeachDataDirectly(beachId: String, region: String) -> Single<BeachData> {
-        fetchBeachDataUseCase.execute(beachId: beachId, region: region)
+    private func fetchBeachDataDirectly(beachId: String, region: String, daysBack: Int = 7) -> Single<BeachData> {
+        fetchBeachDataUseCase.execute(beachId: beachId, region: region, daysBack: daysBack)
     }
 
     private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {

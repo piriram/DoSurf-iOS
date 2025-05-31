@@ -1,10 +1,3 @@
-//
-//  ChartTableViewCell.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/27/25.
-//
-
 import UIKit
 import RxSwift
 import RxCocoa

@@ -1,10 +1,3 @@
-//
-//  SurfingActivityManager.swift
-//  DoSurfApp
-//
-//  Created by Claude on 11/17/25.
-//
-
 import Foundation
 import ActivityKit
 import UIKit

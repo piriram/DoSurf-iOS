@@ -1,9 +1,3 @@
-//
-//  FetchBeachDataUseCase.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/30/25.
-//
 import UIKit
 import RxSwift
 import FirebaseFirestore
@@ -11,19 +5,23 @@ import FirebaseFirestore
 // MARK: - UseCase
 protocol FetchBeachDataUseCase {
     /// beachId와 region을 알고 있을 때 사용하는 메서드
-    func execute(beachId: String, region: String) -> Single<BeachData>
+    /// - Parameters:
+    ///   - beachId: 해변 ID
+    ///   - region: 지역 slug
+    ///   - daysBack: 몇 일 전 데이터까지 가져올지 (기본값: 7일)
+    func execute(beachId: String, region: String, daysBack: Int) -> Single<BeachData>
 }
 
 final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
     private let repository: FirestoreProtocol
-    
+
     init(repository: FirestoreProtocol) {
         self.repository = repository
     }
-    
+
     // MARK: - Execute
-    func execute(beachId: String, region: String) -> Single<BeachData> {
-        return fetch(beachId: beachId, region: region)
+    func execute(beachId: String, region: String, daysBack: Int = 7) -> Single<BeachData> {
+        return fetch(beachId: beachId, region: region, daysBack: daysBack)
             .catch { error in
                 if let apiError = error as? FirebaseAPIError {
                     return .error(apiError)
@@ -31,10 +29,10 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
                 return .error(FirebaseAPIError.map(error))
             }
     }
-    
+
     // MARK: - Private
-    private func fetch(beachId: String, region: String) -> Single<BeachData> {
-        let since = Date().addingTimeInterval(-48*60*60)
+    private func fetch(beachId: String, region: String, daysBack: Int) -> Single<BeachData> {
+        let since = Date().addingTimeInterval(-Double(daysBack) * 24 * 60 * 60)
         
         return Single.zip(
             repository.fetchMetadata(beachId: beachId, region: region),
@@ -47,8 +45,15 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
             let metadata = metadataDTO.toDomain()
             let charts = forecastDTOs
                 .map { $0.toDomain() }
+                .filter { chart in
+                    // 바람, 파주기, 날씨가 모두 0이면 유효하지 않은 데이터로 간주하여 제외
+                    let hasValidWind = chart.windSpeed > 0
+                    let hasValidWave = chart.wavePeriod > 0
+                    let hasValidWeather = chart.weather.rawValue != 0
+                    return hasValidWind || hasValidWave || hasValidWeather
+                }
                 .sorted { $0.time < $1.time }
-            
+
             return BeachData(
                 metadata: metadata,
                 charts: charts,

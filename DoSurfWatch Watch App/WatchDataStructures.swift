@@ -1,10 +1,3 @@
-//
-//  WatchDataStructures.swift
-//  DoSurfWatch Watch App
-//
-//  Watch 앱용 데이터 구조체들
-//
-
 import Foundation
 
 // Watch 앱에서 사용할 서핑 세션 데이터

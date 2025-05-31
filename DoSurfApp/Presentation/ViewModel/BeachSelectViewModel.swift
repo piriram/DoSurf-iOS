@@ -1,9 +1,3 @@
-//
-//  BeachSelectViewModel.swift
-//  DoSurfApp
-//
-//  Created by 잘만보김쥬디 on 9/29/25.
-//
 import UIKit
 import RxSwift
 import RxCocoa
@@ -200,8 +194,8 @@ final class BeachSelectViewModel {
             })
             .flatMapLatest { [weak self] beach -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
-                
-                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug)
+
+                return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug, daysBack: 7)
                     .asObservable()
                     .do(
                         onNext: { [weak self] _ in

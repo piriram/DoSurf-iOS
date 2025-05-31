@@ -1,10 +1,3 @@
-//
-//  SurfingLiveActivity.swift
-//  DoSurfWidgetExtension
-//
-//  Created by 잠만보김쥬디 on 11/17/25.
-//
-
 import ActivityKit
 import WidgetKit
 import SwiftUI

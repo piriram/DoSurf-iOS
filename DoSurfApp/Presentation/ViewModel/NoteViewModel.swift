@@ -1,10 +1,3 @@
-//
-//  SurfRecordViewModel.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/29/25.
-//
-
 import RxSwift
 import RxCocoa
 import Foundation
@@ -27,7 +20,7 @@ final class NoteViewModel {
         let filteredCharts: Driver<[Chart]>
         let initialData: Driver<InitialData>
         let saveSuccess: Driver<Void>
-        let saveError: Signal<Error>  // ✅ Error 타입으로 수정
+        let saveError: Signal<Error>  
         let isLoading: Driver<Bool>
     }
     
@@ -42,8 +35,9 @@ final class NoteViewModel {
     // MARK: - Properties
     private let mode: SurfRecordMode
     private let surfRecordUseCase: SurfRecordUseCaseProtocol
+    private let fetchBeachDataUseCase: FetchBeachDataUseCase
     private let disposeBag = DisposeBag()
-    
+
     // MARK: - State
     private let chartsRelay = BehaviorRelay<[Chart]>(value: [])
     private let currentDateRelay = BehaviorRelay<Date>(value: Date())
@@ -51,15 +45,17 @@ final class NoteViewModel {
     private let currentEndTimeRelay = BehaviorRelay<Date>(value: Date())
     private let currentRatingRelay = BehaviorRelay<Int>(value: 3)
     private let currentMemoRelay = BehaviorRelay<String?>(value: nil)
-    
+
     // MARK: - Initialization
     init(
         mode: SurfRecordMode,
-        surfRecordUseCase: SurfRecordUseCaseProtocol
+        surfRecordUseCase: SurfRecordUseCaseProtocol,
+        fetchBeachDataUseCase: FetchBeachDataUseCase
     ) {
         self.mode = mode
         self.surfRecordUseCase = surfRecordUseCase
-        
+        self.fetchBeachDataUseCase = fetchBeachDataUseCase
+
         // 초기 차트 데이터 설정
         if let charts = mode.charts {
             chartsRelay.accept(charts)
@@ -72,6 +68,37 @@ final class NoteViewModel {
         let saveSuccessRelay = PublishRelay<Void>()
         let saveErrorRelay = PublishRelay<Error>()  // ✅ Error 타입
         
+        // viewDidLoad 시 beach 정보로 차트 로드 (charts가 nil일 때만)
+        input.viewDidLoad
+            .take(1)
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                // charts가 nil이고 beach 정보가 있으면 차트 로드
+                if self.mode.charts == nil, let beach = self.mode.beach {
+                    loadingRelay.accept(true)
+                    self.fetchBeachDataUseCase.execute(
+                        beachId: beach.id,
+                        region: beach.region.slug,
+                        daysBack: 7
+                    )
+                    .asObservable()
+                    .subscribe(on: ConcurrentDispatchQueueScheduler(qos: .userInitiated))
+                    .observe(on: MainScheduler.instance)
+                    .subscribe(
+                        onNext: { [weak self] beachData in
+                            self?.chartsRelay.accept(beachData.charts)
+                            loadingRelay.accept(false)
+                        },
+                        onError: { error in
+                            print("차트 로드 실패: \(error)")
+                            loadingRelay.accept(false)
+                        }
+                    )
+                    .disposed(by: self.disposeBag)
+                }
+            })
+            .disposed(by: disposeBag)
+
         // viewDidLoad 시 초기 데이터 설정
         let initialData = input.viewDidLoad
             .map { [weak self] _ -> InitialData in  // ✅ 타입 명시
@@ -84,16 +111,16 @@ final class NoteViewModel {
                         memo: nil
                     )
                 }
-                
+
                 let now = Date()
                 var date = now
                 var startTime: Date
                 var endTime: Date
                 var rating = 3
                 var memo: String?
-                
+
                 switch self.mode {
-                case .new(let start, let end, _):
+                case .new(let start, let end, _, _):
                     if let start = start {
                         date = start
                         startTime = self.stripSeconds(start)
@@ -106,7 +133,7 @@ final class NoteViewModel {
                         startTime = self.date(bySettingHour: 13, minute: 0, on: now)
                         endTime = self.date(bySettingHour: 15, minute: 0, on: now)
                     }
-                    
+
                 case .edit(let record):
                     date = record.surfDate
                     startTime = record.startTime
@@ -114,14 +141,14 @@ final class NoteViewModel {
                     rating = Int(record.rating)
                     memo = record.memo
                 }
-                
+
                 // 상태 업데이트
                 self.currentDateRelay.accept(date)
                 self.currentStartTimeRelay.accept(startTime)
                 self.currentEndTimeRelay.accept(endTime)
                 self.currentRatingRelay.accept(rating)
                 self.currentMemoRelay.accept(memo)
-                
+
                 return InitialData(
                     date: date,
                     startTime: startTime,

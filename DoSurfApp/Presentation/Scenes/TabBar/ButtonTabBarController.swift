@@ -1,10 +1,3 @@
-//
-//  CustomTabBarController.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 10/16/25.
-//
-
 import UIKit
 import RxSwift
 import RxCocoa
@@ -299,16 +292,27 @@ final class ButtonTabBarController: UIViewController {
     
     private func pushToRecordWrite() {
         let recordData = viewModel.getRecordData()
-        let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
-        
+        let currentBeach = chartViewController.getCurrentBeach()
+        let allCharts = chartViewController.chartsSnapshot()
+
+        // 현재 선택된 해변의 차트인지 확인
+        let chartsToPass: [Chart]?
+        if let beach = currentBeach, let firstChart = allCharts.first {
+            // beachID가 일치하면 차트 전달, 아니면 nil (NoteViewModel에서 로드)
+            chartsToPass = (firstChart.beachID == Int(beach.id)) ? allCharts : nil
+        } else {
+            chartsToPass = allCharts.isEmpty ? nil : allCharts
+        }
+
         let recordVC = DIContainer.shared.makeSurfRecordViewController(
             startTime: recordData.startTime,
             endTime: recordData.endTime,
-            charts: chartsToPass
+            charts: chartsToPass,
+            beach: currentBeach
         )
         recordVC.title = "파도 기록"
         recordVC.hidesBottomBarWhenPushed = true
-        
+
         currentNavigationController?.pushViewController(recordVC, animated: true)
     }
     
@@ -383,12 +387,23 @@ final class ButtonTabBarController: UIViewController {
     }
     
     private func pushToRecordWriteDirectly() {
-        let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
-        
+        let currentBeach = chartViewController.getCurrentBeach()
+        let allCharts = chartViewController.chartsSnapshot()
+
+        // 현재 선택된 해변의 차트인지 확인
+        let chartsToPass: [Chart]?
+        if let beach = currentBeach, let firstChart = allCharts.first {
+            // beachID가 일치하면 차트 전달, 아니면 nil (NoteViewModel에서 로드)
+            chartsToPass = (firstChart.beachID == Int(beach.id)) ? allCharts : nil
+        } else {
+            chartsToPass = allCharts.isEmpty ? nil : allCharts
+        }
+
         let recordVC = DIContainer.shared.makeSurfRecordViewController(
             startTime: nil,
             endTime: nil,
-            charts: chartsToPass
+            charts: chartsToPass,
+            beach: currentBeach
         )
         recordVC.title = "파도 기록"
         recordVC.hidesBottomBarWhenPushed = true

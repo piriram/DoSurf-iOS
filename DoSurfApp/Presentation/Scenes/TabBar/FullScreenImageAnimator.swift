@@ -1,10 +1,3 @@
-//
-//  FullScreenImageAnimator.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 11/4/25.
-//
-
 import UIKit
 
 // MARK: - Full Screen Image Animator

@@ -1,9 +1,3 @@
-//
-//  BeachChooseViewController.swift
-//  DoSurfApp
-//
-//  Created by 잘만보김쥬디 on 9/29/25.
-//
 import UIKit
 import RxSwift
 import RxCocoa

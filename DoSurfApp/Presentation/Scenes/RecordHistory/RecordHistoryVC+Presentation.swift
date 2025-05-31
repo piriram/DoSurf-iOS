@@ -1,10 +1,3 @@
-//
-//  RecordHistoryVC+Presentation.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 11/11/25.
-//
-
 import UIKit
 import CoreData
 import RxSwift

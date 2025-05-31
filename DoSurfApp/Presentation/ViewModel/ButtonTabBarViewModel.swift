@@ -1,10 +1,3 @@
-//
-//  ButtonTabBarViewModel.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 11/4/25.
-//
-
 import Foundation
 import RxSwift
 import RxCocoa
@@ -106,9 +99,9 @@ final class ButtonTabBarViewModel {
         storageService.createSurfingState(false)
         isSurfing.accept(false)
 
-        // 라이브 액티비티 종료 (4시간 후 자동 해제)
+        // 라이브 액티비티 즉시 종료
         if #available(iOS 16.2, *) {
-            SurfingActivityManager.shared.endActivity(dismissalPolicy: .after(.now + 14400))
+            SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
         }
     }
 

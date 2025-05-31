@@ -1,10 +1,3 @@
-//
-//  BaseTabBarController.swift
-//  DoSurfApp
-//
-//  Created by Assistant on 9/29/25.
-//
-
 import UIKit
 
 class BaseTabBarController: UITabBarController {

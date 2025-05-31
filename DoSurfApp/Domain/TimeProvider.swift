@@ -1,9 +1,3 @@
-//
-//  TimeProvider.swift
-//
-//  Created by 잠만보김쥬디 on 10/31/25.
-//
-
 import Foundation
 
 /// 기기(사용자) 시간대를 따르는 날짜/시간 유틸리티

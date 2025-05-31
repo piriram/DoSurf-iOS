@@ -1,10 +1,3 @@
-//
-//  WatchConnectivityManager.swift
-//  DoSurfWatch Watch App
-//
-//  SwiftUI용 WatchConnectivity 매니저
-//
-
 import Foundation
 import WatchConnectivity
 import SwiftUI

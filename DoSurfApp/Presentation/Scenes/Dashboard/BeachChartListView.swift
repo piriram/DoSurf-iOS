@@ -93,16 +93,21 @@ final class BeachChartListView: UIView {
     func attachRefreshControl(_ refreshControl: UIRefreshControl) {
         tableView.refreshControl = refreshControl
     }
-    
+
     func update(groupedCharts: [(date: Date, charts: [Chart])]) {
         self.groupedCharts = groupedCharts
         self.currentDateIndex = 0
         updateDateLabel(index: currentDateIndex)
         tableView.reloadData()
-        
+
         DispatchQueue.main.async { [weak self] in
             self?.scrollToUpcomingChart()
         }
+    }
+
+    /// 현재 시간 기준으로 다가오는 차트에 포커스
+    func focusOnUpcomingChart() {
+        scrollToUpcomingChart()
     }
     
     func setCurrentDateIndex(_ index: Int) {

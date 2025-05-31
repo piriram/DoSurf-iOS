@@ -1,10 +1,3 @@
-//
-//  SurfingActivityAttributes.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 11/17/25.
-//
-
 import Foundation
 import ActivityKit
 

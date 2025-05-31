@@ -1,9 +1,3 @@
-//
-//  DIContainer.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 9/30/25.
-//
 import Foundation
 
 final class DIContainer {
@@ -55,7 +49,8 @@ final class DIContainer {
     func makeSurfRecordViewModel(mode: SurfRecordMode) -> NoteViewModel {
         return NoteViewModel(
             mode: mode,
-            surfRecordUseCase: makeSurfRecordUseCase()
+            surfRecordUseCase: makeSurfRecordUseCase(),
+            fetchBeachDataUseCase: makeFetchBeachDataUseCase()
         )
     }
     
@@ -94,12 +89,14 @@ final class DIContainer {
     func makeSurfRecordViewController(
         startTime: Date?,
         endTime: Date?,
-        charts: [Chart]?
+        charts: [Chart]?,
+        beach: BeachDTO?
     ) -> NoteViewController {
         let mode = SurfRecordMode.new(
             startTime: startTime,
             endTime: endTime,
-            charts: charts
+            charts: charts,
+            beach: beach
         )
         let viewModel = makeSurfRecordViewModel(mode: mode)
         return NoteViewController(

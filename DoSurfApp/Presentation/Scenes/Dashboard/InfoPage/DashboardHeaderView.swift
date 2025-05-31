@@ -1,9 +1,3 @@
-//
-//  DashboardChartSectionView.swift
-//  DoSurfApp
-//
-//  Created by 잠만보김쥬디 on 10/3/25.
-//
 import UIKit
 import SnapKit
 import RxSwift

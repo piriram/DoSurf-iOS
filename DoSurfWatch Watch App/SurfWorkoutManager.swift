@@ -1,10 +1,3 @@
-//
-//  SurfWorkoutManager.swift
-//  DoSurfWatch Watch App
-//
-//  Created by 잠만보김쥬디 on 10/8/25.
-//
-
 import Foundation
 import Combine
 import HealthKit

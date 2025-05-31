@@ -1,10 +1,3 @@
-//
-//  DesignSystem+Colors.swift
-//  DoSurfApp
-//
-//  Created by Assistant on 9/28/25.
-//
-
 import UIKit
 // MARK: - UIColor + Design System Palette
 extension UIColor {
