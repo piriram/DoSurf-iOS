@@ -67,19 +67,22 @@ final class GradientBlurView: UIView {
     }
     
     private func applyGradientMask() {
+        let opaqueBottom = UIColor(red: 0xFB/255.0, green: 0xFB/255.0, blue: 0xFB/255.0, alpha: 1.0).cgColor
+        let transparentTop = UIColor(white: 1.0, alpha: 0.0).cgColor
+        
         // 블러에 그라데이션 마스크 적용
         let blurGradientLayer = CAGradientLayer()
         blurGradientLayer.frame = blurEffectView.bounds
         blurGradientLayer.colors = [
-            UIColor.clear.cgColor,
-            UIColor.white.cgColor
+            opaqueBottom,
+            transparentTop
         ]
         blurGradientLayer.locations = [
             NSNumber(value: gradientStartLocation),
             NSNumber(value: gradientEndLocation)
         ]
-        blurGradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        blurGradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        blurGradientLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
+        blurGradientLayer.endPoint = CGPoint(x: 0.5, y: 0.0)
         
         blurEffectView.layer.mask = blurGradientLayer
         
@@ -87,15 +90,15 @@ final class GradientBlurView: UIView {
         let dimGradientLayer = CAGradientLayer()
         dimGradientLayer.frame = dimView.bounds
         dimGradientLayer.colors = [
-            UIColor.clear.cgColor,
-            UIColor.white.cgColor
+            opaqueBottom,
+            transparentTop
         ]
         dimGradientLayer.locations = [
             NSNumber(value: gradientStartLocation),
             NSNumber(value: gradientEndLocation)
         ]
-        dimGradientLayer.startPoint = CGPoint(x: 0.5, y: 0.0)
-        dimGradientLayer.endPoint = CGPoint(x: 0.5, y: 1.0)
+        dimGradientLayer.startPoint = CGPoint(x: 0.5, y: 1.0)
+        dimGradientLayer.endPoint = CGPoint(x: 0.5, y: 0.0)
         
         dimView.layer.mask = dimGradientLayer
     }
