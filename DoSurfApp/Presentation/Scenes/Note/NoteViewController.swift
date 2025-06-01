@@ -243,45 +243,50 @@ final class NoteViewController: BaseViewController {
     private func handleDateChanged(_ date: Date) {
         let dayStart = time.startOfDay(for: date)
         let dayEnd = time.endOfDay(for: date)
-        
+
         let newStart = time.calendar.combine(date, withTimeOf: topCard.startTimePicker.date)
         let newEnd = time.calendar.combine(date, withTimeOf: topCard.endTimePicker.date)
-        
+
         let clampedStart = min(max(newStart, dayStart), dayEnd)
         let clampedEnd = min(max(newEnd, clampedStart), dayEnd)
-        
+
         topCard.updatePickerBounds(dayStart: dayStart, dayEnd: dayEnd, startTime: clampedStart)
         topCard.startTimePicker.date = clampedStart
         topCard.endTimePicker.date = clampedEnd
-        
+        topCard.updateButtonTexts()
+
         topCard.updateChartDateLabel()
     }
     
     private func handleStartTimeChanged(_ time: Date) {
         let dayEnd = self.time.endOfDay(for: topCard.datePicker.date)
         let start = time
-        
+
         topCard.updatePickerBounds(
             dayStart: self.time.startOfDay(for: topCard.datePicker.date),
             dayEnd: dayEnd,
             startTime: start
         )
-        
+
         if topCard.endTimePicker.date < start {
             topCard.endTimePicker.date = start
+            topCard.updateButtonTexts()
         } else if topCard.endTimePicker.date > dayEnd {
             topCard.endTimePicker.date = dayEnd
+            topCard.updateButtonTexts()
         }
     }
     
     private func handleEndTimeChanged(_ time: Date) {
         let start = topCard.startTimePicker.date
         let dayEnd = self.time.endOfDay(for: topCard.datePicker.date)
-        
+
         if time < start {
             topCard.endTimePicker.date = start
+            topCard.updateButtonTexts()
         } else if time > dayEnd {
             topCard.endTimePicker.date = dayEnd
+            topCard.updateButtonTexts()
         }
     }
     
