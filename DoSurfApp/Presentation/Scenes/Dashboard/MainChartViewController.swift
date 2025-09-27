@@ -22,14 +22,15 @@ class MainChartViewController: UIViewController {
     
     // MARK: - UI Components
     private lazy var tableView: UITableView = {
-        let tableView = UITableView()
+        let tableView = UITableView(frame: .zero, style: .insetGrouped)
         tableView.delegate = self
         tableView.dataSource = self
         tableView.register(ChartTableViewCell.self, forCellReuseIdentifier: ChartTableViewCell.identifier)
-        tableView.backgroundColor = .systemBackground
+        tableView.backgroundColor = .systemGroupedBackground
         tableView.separatorStyle = .singleLine
-        tableView.rowHeight = 70
-        tableView.estimatedRowHeight = 70
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 40
+        tableView.sectionHeaderTopPadding = 0
         return tableView
     }()
     
@@ -183,6 +184,49 @@ extension MainChartViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         // 셀 선택 시 상세 화면으로 이동하거나 추가 동작 구현
+    }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let headerView = UIView()
+        headerView.backgroundColor = .systemGroupedBackground
+        
+        let containerView = UIView()
+        containerView.backgroundColor = .secondarySystemGroupedBackground
+        containerView.layer.cornerRadius = 8
+        
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .fillEqually
+        stackView.alignment = .center
+        stackView.spacing = 8
+        
+        let labels = ["시간", "바람", "파도", "기온/수온"]
+        labels.forEach { text in
+            let label = UILabel()
+            label.text = text
+            label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.textAlignment = .center
+            stackView.addArrangedSubview(label)
+        }
+        
+        containerView.addSubview(stackView)
+        headerView.addSubview(containerView)
+        
+        stackView.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(8)
+        }
+        
+        containerView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.top.bottom.equalToSuperview().inset(4)
+        }
+        
+        return headerView
+    }
+    
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return charts.isEmpty ? 0 : 40
     }
 }
 
