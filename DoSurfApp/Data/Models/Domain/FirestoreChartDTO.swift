@@ -29,8 +29,10 @@ struct FirestoreChartDTO {
     let omSeaSurfaceTemperature: Double?
     
     func toDomain() -> Chart {
+        print(documentId)
         return Chart(beachID: beachId,
-                     time: datetime.toDate(dateFormat: "yyyymmddHHmm") ?? .distantPast, //TODO: 예외 처리 어떻게 하지
+                     time: documentId.toDate(dateFormat: "yyyyMMddHHmm") ?? .distantPast, //TODO: 예외 처리 어떻게 하지
+                    
                      windDirection: windDirection ?? 0.0,
                      windSpeed: windSpeed ?? 0.0,
                      waveDirection: omWaveDirection ?? 0.0,
@@ -41,6 +43,26 @@ struct FirestoreChartDTO {
                      airTemperature: airTemperature ?? 0.0)
     }
 }
+struct Chart: Equatable {
+    let beachID: Int
+    let time: Date
+    let windDirection: Double
+    let windSpeed: Double
+    let waveDirection: Double
+    let waveHeight: Double
+    let waveSpeed: Double
+    let waterTemperature: Double
+    let weather: WeatherType
+    let airTemperature: Double
+}
+struct ChartList {
+    let id: String
+    let beachID: String
+    let chartList: [Chart]
+    let lastUpdateTime: Date
+}
+
+
 
 extension String {
     func toDate(dateFormat: String) -> Date?{

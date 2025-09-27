@@ -15,7 +15,13 @@ struct BeachDataDump {
     let lastUpdated: Date
     let foundInRegion: String?
 }
-
+struct NewBeachDataDump {
+    let beachInfo: BeachInfo
+    let metadata: BeachMetadata?
+    let forecasts: [Chart]
+    let lastUpdated: Date
+    let foundInRegion: String?
+}
 struct BeachMetadata {
     let beachId: Int
     let region: String
