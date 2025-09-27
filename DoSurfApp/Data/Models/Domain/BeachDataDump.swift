@@ -11,7 +11,7 @@ import Foundation
 struct BeachDataDump {
     let beachInfo: BeachInfo
     let metadata: BeachMetadata?
-    let forecasts: [ForecastData]
+    let forecasts: [FirestoreChartDTO]
     let lastUpdated: Date
     let foundInRegion: String?
 }

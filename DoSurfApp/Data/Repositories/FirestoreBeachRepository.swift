@@ -57,6 +57,7 @@ final class FirestoreBeachRepository: BeachRepository {
                     completion(.failure(FirebaseAPIError.map(error)))
                     return
                 }
+             
                 var metadata: BeachMetadata? = nil
                 if let document = document, document.exists, let data = document.data() {
                     metadata = BeachMetadata(
@@ -75,7 +76,8 @@ final class FirestoreBeachRepository: BeachRepository {
             }
     }
 
-    func fetchForecasts(beachId: String, region: String, since: Date, limit: Int, completion: @escaping (Result<[ForecastData], FirebaseAPIError>) -> Void) {
+    // TODO: -900이하면 nil처리 해주기
+    func fetchForecasts(beachId: String, region: String, since: Date, limit: Int, completion: @escaping (Result<[FirestoreChartDTO], FirebaseAPIError>) -> Void) {
         db.collection("regions")
             .document(region)
             .collection(beachId)
@@ -87,12 +89,12 @@ final class FirestoreBeachRepository: BeachRepository {
                     completion(.failure(FirebaseAPIError.map(error)))
                     return
                 }
-                var forecasts: [ForecastData] = []
+                var forecasts: [FirestoreChartDTO] = []
                 if let documents = snapshot?.documents {
                     for document in documents {
                         if document.documentID == "_metadata" { continue }
                         let data = document.data()
-                        let forecast = ForecastData(
+                        let forecast = FirestoreChartDTO(
                             documentId: document.documentID,
                             beachId: data["beach_id"] as? Int ?? Int(beachId) ?? 0,
                             region: data["region"] as? String ?? region,
