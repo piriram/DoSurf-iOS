@@ -35,7 +35,9 @@ final class ChartListView: UIView {
         tableView.separatorStyle = .singleLine
         tableView.rowHeight = 56
         tableView.sectionHeaderTopPadding = 0
-        tableView.showsVerticalScrollIndicator = false
+        tableView.showsVerticalScrollIndicator = true
+        tableView.isScrollEnabled = true
+        tableView.alwaysBounceVertical = true
         return tableView
     }()
 
@@ -102,6 +104,39 @@ final class ChartListView: UIView {
         formatter.dateFormat = "M월 d일 EEEE"
         dateLabel.text = formatter.string(from: date)
     }
+    
+    private func updateDateForVisibleSectionByCount() {
+        guard !groupedCharts.isEmpty else { return }
+        guard let visible = tableView.indexPathsForVisibleRows, !visible.isEmpty else { return }
+
+        // Count visible rows per section
+        var counts: [Int: Int] = [:]
+        for indexPath in visible {
+            counts[indexPath.section, default: 0] += 1
+        }
+
+        // Choose the section with the highest visible row count.
+        // In case of tie, prefer the one that appears earlier in the visible rows order (closer to top).
+        var bestSection = currentDateIndex
+        var bestCount = -1
+        for (section, count) in counts {
+            if count > bestCount {
+                bestCount = count
+                bestSection = section
+            } else if count == bestCount {
+                let firstIdxBest = visible.firstIndex(where: { $0.section == bestSection }) ?? Int.max
+                let firstIdxCandidate = visible.firstIndex(where: { $0.section == section }) ?? Int.max
+                if firstIdxCandidate < firstIdxBest {
+                    bestSection = section
+                }
+            }
+        }
+
+        if bestSection != currentDateIndex && bestSection < groupedCharts.count {
+            currentDateIndex = bestSection
+            updateDateLabel(index: bestSection)
+        }
+    }
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
@@ -158,5 +193,21 @@ extension ChartListView: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return section == 0 ? 44 : 20
+    }
+
+    // Keep the date header in sync with the section that has more visible rows
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView === tableView else { return }
+        updateDateForVisibleSectionByCount()
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        guard scrollView === tableView else { return }
+        updateDateForVisibleSectionByCount()
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        guard scrollView === tableView else { return }
+        if !decelerate { updateDateForVisibleSectionByCount() }
     }
 }

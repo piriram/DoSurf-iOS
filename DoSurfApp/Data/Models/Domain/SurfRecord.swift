@@ -7,16 +7,16 @@
 
 import Foundation
 
-struct SurfRecord {
-    let id: String
-    let beachID: String
-    let startTime: Date
-    let endTime: Date
-    let charts: [Chart]
-    let score: SurfScore
-    let comment: String?
-    let isPin: Bool
-}
+//struct SurfRecord {
+//    let id: String
+//    let beachID: String
+//    let startTime: Date
+//    let endTime: Date
+//    let charts: [Chart]
+//    let score: SurfScore
+//    let comment: String?
+//    let isPin: Bool
+//}
 
 enum SurfScore: Int, CaseIterable, Codable {
     case terrible = 1

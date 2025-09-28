@@ -318,7 +318,7 @@ class DashboardViewController: BaseViewController {
                 type: .wave,
                 title: "파도",
                 value: String(format: "%.1fm", latestChart.waveHeight),
-                subtitle: String(format: "%.1fs", latestChart.waveSpeed),
+                subtitle: String(format: "%.1fs", latestChart.wavePeriod),
                 icon: "water.waves",
                 color: .systemBlue
             ),
