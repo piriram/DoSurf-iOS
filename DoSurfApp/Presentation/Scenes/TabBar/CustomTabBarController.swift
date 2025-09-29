@@ -135,7 +135,7 @@ class CustomTabBarController: BaseTabBarController {
         // 햅틱 피드백
         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
         impactFeedback.impactOccurred()
-
+        
         // 상태 추적 - 기록 상태 시작 (탭 전환 없이 상태만 변경)
         isRecordingScreenPresented.accept(true)
     }
@@ -228,7 +228,7 @@ class CustomTabBarController: BaseTabBarController {
         UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
             self.tabBar.alpha = hidden ? 0 : 1
             self.tabBar.transform = hidden ?
-                CGAffineTransform(translationX: 0, y: self.tabBar.frame.height) : .identity
+            CGAffineTransform(translationX: 0, y: self.tabBar.frame.height) : .identity
         }
     }
 }

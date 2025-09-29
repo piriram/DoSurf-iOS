@@ -266,8 +266,8 @@ class DashboardViewController: BaseViewController {
     }
     
     private func pushBeachChoose() {
-        let viewModel = BeachChooseViewModel()
-        let vc = BeachChooseViewController(viewModel: viewModel)
+        let viewModel = BeachSelectViewModel()
+        let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
         navigationController?.pushViewController(vc, animated: true)
     }
@@ -513,7 +513,7 @@ class DashboardCardCell: UICollectionViewCell {
     
     private let cardView: UIView = {
         let view = UIView()
-        view.backgroundColor = .white.withAlphaComponent(0.2)
+        view.backgroundColor = .white
         view.layer.cornerRadius = 16
         view.layer.borderWidth = 1
         view.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
@@ -530,21 +530,21 @@ class DashboardCardCell: UICollectionViewCell {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white.withAlphaComponent(0.8)
+        label.textColor = .black
         return label
     }()
     
     private let valueLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 24, weight: .bold)
-        label.textColor = .white
+        label.textColor = .black
         return label
     }()
     
     private let subtitleLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: 16, weight: .medium)
-        label.textColor = .white.withAlphaComponent(0.9)
+        label.textColor = .black
         return label
     }()
     

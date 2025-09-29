@@ -13,12 +13,12 @@ final class FirestoreBeachRepository: BeachRepository {
     init(db: Firestore = Firestore.firestore()) {
         self.db = db
     }
-
+    
     func findRegion(for beachId: String, among regions: [String], completion: @escaping (Result<String?, FirebaseAPIError>) -> Void) {
         let group = DispatchGroup()
         var foundRegion: String?
         var firstError: FirebaseAPIError?
-
+        
         for region in regions {
             group.enter()
             db.collection("regions")
@@ -35,7 +35,7 @@ final class FirestoreBeachRepository: BeachRepository {
                     group.leave()
                 }
         }
-
+        
         group.notify(queue: .global()) {
             if let region = foundRegion {
                 completion(.success(region))
@@ -46,7 +46,7 @@ final class FirestoreBeachRepository: BeachRepository {
             }
         }
     }
-
+    
     func fetchMetadata(beachId: String, region: String, completion: @escaping (Result<BeachMetadata?, FirebaseAPIError>) -> Void) {
         db.collection("regions")
             .document(region)
@@ -57,7 +57,7 @@ final class FirestoreBeachRepository: BeachRepository {
                     completion(.failure(FirebaseAPIError.map(error)))
                     return
                 }
-             
+                
                 var metadata: BeachMetadata? = nil
                 if let document = document, document.exists, let data = document.data() {
                     metadata = BeachMetadata(
@@ -75,8 +75,8 @@ final class FirestoreBeachRepository: BeachRepository {
                 completion(.success(metadata))
             }
     }
-
-
+    
+    
     func fetchForecasts(beachId: String, region: String, since: Date, limit: Int, completion: @escaping (Result<[FirestoreChartDTO], FirebaseAPIError>) -> Void) {
         db.collection("regions")
             .document(region)

@@ -32,7 +32,7 @@ struct FirestoreChartDTO {
         print(documentId)
         return Chart(beachID: beachId,
                      time: documentId.toDate(dateFormat: "yyyyMMddHHmm") ?? .distantPast, //TODO: 예외 처리 어떻게 하지
-                    
+                     
                      windDirection: windDirection ?? 0.0,
                      windSpeed: windSpeed ?? 0.0,
                      waveDirection: omWaveDirection ?? 0.0,
