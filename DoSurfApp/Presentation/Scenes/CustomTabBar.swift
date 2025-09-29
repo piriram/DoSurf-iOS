@@ -51,6 +51,7 @@ class CustomTabBar: UITabBar {
             
             standardAppearance = appearance
             scrollEdgeAppearance = appearance
+            isTranslucent = false
         }
         
         // 중앙 버튼 설정
@@ -200,6 +201,16 @@ class CustomTabBar: UITabBar {
     }
     
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        // 탭바가 보이지 않거나 비활성 상태면 터치 무시
+        if isHidden || alpha < 0.01 || window == nil {
+            return nil
+        }
+        
+        // 탭바가 화면 아래로 내려가 있는(숨겨진) 상태면 터치 무시
+        if let superBounds = superview?.bounds, frame.minY >= superBounds.height - 1 {
+            return nil
+        }
+        
         // 중앙 버튼 터치 영역 확장
         let centerButtonFrame = centerButton.frame.insetBy(dx: -10, dy: -10)
         if centerButtonFrame.contains(point) {
@@ -210,15 +221,14 @@ class CustomTabBar: UITabBar {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        
-        // Safe Area 고려한 높이 조정
-        if #available(iOS 11.0, *) {
-            let bottomSafeArea = safeAreaInsets.bottom
-            frame.size.height = 49 + bottomSafeArea + 20 // 중앙 버튼 공간 추가
-        }
-        
-        // 탭바 아이템 위치 조정 (중앙 공간 확보)
         arrangeTabBarItems()
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+        var s = super.sizeThatFits(size)
+        // 기존 탭바 높이에 중앙 버튼 공간(+20)만 추가
+        s.height += 20
+        return s
     }
     
     private func arrangeTabBarItems() {

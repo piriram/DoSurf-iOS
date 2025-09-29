@@ -120,7 +120,7 @@ final class SurfRatingCardView: UIView {
     private func setupCircles() {
         for i in 0..<numberOfSteps {
             let circleView = UIImageView()
-            circleView.image = UIImage(named: "elipse")
+            circleView.image = UIImage(named: "ellipse")
             circleView.contentMode = .scaleAspectFit
             circleView.tag = i + 1
             
@@ -271,9 +271,9 @@ final class SurfRatingCardView: UIView {
     private func updateCircleColors(for rating: Int) {
         circleViews.enumerated().forEach { index, imageView in
             let isActive = index < rating
-            let templateImage = UIImage(named: "eclipse")?.withRenderingMode(.alwaysTemplate)
+            let templateImage = UIImage(named: "ellipse")
             imageView.image = templateImage
-            imageView.tintColor = isActive ? .systemBlue : .systemGray4
+            
         }
     }
 }

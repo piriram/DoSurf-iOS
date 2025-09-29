@@ -38,7 +38,7 @@ final class SurfRecordViewController: BaseViewController {
         configureHierarchy()
         configureStyles()
         // 처음엔 스크롤 비활성화
-        scrollView.isScrollEnabled = false
+//        scrollView.isScrollEnabled = false
         
         // Ensure navigation bar is visible and back button available when pushed
         navigationController?.setNavigationBarHidden(false, animated: false)
