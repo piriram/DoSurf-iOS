@@ -21,6 +21,44 @@ extension UIColor {
         self.init(red: r, green: g, blue: b, alpha: alpha)
     }
     
+    /// Initialize a UIColor from a hex string (e.g., "004AC7", "#004AC7", "0x004AC7").
+    /// Supports 3, 4, 6, or 8 hex digits. When 8 digits are provided, they are interpreted as RRGGBBAA.
+    /// Values are interpreted as sRGB.
+    convenience init(hex: String, alpha: CGFloat = 1.0) {
+        // Normalize input: trim spaces, remove common prefixes, uppercase
+        var hexString = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if hexString.hasPrefix("#") { hexString.removeFirst() }
+        if hexString.hasPrefix("0X") {
+            hexString.removeFirst(2)
+        }
+        // Expand shorthand forms (#RGB, #RGBA)
+        if hexString.count == 3 || hexString.count == 4 {
+            let chars = Array(hexString)
+            let expanded = chars.map { String(repeating: $0, count: 2) }.joined()
+            hexString = expanded
+        }
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = alpha
+        var value: UInt64 = 0
+        let scanned = Scanner(string: hexString).scanHexInt64(&value)
+        if scanned {
+            switch hexString.count {
+            case 6: // RRGGBB
+                r = CGFloat((value & 0xFF0000) >> 16) / 255.0
+                g = CGFloat((value & 0x00FF00) >> 8) / 255.0
+                b = CGFloat(value & 0x0000FF) / 255.0
+            case 8: // RRGGBBAA
+                r = CGFloat((value & 0xFF000000) >> 24) / 255.0
+                g = CGFloat((value & 0x00FF0000) >> 16) / 255.0
+                b = CGFloat((value & 0x0000FF00) >> 8) / 255.0
+                let parsedA = CGFloat(value & 0x000000FF) / 255.0
+                a = a * parsedA // combine provided alpha with parsed alpha
+            default:
+                break
+            }
+        }
+        self.init(red: r, green: g, blue: b, alpha: a)
+    }
+    
     // MARK: Brand & Icon Colors
     static var surfBlue: UIColor { UIColor(hex: 0x004AC7) }        // #004AC7
     static var iconBlue: UIColor { UIColor(hex: 0x4B88EF) }        // #4B88EF
@@ -34,11 +72,18 @@ extension UIColor {
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
     static var backgroundGray: UIColor { UIColor(hex: 0xDEDFE4) }  // #DEDFE4
     static var backgroundSkyblue: UIColor { UIColor(hex: 0xCCDBF4) } // #CCDBF4
+    static var backgroundWhite: UIColor { UIColor(hex:0xEFF1F6)}
 }
 
 // MARK: - SwiftUI Color Mirrors
 #if canImport(SwiftUI)
 extension Color {
+    /// Initialize a SwiftUI Color from a hex string (e.g., "004AC7", "#004AC7", "0x004AC7").
+    /// Mirrors UIColor's hex parsing rules.
+    init(hex: String, alpha: Double = 1.0) {
+        self.init(UIColor(hex: hex, alpha: CGFloat(alpha)))
+    }
+    
     static var surfBlue: Color { Color(UIColor.surfBlue) }
     static var iconBlue: Color { Color(UIColor.iconBlue) }
     static var iconSkyblue: Color { Color(UIColor.iconSkyblue) }

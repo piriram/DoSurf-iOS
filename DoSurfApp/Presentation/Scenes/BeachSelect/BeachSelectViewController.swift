@@ -23,6 +23,10 @@ struct LocationDTO: Sendable {
     
     // TODO: 이페이지에서 보이는 네임과 대시보드에서 보이는 네임 다르게 하기
     var displayText: String {
+        return "\(place)"
+    }
+    
+    var passText: String {
         return "\(region) \(place)"
     }
 }
@@ -37,33 +41,33 @@ final class BeachSelectViewController: BaseViewController {
     // MARK: - UI Components
     private let containerView: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = .clear
         return view
     }()
     
-    private let categoryTableView: UITableView = {
+    private let regionTableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
-        tableView.backgroundColor = .systemGray6
+        tableView.backgroundColor = .clear
         tableView.separatorStyle = .none
-        tableView.register(CategoryCell.self, forCellReuseIdentifier: CategoryCell.identifier)
+        tableView.register(RegionCategoryCell.self, forCellReuseIdentifier: RegionCategoryCell.identifier)
         return tableView
     }()
     
-    private let locationTableView: UITableView = {
+    private let beachTableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
-        tableView.backgroundColor = .white
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle = .none
         tableView.register(BeachCategoryCell.self, forCellReuseIdentifier: BeachCategoryCell.identifier)
         return tableView
     }()
     
     private let confirmButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("설명 받기", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-        button.backgroundColor = .systemGray5
+        button.setTitle("선택 완료", for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
+        button.backgroundColor = .backgroundGray
         button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 12
+        button.layer.cornerRadius = 26
         return button
     }()
     
@@ -89,11 +93,19 @@ final class BeachSelectViewController: BaseViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // Ensure the navigation bar is visible when this view appears
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+    
     // MARK: - Setup
     override func configureUI() {
+        view.backgroundColor = .backgroundWhite
+        navigationItem.title = "지역 선택"
         view.addSubview(containerView)
-        containerView.addSubview(categoryTableView)
-        containerView.addSubview(locationTableView)
+        containerView.addSubview(regionTableView)
+        containerView.addSubview(beachTableView)
         view.addSubview(confirmButton)
     }
     
@@ -104,28 +116,28 @@ final class BeachSelectViewController: BaseViewController {
             $0.bottom.equalTo(confirmButton.snp.top).offset(-16)
         }
         
-        categoryTableView.snp.makeConstraints {
+        regionTableView.snp.makeConstraints {
             $0.top.leading.bottom.equalToSuperview()
-            $0.width.equalToSuperview().multipliedBy(0.3)
+            $0.width.equalToSuperview().multipliedBy(0.375)
         }
         
-        locationTableView.snp.makeConstraints {
+        beachTableView.snp.makeConstraints {
             $0.top.trailing.bottom.equalToSuperview()
-            $0.leading.equalTo(categoryTableView.snp.trailing)
+            $0.leading.equalTo(regionTableView.snp.trailing)
         }
         
         confirmButton.snp.makeConstraints {
             $0.leading.trailing.equalToSuperview().inset(16)
             $0.bottom.equalTo(view.safeAreaLayoutGuide).offset(-16)
-            $0.height.equalTo(52)
+            $0.height.equalTo(56)
         }
     }
     
     // MARK: - Bind
     override func configureBind() {
         let input = BeachSelectViewModel.Input(
-            categorySelected: categoryTableView.rx.itemSelected.asObservable(),
-            locationSelected: locationTableView.rx.itemSelected.asObservable(),
+            categorySelected: regionTableView.rx.itemSelected.asObservable(),
+            locationSelected: beachTableView.rx.itemSelected.asObservable(),
             confirmButtonTapped: confirmButton.rx.tap.asObservable()
         )
         
@@ -149,7 +161,7 @@ final class BeachSelectViewController: BaseViewController {
         output.selectedCategory
             .subscribe(onNext: { [weak self] index in
                 let indexPath = IndexPath(row: index, section: 0)
-                self?.categoryTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+                self?.regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
             })
             .disposed(by: disposeBag)
         
@@ -157,7 +169,7 @@ final class BeachSelectViewController: BaseViewController {
         output.canConfirm
             .subscribe(onNext: { [weak self] canConfirm in
                 self?.confirmButton.isEnabled = canConfirm
-                self?.confirmButton.backgroundColor = canConfirm ? .systemBlue : .systemGray5
+                self?.confirmButton.backgroundColor = canConfirm ? .surfBlue : .backgroundGray
             })
             .disposed(by: disposeBag)
         
@@ -189,7 +201,7 @@ final class BeachSelectViewController: BaseViewController {
             .disposed(by: disposeBag)
         
         // 지역 단일 선택: 텍스트 파란색으로 표시
-        locationTableView.rx.itemSelected
+        beachTableView.rx.itemSelected
             .withLatestFrom(output.locations) { indexPath, locations -> (IndexPath, LocationDTO)? in
                 guard indexPath.row < locations.count else { return nil }
                 return (indexPath, locations[indexPath.row])
@@ -198,25 +210,25 @@ final class BeachSelectViewController: BaseViewController {
             .subscribe(onNext: { [weak self] indexPath, location in
                 guard let self = self else { return }
                 self.selectedLocationId = location.id
-                self.locationTableView.reloadData()
+                self.beachTableView.reloadData()
             })
             .disposed(by: disposeBag)
         
         // 지역 선택 해제 처리
-        locationTableView.rx.itemSelected
+        beachTableView.rx.itemSelected
             .subscribe(onNext: { [weak self] indexPath in
-                self?.locationTableView.deselectRow(at: indexPath, animated: true)
+                self?.beachTableView.deselectRow(at: indexPath, animated: true)
             })
             .disposed(by: disposeBag)
     }
     
     // MARK: - DataSource
     private func createCategoryDataSource() -> CategoryDataSource {
-        return CategoryDataSource(tableView: categoryTableView) { tableView, indexPath, category in
+        return CategoryDataSource(tableView: regionTableView) { tableView, indexPath, category in
             guard let cell = tableView.dequeueReusableCell(
-                withIdentifier: CategoryCell.identifier,
+                withIdentifier: RegionCategoryCell.identifier,
                 for: indexPath
-            ) as? CategoryCell else {
+            ) as? RegionCategoryCell else {
                 return UITableViewCell()
             }
             cell.configure(with: category)
@@ -225,7 +237,7 @@ final class BeachSelectViewController: BaseViewController {
     }
     
     private func createLocationDataSource() -> LocationDataSource {
-        return LocationDataSource(tableView: locationTableView) { [weak self] tableView, indexPath, location in
+        return LocationDataSource(tableView: beachTableView) { [weak self] tableView, indexPath, location in
             guard let cell = tableView.dequeueReusableCell(
                 withIdentifier: BeachCategoryCell.identifier,
                 for: indexPath
@@ -247,7 +259,7 @@ final class BeachSelectViewController: BaseViewController {
         // 첫 번째 항목 자동 선택
         if !categories.isEmpty {
             let indexPath = IndexPath(row: 0, section: 0)
-            categoryTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+            regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
         }
     }
     
@@ -258,51 +270,4 @@ final class BeachSelectViewController: BaseViewController {
         locationDataSource.apply(snapshot, animatingDifferences: true)
     }
 }
-
-// MARK: - CategoryCell
-final class CategoryCell: UITableViewCell {
-    static let identifier = "CategoryCell"
-    
-    private let titleLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 15, weight: .medium)
-        label.textColor = .label
-        return label
-    }()
-    
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-        setupUI()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func setupUI() {
-        backgroundColor = .clear
-        selectedBackgroundView = {
-            let view = UIView()
-            view.backgroundColor = .systemBlue.withAlphaComponent(0.1)
-            return view
-        }()
-        
-        contentView.addSubview(titleLabel)
-        titleLabel.snp.makeConstraints {
-            $0.leading.trailing.equalToSuperview().inset(16)
-            $0.top.bottom.equalToSuperview().inset(12)
-        }
-    }
-    
-    func configure(with category: CategoryDTO) {
-        titleLabel.text = category.name
-    }
-    
-    override func setSelected(_ selected: Bool, animated: Bool) {
-        super.setSelected(selected, animated: animated)
-        titleLabel.textColor = selected ? .systemBlue : .label
-        titleLabel.font = selected ? .systemFont(ofSize: 15, weight: .bold) : .systemFont(ofSize: 15, weight: .medium)
-    }
-}
-
 
