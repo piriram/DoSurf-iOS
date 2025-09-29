@@ -221,12 +221,7 @@ class CustomTabBarController: BaseTabBarController {
             nav.pushViewController(recordVC, animated: true)
         } else if let nav = self.navigationController {
             nav.pushViewController(recordVC, animated: true)
-        } else {
-            // 네비게이션 컨트롤러가 없을 경우 대비
-            let nav = UINavigationController(rootViewController: recordVC)
-            nav.modalPresentationStyle = .fullScreen
-            self.present(nav, animated: true)
-        }
+        } 
     }
     
     private func animateTabBarVisibility(hidden: Bool) {
