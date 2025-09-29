@@ -214,7 +214,7 @@ class CustomTabBarController: BaseTabBarController {
     
     private func pushToRecordWrite() {
         let recordVC = SurfRecordViewController()
-        recordVC.title = "기록 작성"
+        recordVC.title = "파도 기록"
         recordVC.hidesBottomBarWhenPushed = true
         
         if let nav = self.selectedViewController as? UINavigationController {

@@ -32,12 +32,12 @@ class DashboardViewController: BaseViewController {
         return imageView
     }()
     
-    private lazy var locationButton: UIButton = {
+    private lazy var beachSelectButton: UIButton = {
         let button = UIButton(type: .system)
         button.setTitle("안양 중도해변 B", for: .normal)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
         button.tintColor = .white
-        button.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.semanticContentAttribute = .forceRightToLeft
         button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
         return button
@@ -46,9 +46,9 @@ class DashboardViewController: BaseViewController {
     private lazy var locationHeaderView: UIView = {
         let view = UIView()
 
-        view.addSubview(locationButton)
-        locationButton.snp.makeConstraints { make in
-            make.centerX.equalToSuperview()
+        view.addSubview(beachSelectButton)
+        beachSelectButton.snp.makeConstraints { make in
+            make.leading.equalToSuperview()
             make.centerY.equalToSuperview()
         }
 
@@ -60,12 +60,12 @@ class DashboardViewController: BaseViewController {
         
         let titleLabel = UILabel()
         titleLabel.text = "선호하는 차트 통계"
-        titleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
+        titleLabel.font = .systemFont(ofSize: 21, weight: .bold)
         titleLabel.textColor = .white
         
         let infoButton = UIButton(type: .system)
         infoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
-        infoButton.tintColor = .white.withAlphaComponent(0.8)
+        infoButton.tintColor = .white
         
         view.addSubview(titleLabel)
         view.addSubview(infoButton)
@@ -118,7 +118,7 @@ class DashboardViewController: BaseViewController {
         return view
     }()
     
-    private let chartListView = ChartListView()
+    private let chartListView = BeachChartListView()
     private let refreshControl = UIRefreshControl()
     
     // MARK: - Initialization
@@ -136,6 +136,11 @@ class DashboardViewController: BaseViewController {
         super.configureNavigationBar()
         // 네비게이션 바 숨기기 (커스텀 헤더 사용)
         navigationController?.setNavigationBarHidden(true, animated: false)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
     override func configureUI() {
@@ -168,19 +173,19 @@ class DashboardViewController: BaseViewController {
         }
         
         locationHeaderView.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaLayoutGuide).offset(10)
-            make.leading.trailing.equalToSuperview().inset(20)
-            make.height.equalTo(44)
+            make.top.equalTo(view.safeAreaLayoutGuide)
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.height.equalTo(40)
         }
         
         statisticsHeaderView.snp.makeConstraints { make in
-            make.top.equalTo(locationHeaderView.snp.bottom).offset(30)
-            make.leading.trailing.equalToSuperview().inset(20)
+            make.top.equalTo(locationHeaderView.snp.bottom).offset(6)
+            make.leading.trailing.equalToSuperview().inset(16)
             make.height.equalTo(24)
         }
         
         cardCollectionView.snp.makeConstraints { make in
-            make.top.equalTo(statisticsHeaderView.snp.bottom).offset(20)
+            make.top.equalTo(statisticsHeaderView.snp.bottom).offset(24)
             make.leading.trailing.equalToSuperview()
             make.height.equalTo(120)
         }
@@ -206,7 +211,7 @@ class DashboardViewController: BaseViewController {
         refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
         
         // Push BeachChooseViewController when tapping the location button
-        locationButton.rx.tap
+        beachSelectButton.rx.tap
             .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
             .bind(onNext: { [weak self] in
                 self?.pushBeachChoose()
