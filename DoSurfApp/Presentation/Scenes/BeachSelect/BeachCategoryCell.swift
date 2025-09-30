@@ -39,7 +39,7 @@ final class BeachCategoryCell: UITableViewCell {
     
     func configure(with location: LocationDTO, isSelected: Bool) {
         titleLabel.text = location.displayText
-        titleLabel.textColor = isSelected ? .systemBlue : .black.withAlphaComponent(0.5)
+        titleLabel.textColor = isSelected ? .surfBlue : .black.withAlphaComponent(0.5)
         titleLabel.font = isSelected ? .systemFont(ofSize: 16, weight: .semibold) : .systemFont(ofSize: 16)
     }
 }

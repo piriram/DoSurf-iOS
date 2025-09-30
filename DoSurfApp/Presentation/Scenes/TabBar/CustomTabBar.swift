@@ -39,7 +39,7 @@ class CustomTabBar: UITabBar {
     private func setupCenterButton() {
         // 탭바 스타일링
         backgroundColor = .systemBackground
-        tintColor = .systemBlue
+        tintColor = .surfBlue
         unselectedItemTintColor = .systemGray
         
         // iOS 15+ 대응
@@ -61,7 +61,6 @@ class CustomTabBar: UITabBar {
     }
     
     private func setupCenterButtonDesign() {
-        centerButton.layer.cornerRadius = 30
         centerButton.layer.masksToBounds = false
         centerButton.imageView?.contentMode = .scaleAspectFit
         centerButton.tintColor = .white
@@ -75,7 +74,7 @@ class CustomTabBar: UITabBar {
         // 기록하기 텍스트 라벨
         centerButton.setTitle("기록하기", for: .normal)
         centerButton.setTitle("서핑중", for: .selected)
-        centerButton.titleLabel?.font = .systemFont(ofSize: 10, weight: .medium)
+        // centerButton.titleLabel?.font = .systemFont(ofSize: 4, weight: .medium)  // Removed as per instructions
         
         // 이미지와 텍스트 배치 - 가로 중앙 정렬
         if #available(iOS 15.0, *) {
@@ -84,11 +83,17 @@ class CustomTabBar: UITabBar {
             config.imagePadding = 6
             config.titleAlignment = .center
             config.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+            config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var outgoing = incoming
+                outgoing.font = UIFont.systemFont(ofSize: 10, weight: .medium)
+                return outgoing
+            }
             centerButton.configuration = config
         } else {
             centerButton.contentHorizontalAlignment = .center
             centerButton.contentVerticalAlignment = .center
             centerButton.titleLabel?.textAlignment = .center
+            centerButton.titleLabel?.font = .systemFont(ofSize: 10, weight: .medium)
             centerButton.contentEdgeInsets = .zero
             centerButton.imageEdgeInsets = UIEdgeInsets(top: -6, left: 0, bottom: 6, right: 0)
             centerButton.titleEdgeInsets = UIEdgeInsets(top: 24, left: 0, bottom: -4, right: 0)
@@ -111,16 +116,16 @@ class CustomTabBar: UITabBar {
         
         UIView.transition(with: centerButton, duration: 0.2, options: .transitionCrossDissolve) {
             self.centerButton.isSelected = isSelected
-            
+            //TODO: 디테일한 디자인 맞추기
             if isSelected {
                 // 선택된 상태: 밝은 파란색
-                self.centerButton.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.8)
-                self.centerButton.layer.shadowColor = UIColor.systemBlue.withAlphaComponent(0.6).cgColor
+                self.centerButton.backgroundColor = UIColor.surfBlue.withAlphaComponent(0.8)
+                self.centerButton.layer.shadowColor = UIColor.surfBlue.withAlphaComponent(0.6).cgColor
                 self.centerButton.layer.shadowOpacity = 0.4
             } else {
                 // 기본 상태: 진한 파란색
-                self.centerButton.backgroundColor = UIColor.systemBlue
-                self.centerButton.layer.shadowColor = UIColor.systemBlue.cgColor
+                self.centerButton.backgroundColor = UIColor.surfBlue
+                self.centerButton.layer.shadowColor = UIColor.surfBlue.cgColor
                 self.centerButton.layer.shadowOpacity = 0.25
             }
         }
@@ -135,40 +140,13 @@ class CustomTabBar: UITabBar {
         return isSurfing
     }
     
-    private func createWaveIcon(color: UIColor = .white) -> UIImage? {
-        // 물결 모양 아이콘 생성 (디자인에 맞게)
-        let size = CGSize(width: 24, height: 16)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        
-        return renderer.image { context in
-            let ctx = context.cgContext
-            ctx.setStrokeColor(color.cgColor)
-            ctx.setLineWidth(2)
-            ctx.setLineCap(.round)
-            
-            // 3개의 물결 그리기
-            for i in 0..<3 {
-                let y = CGFloat(4 + i * 4)
-                ctx.move(to: CGPoint(x: 2, y: y))
-                
-                for x in stride(from: 2, to: 22, by: 4) {
-                    let nextX = CGFloat(x + 2)
-                    let offset: CGFloat = (x % 8 == 2) ? -2 : 2
-                    let nextY = y + offset
-                    ctx.addLine(to: CGPoint(x: nextX, y: nextY))
-                }
-            }
-            ctx.strokePath()
-        }
-    }
-    
     private func setupCenterButtonConstraints() {
         addSubview(centerButton)
         
         centerButton.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
             make.centerY.equalTo(snp.top).offset(10) // 탭바 위로 올라오게
-            make.width.height.equalTo(60)
+            make.width.height.equalTo(67)
         }
     }
     
@@ -222,6 +200,11 @@ class CustomTabBar: UITabBar {
     override func layoutSubviews() {
         super.layoutSubviews()
         arrangeTabBarItems()
+        let side = min(centerButton.bounds.width, centerButton.bounds.height)
+        centerButton.layer.cornerRadius = side / 2
+        if #available(iOS 13.0, *) {
+            centerButton.layer.cornerCurve = .continuous
+        }
     }
     
     override func sizeThatFits(_ size: CGSize) -> CGSize {

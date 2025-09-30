@@ -71,7 +71,7 @@ class FirestoreViewController: UIViewController {
         
         // Fetch Button
         fetchButton.setTitle("Fetch Data", for: .normal)
-        fetchButton.backgroundColor = .systemBlue
+        fetchButton.backgroundColor = .surfBlue
         fetchButton.setTitleColor(.white, for: .normal)
         fetchButton.layer.cornerRadius = 8
         fetchButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)

@@ -56,8 +56,8 @@ class CustomTabBarController: BaseTabBarController {
         let chartNav = UINavigationController(rootViewController: chartVC)
         chartNav.tabBarItem = UITabBarItem(
             title: "파도차트",
-            image: UIImage(systemName: "chart.bar"),
-            selectedImage: UIImage(systemName: "chart.bar.fill")
+            image: UIImage(named: "chartSymbol"),
+            selectedImage: UIImage(named: "chartSymbol.fill")
         )
         chartNav.tabBarItem.tag = 0
         
@@ -71,8 +71,8 @@ class CustomTabBarController: BaseTabBarController {
         let recordNav = UINavigationController(rootViewController: recordListVC)
         recordNav.tabBarItem = UITabBarItem(
             title: "기록 차트",
-            image: UIImage(systemName: "doc.text"),
-            selectedImage: UIImage(systemName: "doc.text.fill")
+            image: UIImage(named: "recordSymbol"),
+            selectedImage: UIImage(named: "recordSymbol.fill")
         )
         recordNav.tabBarItem.tag = 2
         

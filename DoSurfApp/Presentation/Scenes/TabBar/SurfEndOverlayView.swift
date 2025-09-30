@@ -57,15 +57,16 @@ class SurfEndOverlayView: UIView {
     }
     
     private func setupSurfEndButton() {
+        //TODO: 기록하기 버튼 추가
         // 서핑 종료 버튼 (큰 파란색 원형)
-        surfEndButton.backgroundColor = .systemBlue
+        surfEndButton.backgroundColor = .surfBlue
         surfEndButton.setTitle("서핑 종료", for: .normal)
         surfEndButton.setTitleColor(.white, for: .normal)
         surfEndButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         surfEndButton.layer.cornerRadius = 60
         
         // 그림자 효과
-        surfEndButton.layer.shadowColor = UIColor.systemBlue.cgColor
+        surfEndButton.layer.shadowColor = UIColor.surfBlue.cgColor
         surfEndButton.layer.shadowOffset = CGSize(width: 0, height: 8)
         surfEndButton.layer.shadowRadius = 16
         surfEndButton.layer.shadowOpacity = 0.3
@@ -83,10 +84,10 @@ class SurfEndOverlayView: UIView {
         // 취소 버튼 (작은 X 버튼)
         cancelButton.backgroundColor = .systemBackground
         cancelButton.setImage(UIImage(systemName: "xmark"), for: .normal)
-        cancelButton.tintColor = .systemBlue
+        cancelButton.tintColor = .surfBlue
         cancelButton.layer.cornerRadius = 20
         cancelButton.layer.borderWidth = 1
-        cancelButton.layer.borderColor = UIColor.systemBlue.cgColor
+        cancelButton.layer.borderColor = UIColor.surfBlue.cgColor
         
         // 그림자 효과
         cancelButton.layer.shadowColor = UIColor.black.cgColor
