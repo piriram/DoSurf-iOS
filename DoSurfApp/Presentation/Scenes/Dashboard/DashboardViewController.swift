@@ -19,6 +19,10 @@ class DashboardViewController: BaseViewController {
     private var currentDateIndex = 0
     private var groupedCharts: [(date: Date, charts: [Chart])] = []
     private var dashboardData: [DashboardCardData] = []
+#if DEBUG
+    private var didRunBackgroundDebug = false
+    private var didSetupPageControlBinding = false
+#endif
     
     // MARK: - UI Components
     // Removed scrollView and contentView declarations
@@ -69,7 +73,7 @@ class DashboardViewController: BaseViewController {
         
         view.addSubview(titleLabel)
         view.addSubview(infoButton)
-        
+        view.backgroundColor = .clear
         titleLabel.snp.makeConstraints { make in
             make.leading.centerY.equalToSuperview()
         }
@@ -94,7 +98,7 @@ class DashboardViewController: BaseViewController {
         collectionView.backgroundColor = .clear
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.isPagingEnabled = false // 커스텀 페이징 사용
-        collectionView.decelerationRate = .fast
+//        collectionView.decelerationRate = .fast
         collectionView.register(DashboardCardCell.self, forCellWithReuseIdentifier: DashboardCardCell.identifier)
         return collectionView
     }()
@@ -168,8 +172,8 @@ class DashboardViewController: BaseViewController {
         
         // Dashboard layout
         backgroundImageView.snp.makeConstraints { make in
-            make.top.leading.trailing.equalToSuperview()
-            make.height.equalTo(380)
+            make.edges.equalToSuperview()
+            
         }
         
         locationHeaderView.snp.makeConstraints { make in
@@ -237,37 +241,45 @@ class DashboardViewController: BaseViewController {
         
         // 레이아웃이 완료된 후 페이지 컨트롤 바인딩 설정
         setupPageControlBinding()
+
     }
-    
+
+
+    // MARK: - Page Control Binding
     private func setupPageControlBinding() {
-        // 이미 바인딩되어 있으면 중복 방지
-        guard cardCollectionView.frame.width > 0 else { return }
-        
-        // Page control 스크롤 바인딩
+        // Ensure we only set this up once even if viewDidLayoutSubviews is called multiple times
+        guard !didSetupPageControlBinding else { return }
+        didSetupPageControlBinding = true
+
+        // Update page control as the collection view scrolls
         cardCollectionView.rx.contentOffset
-            .throttle(.milliseconds(100), scheduler: MainScheduler.instance) // 성능 최적화
+            .observe(on: MainScheduler.instance)
             .map { [weak self] offset -> Int in
                 guard let self = self else { return 0 }
-                let pageWidth = self.cardCollectionView.frame.width
-                
-                // pageWidth가 0이면 계산하지 않고 0 반환
+                let pageWidth = self.cardCollectionView.bounds.width
                 guard pageWidth > 0 else { return 0 }
-                
-                // offset.x가 유효한 값인지 확인
-                guard offset.x.isFinite else { return 0 }
-                
-                let calculatedPage = (offset.x + pageWidth / 2) / pageWidth
-                
-                // 계산 결과가 유효한지 확인
-                guard calculatedPage.isFinite else { return 0 }
-                
-                // 페이지 범위 제한
-                let pageIndex = Int(calculatedPage)
-                return max(0, min(pageIndex, self.pageControl.numberOfPages - 1))
+                // Determine the current page based on the collection view's width
+                let rawPage = (offset.x + pageWidth / 2) / pageWidth
+                let page = Int(rawPage.rounded(.down))
+                let clamped = max(0, min(page, self.pageControl.numberOfPages - 1))
+                return clamped
             }
             .distinctUntilChanged()
-            .bind(to: pageControl.rx.currentPage)
+            .bind(onNext: { [weak self] page in
+                self?.pageControl.currentPage = page
+            })
             .disposed(by: disposeBag)
+
+        // Allow tapping the page control to jump to a page
+        pageControl.addTarget(self, action: #selector(pageControlValueChanged(_:)), for: .valueChanged)
+    }
+
+    @objc private func pageControlValueChanged(_ sender: UIPageControl) {
+        let page = sender.currentPage
+        let pageWidth = cardCollectionView.bounds.width
+        guard pageWidth > 0 else { return }
+        let targetOffset = CGPoint(x: CGFloat(page) * pageWidth, y: 0)
+        cardCollectionView.setContentOffset(targetOffset, animated: true)
     }
     
     private func pushBeachChoose() {
