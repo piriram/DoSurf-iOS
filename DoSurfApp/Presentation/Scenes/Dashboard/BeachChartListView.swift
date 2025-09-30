@@ -17,6 +17,35 @@ final class BeachChartListView: UIView {
         }
         return view
     }()
+    
+    private lazy var columnHeaderView: UIView = {
+        let headerView = UIView()
+        headerView.backgroundColor = .backgroundHeader.withAlphaComponent(0.5)
+
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .equalSpacing
+        stackView.alignment = .center
+        stackView.spacing = 8
+
+        let labels = ["시간", "바람", "파도", "수온", "날씨"]
+        labels.forEach { text in
+            let label = UILabel()
+            label.text = text
+            label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
+            label.textColor = .secondaryLabel
+            label.textAlignment = .center
+            stackView.addArrangedSubview(label)
+        }
+
+        headerView.addSubview(stackView)
+        stackView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(16)
+            make.centerY.equalToSuperview()
+        }
+
+        return headerView
+    }()
 
     private let dateLabel: UILabel = {
         let label = UILabel()
@@ -61,15 +90,20 @@ final class BeachChartListView: UIView {
     private func setupUI() {
         backgroundColor = .clear
         addSubview(dateHeaderView)
+        addSubview(columnHeaderView)
         addSubview(tableView)
 
         dateHeaderView.snp.makeConstraints { make in
             make.top.leading.trailing.equalToSuperview()
             make.height.equalTo(60)
         }
-
-        tableView.snp.makeConstraints { make in
+        columnHeaderView.snp.makeConstraints { make in
             make.top.equalTo(dateHeaderView.snp.bottom)
+            make.leading.trailing.equalToSuperview()
+            make.height.equalTo(28)
+        }
+        tableView.snp.makeConstraints { make in
+            make.top.equalTo(columnHeaderView.snp.bottom)
             make.leading.trailing.bottom.equalToSuperview()
         }
     }
@@ -160,36 +194,15 @@ extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let headerView = UIView()
-        headerView.backgroundColor = .backgroundHeader.withAlphaComponent(0.5)
-
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.distribution = .equalSpacing
-        stackView.alignment = .center
-        stackView.spacing = 8
-
-        let labels = ["시간", "바람", "파도", "수온", "날씨"]
-        labels.forEach { text in
-            let label = UILabel()
-            label.text = text
-            label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-            label.textColor = .secondaryLabel
-            label.textAlignment = .center
-            stackView.addArrangedSubview(label)
-        }
-
-        headerView.addSubview(stackView)
-        stackView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(16)
-            make.centerY.equalToSuperview()
-        }
-
-        return headerView
+        if section == 0 { return nil }
+        let spacer = UIView()
+        spacer.backgroundColor = .clear
+        return spacer
     }
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return 20
+        if section == 0 { return 0 }
+        return 12
     }
 
     // Keep the date header in sync with the section that has more visible rows

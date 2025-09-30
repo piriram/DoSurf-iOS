@@ -139,7 +139,7 @@ final class SurfRatingCardView: UIView {
         
         starImageView.snp.makeConstraints {
             $0.centerY.equalToSuperview()
-            $0.width.height.equalTo(4)
+            $0.width.height.equalTo(26)
         }
     }
     
@@ -256,7 +256,7 @@ final class SurfRatingCardView: UIView {
         starImageView.snp.remakeConstraints {
             $0.centerY.equalToSuperview()
             $0.leading.equalToSuperview().offset(xPosition - 16)
-            $0.width.height.equalTo(32)
+            $0.width.height.equalTo(26)
         }
         
         if animated {

@@ -13,11 +13,11 @@ extension DateFormatter {
         let df = DateFormatter()
         df.dateFormat = "yyyy-MM-dd HH:mm:ss"
         df.calendar = Calendar(identifier: .gregorian)
-        df.locale = Locale(identifier: "en_US_POSIX")
+        df.locale = Locale(identifier: "ko_KR")
         return df
     }()
 
-    static func make(format: String, locale: Locale = .current, calendar: Calendar = .current) -> DateFormatter {
+    static func toFormattedDate(format: String, locale: Locale = .current, calendar: Calendar = .current) -> DateFormatter {
         let df = DateFormatter()
         df.dateFormat = format
         df.locale = locale
@@ -46,7 +46,7 @@ public extension Date {
         return Date.koreanMonthDayWeekdayFormatter.string(from: self)
     }
 
-    func formattedString(format: String, locale: Locale = .current, calendar: Calendar = .current) -> String {
-        return DateFormatter.make(format: format, locale: locale, calendar: calendar).string(from: self)
+    func toFormattedString(format: String, locale: Locale = .current, calendar: Calendar = .current) -> String {
+        return DateFormatter.toFormattedDate(format: format, locale: locale, calendar: calendar).string(from: self)
     }
 }
