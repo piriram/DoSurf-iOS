@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24299" systemVersion="25A354" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
+    <entity name="SurfChart" representedClassName="SurfChart" syncable="YES" codeGenerationType="class">
+        <attribute name="airTemperature" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="time" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="waterTemperature" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="waveDirection" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="waveHeight" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="wavePeriod" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="weatherIconName" attributeType="String"/>
+        <attribute name="windDirection" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="windSpeed" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <relationship name="record" maxCount="1" deletionRule="Nullify" destinationEntity="SurfRecord" inverseName="charts" inverseEntity="SurfRecord"/>
+    </entity>
+    <entity name="SurfRecord" representedClassName="SurfRecord" syncable="YES" codeGenerationType="class">
+        <attribute name="endTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="isPin" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="memo" optional="YES" attributeType="String"/>
+        <attribute name="rating" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="startTime" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="surfDate" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="charts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="SurfChart" inverseName="record" inverseEntity="SurfChart"/>
+    </entity>
+</model>

@@ -166,13 +166,12 @@ class CustomTabBarController: BaseTabBarController {
         // ✅ 대시보드에서 “현재 해변의 차트 전체” 혹은 기간 필터된 차트 가져오기
         let chartsToPass: [Chart] = {
             if let provider = dashboardProvider {
-                // 전체 전달:
-                // return provider.allChartsSnapshot
-                // 기간 필터 전달:
-                return provider.charts(from: startTime, to: endTime)
+                return provider.allChartsSnapshot
             }
             return []
         }()
+        print("[DEBUG] chartsToPass.count = \(chartsToPass.count)")
+        chartsToPass.forEach { print("[DEBUG] chart time: \($0.time)") }
         
         let recordVC = SurfRecordViewController(startTime: startTime, endTime: endTime, charts: chartsToPass)
         recordVC.title = "파도 기록"

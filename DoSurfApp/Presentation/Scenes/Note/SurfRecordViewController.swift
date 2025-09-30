@@ -2,6 +2,7 @@ import UIKit
 import SnapKit
 import RxSwift
 import RxCocoa
+internal import CoreData
 
 // MARK: - ViewController
 final class SurfRecordViewController: BaseViewController {
@@ -27,9 +28,21 @@ final class SurfRecordViewController: BaseViewController {
     private let chartDateLabel = UILabel()
     private let tableContainer = UIStackView()
     
+    private let emptyChartLabel: UILabel = {
+        let label = UILabel()
+        label.text = "차트 데이터가 없습니다."
+        label.textAlignment = .center
+        label.textColor = .secondaryLabel
+        label.font = .systemFont(ofSize: 16, weight: .medium)
+        return label
+    }()
+    
     // State
     private var memoOpened = false
     private let disposeBag = DisposeBag()
+    private lazy var context: NSManagedObjectContext = {
+        CoreDataStack.shared.viewContext
+    }()
     
     // VM
     private let viewModel = SurfRecordViewModel()
@@ -85,6 +98,9 @@ final class SurfRecordViewController: BaseViewController {
     
     override func configureBind() {
         bind()
+        saveButton.rx.tap
+            .bind(onNext: { [weak self] in self?.saveSurfRecordToCoreData() })
+            .disposed(by: disposeBag)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -238,6 +254,9 @@ final class SurfRecordViewController: BaseViewController {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(ChartTableViewCell.self, forCellReuseIdentifier: ChartTableViewCell.identifier)
+        
+        tableView.backgroundView = emptyChartLabel
+        emptyChartLabel.isHidden = true
         
         // Build stack
         tableContainer.addArrangedSubview(dateHeaderView)
@@ -409,6 +428,63 @@ final class SurfRecordViewController: BaseViewController {
         tableView.reloadData()
         tableView.layoutIfNeeded()
         // ✅ 고정 높이 유지 (자동 변경 없음)
+        
+        emptyChartLabel.isHidden = !charts.isEmpty
+    }
+    
+    // MARK: - CoreData Save Logic
+    private func saveSurfRecordToCoreData() {
+        guard let entity = NSEntityDescription.entity(forEntityName: "SurfRecord", in: context) else { return }
+        let record = NSManagedObject(entity: entity, insertInto: context)
+        record.setValue(datePicker.date, forKey: "surfDate")
+        record.setValue(startTimePicker.date, forKey: "startTime")
+        record.setValue(endTimePicker.date, forKey: "endTime")
+        record.setValue(ratingCardView.selectedRating.value, forKey: "rating")
+        record.setValue(memoTextView.text.isEmpty ? nil : memoTextView.text, forKey: "memo")
+        record.setValue(false, forKey: "isPin")
+
+        // 차트 배열 저장: 예시로 Record-Chart 관계를 1:N로 가정
+        let chartEntity = NSEntityDescription.entity(forEntityName: "SurfChart", in: context)
+        let chartObjects = charts.compactMap { chart -> NSManagedObject? in
+            guard let chartEntity = chartEntity else { return nil }
+            let chartObj = NSManagedObject(entity: chartEntity, insertInto: context)
+            chartObj.setValue(chart.time, forKey: "time")
+            chartObj.setValue(chart.windSpeed, forKey: "windSpeed")
+            chartObj.setValue(chart.windDirection, forKey: "windDirection")
+            chartObj.setValue(chart.waveHeight, forKey: "waveHeight")
+            chartObj.setValue(chart.wavePeriod, forKey: "wavePeriod")
+            chartObj.setValue(chart.waveDirection, forKey: "waveDirection")
+            chartObj.setValue(chart.airTemperature, forKey: "airTemperature")
+            chartObj.setValue(chart.waterTemperature, forKey: "waterTemperature")
+            chartObj.setValue(chart.weather.iconName, forKey: "weatherIconName")
+           
+            // 관계 연결 (record.addToCharts(chartObj))
+            return chartObj
+        }
+        // Record와 차트들 관계 연결 (to-many)
+        record.setValue(NSSet(array: chartObjects), forKey: "charts")
+
+        do {
+            try context.save()
+            print("✅ 기록이 CoreData에 성공적으로 저장되었습니다.")
+            // 저장 성공 시 화면 닫기 (pop 또는 dismiss)
+            DispatchQueue.main.async {
+                if let nav = self.navigationController {
+                    // 네비게이션 스택에 있을 경우 pop
+                    if nav.viewControllers.first === self, self.presentingViewController != nil {
+                        // 모달 네비게이션의 루트인 경우 dismiss
+                        self.dismiss(animated: true)
+                    } else {
+                        nav.popViewController(animated: true)
+                    }
+                } else if self.presentingViewController != nil {
+                    // 네비게이션이 없고 모달로 표시된 경우 dismiss
+                    self.dismiss(animated: true)
+                }
+            }
+        } catch {
+            print("❌ CoreData 저장 실패: \(error)")
+        }
     }
 }
 
@@ -510,6 +586,7 @@ private extension SurfRecordViewController {
     
     /// ✅ 시작시간을 3시간 슬롯으로 내림(KST), 종료시간 이하는 포함(<=)
     func filterAndApplyCharts() {
+        print("[Debug] filterAndApplyCharts called. injectedCharts count: \(injectedCharts?.count ?? -1)")
         guard let all = injectedCharts, !all.isEmpty else {
             self.charts = []
             reloadChartTable()
@@ -524,6 +601,10 @@ private extension SurfRecordViewController {
         let filtered = all
             .filter { $0.time >= lowerBound && $0.time <= upperBound }
             .sorted { $0.time < $1.time }
+        
+        if filtered.isEmpty {
+            print("[Debug] No chart data after filtering.\nStart: \(startTimePicker.date)\nEnd: \(endTimePicker.date)")
+        }
         
         self.charts = filtered
         reloadChartTable()
@@ -560,3 +641,4 @@ extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
+
