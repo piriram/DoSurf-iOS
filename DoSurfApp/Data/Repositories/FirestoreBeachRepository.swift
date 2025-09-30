@@ -92,9 +92,9 @@ final class FirestoreBeachRepository: BeachRepository {
                     for document in documents {
                         if document.documentID == "_metadata" { continue }
                         let data = document.data()
-                        // Handle waveHeight: set to nil if -900 or below
+                        // Handle waveHeight: set to nil if sentinel values (<= -900 or >= 900)
                         let rawWaveHeight = data["wave_height"] as? Double
-                        let waveHeight = (rawWaveHeight != nil && rawWaveHeight! <= -900 ) ? nil : rawWaveHeight
+                        let waveHeight = (rawWaveHeight != nil && (rawWaveHeight! <= -900 || rawWaveHeight! >= 900)) ? nil : rawWaveHeight
                         
                         let forecast = FirestoreChartDTO(
                             documentId: document.documentID,
