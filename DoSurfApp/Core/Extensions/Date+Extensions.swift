@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import UIKit
 // MARK: - Date Formatting
 extension DateFormatter {
     static let beachDumpFormatter: DateFormatter = {
@@ -48,5 +48,23 @@ public extension Date {
 
     func toFormattedString(format: String, locale: Locale = .current, calendar: Calendar = .current) -> String {
         return DateFormatter.toFormattedDate(format: format, locale: locale, calendar: calendar).string(from: self)
+    }
+}
+
+// MARK: - 작은 유틸 라벨
+final class PaddingLabel: UILabel {
+    private let insets: UIEdgeInsets
+    init(insets: UIEdgeInsets) {
+        self.insets = insets
+        super.init(frame: .zero)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    override func drawText(in rect: CGRect) {
+        super.drawText(in: rect.inset(by: insets))
+    }
+    override var intrinsicContentSize: CGSize {
+        let s = super.intrinsicContentSize
+        return CGSize(width: s.width + insets.left + insets.right,
+                      height: s.height + insets.top + insets.bottom)
     }
 }
