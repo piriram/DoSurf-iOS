@@ -27,9 +27,9 @@ final class BeachSelectViewModel {
         let selectedCategory: Observable<Int>
         let canConfirm: Observable<Bool>
         let dismiss: Observable<[LocationDTO]>
-        let beachData: Observable<BeachDataDump>  // 추가
-        let error: Observable<Error>               // 추가
-        let isLoading: Observable<Bool>            // 추가
+        let beachData: Observable<BeachData>
+        let error: Observable<Error>
+        let isLoading: Observable<Bool>
     }
     
     // MARK: - Properties
@@ -51,25 +51,22 @@ final class BeachSelectViewModel {
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
-        // 카테고리 선택 처리
         input.categorySelected
             .map { $0.row }
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
         
-        // 선택된 카테고리에 따른 지역 목록 필터링
         let filteredLocations = selectedCategoryIndex
             .withLatestFrom(categories) { index, categories in
-                guard index < categories.count else { return "" }
-                return categories[index].id
+                guard index < categories.count else { return BeachRegion.yangyang }
+                return categories[index].region
             }
-            .map { [weak self] categoryId -> [LocationDTO] in
+            .map { [weak self] selectedRegion -> [LocationDTO] in
                 guard let self = self else { return [] }
-                return self.locations.value.filter { $0.categoryId == categoryId }
+                return self.locations.value.filter { $0.region == selectedRegion }
             }
             .asObservable()
         
-        // 지역 선택 처리 및 데이터 로딩
         let beachData = input.locationSelected
             .withLatestFrom(filteredLocations) { indexPath, locations -> LocationDTO? in
                 guard indexPath.row < locations.count else { return nil }
@@ -80,7 +77,7 @@ final class BeachSelectViewModel {
                 self?.selectedLocations.accept([location.id])
                 self?.isLoadingRelay.accept(true)
             })
-            .flatMapLatest { [weak self] location -> Observable<BeachDataDump> in
+            .flatMapLatest { [weak self] location -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
                 
                 return self.fetchBeachDataUseCase.execute(beachId: location.id)
@@ -101,12 +98,10 @@ final class BeachSelectViewModel {
             }
             .share(replay: 1)
         
-        // 확인 버튼 활성화 여부
         let canConfirm = selectedLocations
             .map { !$0.isEmpty }
             .asObservable()
         
-        // 확인 버튼 탭 처리
         let dismiss = input.confirmButtonTapped
             .withLatestFrom(Observable.combineLatest(locations, selectedLocations))
             .map { locations, selectedIds in
@@ -127,21 +122,15 @@ final class BeachSelectViewModel {
     
     // MARK: - Mock Data
     private func setupMockData() {
-        let mockCategories = [
-            CategoryDTO(id: "yangyang", name: "양양"),
-            CategoryDTO(id: "jeju", name: "제주"),
-            CategoryDTO(id: "busan", name: "부산"),
-            CategoryDTO(id: "goseong", name: "고성/속초"),
-            CategoryDTO(id: "incheon", name: "강릉/동해/삼척"),
-            CategoryDTO(id: "pohang", name: "포항/울산"),
-            CategoryDTO(id: "jinhae", name: "서해/남해")
-        ]
+        let mockCategories = BeachRegion.allCases.map { CategoryDTO(region: $0) }
         
         let mockLocations = [
-            LocationDTO(id: "1001", categoryId: "yangyang", region: "양양", place: "죽도서핑비치"),
-            LocationDTO(id: "1002", categoryId: "yangyang", region: "양양", place: "죽도해변 C"),
-            LocationDTO(id: "2001", categoryId: "jeju", region: "제주", place: "중문"),
-            LocationDTO(id: "3001", categoryId: "busan", region: "부산", place: "해운대"),
+            LocationDTO(id: "1001", region: .yangyang, place: "죽도서핑비치"),
+            LocationDTO(id: "1002", region: .yangyang, place: "죽도해변 C"),
+            LocationDTO(id: "1003", region: .yangyang, place: "인구해변"),
+            LocationDTO(id: "2001", region: .jeju, place: "중문"),
+            LocationDTO(id: "3001", region: .busan, place: "해운대"),
+            LocationDTO(id: "4001", region: .gangreung, place: "정동진"),
         ]
         
         categories.accept(mockCategories)

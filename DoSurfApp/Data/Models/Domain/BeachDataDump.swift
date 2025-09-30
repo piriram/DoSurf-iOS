@@ -4,32 +4,10 @@
 //
 //  Created by 잠만보김쥬디 on 9/26/25.
 //
-
 import Foundation
 
-// MARK: - DTOs
-struct BeachDataDump {
-    let beachInfo: BeachInfo
-    let metadata: BeachMetadata?
-    let forecasts: [FirestoreChartDTO]
-    let lastUpdated: Date
-    let foundInRegion: String?
-}
-
-struct BeachInfo {
-    let id: String
-    let name: String
-    let region: String
-    
-    static let availableBeaches: [BeachInfo] = [
-        BeachInfo(id: "1001", name: "정동진", region: "gangreung"),
-        BeachInfo(id: "2001", name: "월포", region: "pohang"),
-        BeachInfo(id: "3001", name: "중문", region: "jeju"),
-        BeachInfo(id: "4001", name: "해운대", region: "busan")
-    ]
-}
-
-struct BeachMetadata {
+// MARK: - Firestore DTOs (Data Layer에서만 사용)
+struct BeachMetadataDTO {
     let beachId: Int
     let region: String
     let beach: String
@@ -39,9 +17,18 @@ struct BeachMetadata {
     let earliestForecast: Date?
     let latestForecast: Date?
     let nextForecastTime: Date?
+    
+    func toDomain() -> BeachMetadata {
+        return BeachMetadata(
+            id: String(beachId),
+            name: beach,
+            region: region,
+            status: status,
+            lastUpdated: lastUpdated,
+            totalForecasts: totalForecasts
+        )
+    }
 }
-
-import Foundation
 
 struct FirestoreChartDTO {
     let documentId: String
@@ -65,20 +52,37 @@ struct FirestoreChartDTO {
     let omSeaSurfaceTemperature: Double?
     
     func toDomain() -> Chart {
-        print(documentId)
-        return Chart(beachID: beachId,
-                     time: documentId.toDate(dateFormat: "yyyyMMddHHmm") ?? .distantPast, //TODO: 예외 처리 어떻게 하지
-                     
-                     windDirection: windDirection ?? 0.0,
-                     windSpeed: windSpeed ?? 0.0,
-                     waveDirection: omWaveDirection ?? 0.0,
-                     waveHeight: waveHeight ?? omWaveHeight ?? 0.0,
-                     wavePeriod: 0.0,//TODO: 값 서버에서 넣어줘야함
-                     waterTemperature: omSeaSurfaceTemperature ?? 0.0,
-                     weather: .rain, // TODO: enum 값 연결
-                     airTemperature: airTemperature ?? 0.0)
+        return Chart(
+            beachID: beachId,
+            time: timestamp,
+            windDirection: windDirection ?? 0.0,
+            windSpeed: windSpeed ?? 0.0,
+            waveDirection: omWaveDirection ?? 0.0,
+            waveHeight: waveHeight ?? omWaveHeight ?? 0.0,
+            wavePeriod: 0.0, // TODO: 서버에서 값 추가 필요
+            waterTemperature: omSeaSurfaceTemperature ?? 0.0,
+            weather: mapWeather(skyCondition: skyCondition, precipitationType: precipitationType),
+            airTemperature: airTemperature ?? 0.0
+        )
+    }
+    
+    private func mapWeather(skyCondition: Int?, precipitationType: Int?) -> WeatherType {
+        return .clear
+        
     }
 }
+
+// MARK: - Domain Models (Domain/Presentation Layer에서 사용)
+struct BeachMetadata {
+    let id: String
+    let name: String
+    let region: String
+    let status: String
+    let lastUpdated: Date
+    let totalForecasts: Int
+}
+
+
 struct Chart: Equatable {
     let beachID: Int
     let time: Date
@@ -90,8 +94,9 @@ struct Chart: Equatable {
     let waterTemperature: Double
     let weather: WeatherType
     let airTemperature: Double
-    
 }
+
+
 struct ChartList {
     let id: String
     let beachID: String
@@ -100,30 +105,12 @@ struct ChartList {
 }
 
 
-// MARK: - DTOs
-struct CategoryDTO: Sendable {
-    let id: String
-    let name: String
+struct BeachData {
+    let metadata: BeachMetadata
+    let charts: [Chart]
+    let lastUpdated: Date
 }
 
-struct LocationDTO: Sendable {
-    let id: String
-    let categoryId: String
-    let region: String
-    let place: String
-    
-    var displayText: String {
-        return "\(place)"
-    }
-    
-    var passText: String {
-        return "\(region) \(place)"
-    }
-}
-
-// MARK: - Nonisolated conformances for Diffable Data Source
-nonisolated extension CategoryDTO: Hashable {}
-nonisolated extension LocationDTO: Hashable {}
 
 extension String {
     func toDate(dateFormat: String) -> Date?{
