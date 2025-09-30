@@ -36,7 +36,7 @@ final class BeachSelectViewModel {
     private let categories = BehaviorRelay<[CategoryDTO]>(value: [])
     private let locations = BehaviorRelay<[LocationDTO]>(value: [])
     private let selectedCategoryIndex = BehaviorRelay<Int>(value: 0)
-    private let selectedLocations = BehaviorRelay<Set<String>>(value: [])
+    private let selectedLocation = BehaviorRelay<String?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
     
@@ -56,31 +56,46 @@ final class BeachSelectViewModel {
             .bind(to: selectedCategoryIndex)
             .disposed(by: disposeBag)
         
-        let filteredLocations = selectedCategoryIndex
-            .withLatestFrom(categories) { index, categories in
-                guard index < categories.count else { return BeachRegion.yangyang }
+        // 카테고리 변경 시 선택된 해변 초기화
+        selectedCategoryIndex
+            .subscribe(onNext: { [weak self] _ in
+                self?.selectedLocation.accept(nil)
+            })
+            .disposed(by: disposeBag)
+        
+        let filteredLocations: Observable<[LocationDTO]> = selectedCategoryIndex
+            .withLatestFrom(categories) { (index, categories) -> BeachRegion in
+                guard index < categories.count else { return .gangreung }
                 return categories[index].region
             }
-            .map { [weak self] selectedRegion -> [LocationDTO] in
+            .map { [weak self] (selectedRegion: BeachRegion) -> [LocationDTO] in
                 guard let self = self else { return [] }
                 return self.locations.value.filter { $0.region == selectedRegion }
             }
             .asObservable()
         
-        let beachData = input.locationSelected
+        // 해변 선택 처리
+        input.locationSelected
             .withLatestFrom(filteredLocations) { indexPath, locations -> LocationDTO? in
                 guard indexPath.row < locations.count else { return nil }
                 return locations[indexPath.row]
             }
             .compactMap { $0 }
-            .do(onNext: { [weak self] location in
-                self?.selectedLocations.accept([location.id])
+            .subscribe(onNext: { [weak self] location in
+                self?.selectedLocation.accept(location.id)
+            })
+            .disposed(by: disposeBag)
+        
+        let beachData = selectedLocation
+            .compactMap { $0 }
+            .distinctUntilChanged()
+            .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
             })
-            .flatMapLatest { [weak self] location -> Observable<BeachData> in
+            .flatMapLatest { [weak self] locationId -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
                 
-                return self.fetchBeachDataUseCase.execute(beachId: location.id)
+                return self.fetchBeachDataUseCase.execute(beachId: locationId)
                     .asObservable()
                     .do(
                         onNext: { [weak self] _ in
@@ -98,14 +113,18 @@ final class BeachSelectViewModel {
             }
             .share(replay: 1)
         
-        let canConfirm = selectedLocations
-            .map { !$0.isEmpty }
+        let canConfirm = selectedLocation
+            .map { $0 != nil }
             .asObservable()
         
         let dismiss = input.confirmButtonTapped
-            .withLatestFrom(Observable.combineLatest(locations, selectedLocations))
-            .map { locations, selectedIds in
-                locations.filter { selectedIds.contains($0.id) }
+            .withLatestFrom(Observable.combineLatest(
+                locations.asObservable(),
+                selectedLocation.asObservable()
+            ))
+            .map { (locations: [LocationDTO], selectedId: String?) -> [LocationDTO] in
+                guard let selectedId = selectedId else { return [] }
+                return locations.filter { $0.id == selectedId }
             }
         
         return Output(
@@ -125,12 +144,10 @@ final class BeachSelectViewModel {
         let mockCategories = BeachRegion.allCases.map { CategoryDTO(region: $0) }
         
         let mockLocations = [
-            LocationDTO(id: "1001", region: .yangyang, place: "죽도서핑비치"),
-            LocationDTO(id: "1002", region: .yangyang, place: "죽도해변 C"),
-            LocationDTO(id: "1003", region: .yangyang, place: "인구해변"),
-            LocationDTO(id: "2001", region: .jeju, place: "중문"),
-            LocationDTO(id: "3001", region: .busan, place: "해운대"),
-            LocationDTO(id: "4001", region: .gangreung, place: "정동진"),
+            LocationDTO(id: "1001", region: .gangreung, place: "죽도"),
+            LocationDTO(id: "2001", region: .pohang, place: "월포"),
+            LocationDTO(id: "3001", region: .jeju, place: "중문"),
+            LocationDTO(id: "4001", region: .busan, place: "송정"),
         ]
         
         categories.accept(mockCategories)

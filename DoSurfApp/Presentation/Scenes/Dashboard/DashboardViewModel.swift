@@ -44,10 +44,15 @@ final class DashboardViewModel {
     // MARK: - Transform
     func transform(input: Input) -> Output {
         
+        // 새로운 해변이 선택될 때마다 currentBeachId 업데이트
         input.beachSelected
             .bind(to: currentBeachId)
             .disposed(by: disposeBag)
         
+        // 데이터를 불러오는 트리거들:
+        // 1. 뷰 로드 시 (기본 해변)
+        // 2. 해변 선택 시 (새로운 차트 데이터 로드)
+        // 3. 새로고침 시 (현재 해변 데이터 재로드)
         let loadTrigger = Observable.merge(
             input.viewDidLoad.map { [weak self] _ in self?.currentBeachId.value ?? "4001" },
             input.beachSelected,
