@@ -81,9 +81,7 @@ final class FirestoreBeachRepository: BeachRepository {
         db.collection("regions")
             .document(region)
             .collection(beachId)
-            .whereField("timestamp", isGreaterThan: Timestamp(date: since))
             .order(by: "timestamp", descending: false)
-            .limit(to: limit)
             .getDocuments { snapshot, error in
                 if let error = error {
                     completion(.failure(FirebaseAPIError.map(error)))
@@ -96,7 +94,7 @@ final class FirestoreBeachRepository: BeachRepository {
                         let data = document.data()
                         // Handle waveHeight: set to nil if -900 or below
                         let rawWaveHeight = data["wave_height"] as? Double
-                        let waveHeight = (rawWaveHeight != nil && rawWaveHeight! <= -900) ? nil : rawWaveHeight
+                        let waveHeight = (rawWaveHeight != nil && rawWaveHeight! <= -900 ) ? nil : rawWaveHeight
                         
                         let forecast = FirestoreChartDTO(
                             documentId: document.documentID,
@@ -126,3 +124,4 @@ final class FirestoreBeachRepository: BeachRepository {
             }
     }
 }
+

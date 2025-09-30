@@ -21,7 +21,6 @@ struct LocationDTO: Sendable {
     let region: String
     let place: String
     
-    // TODO: 이페이지에서 보이는 네임과 대시보드에서 보이는 네임 다르게 하기
     var displayText: String {
         return "\(place)"
     }
