@@ -8,6 +8,7 @@ import UIKit
 import RxSwift
 import RxCocoa
 import SnapKit
+import Foundation
 
 // MARK: - Diffable Aliases
 private typealias CategoryDataSource = UITableViewDiffableDataSource<Int, String>
@@ -21,6 +22,7 @@ final class BeachSelectViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
+    private let storageService: SurfingStorageService = UserDefaultsSurfingStorageService()
 
     var onBeachSelected: ((LocationDTO) -> Void)?
 
@@ -79,6 +81,15 @@ final class BeachSelectViewController: BaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
+        
+        if let savedID = storageService.loadSelectedBeachID(),
+           let index = currentLocations.firstIndex(where: { $0.id == savedID }) {
+            selectedLocationId = savedID
+            selectedLocation = currentLocations[index]
+            beachTableView.reloadData()
+            confirmButton.isEnabled = true
+            confirmButton.backgroundColor = .surfBlue
+        }
     }
 
     // MARK: - Base Overrides
@@ -169,6 +180,7 @@ final class BeachSelectViewController: BaseViewController {
                 guard let self = self else { return }
                 if let selectedBeach = selectedLocations.first {
                     self.onBeachSelected?(selectedBeach)
+                    self.storageService.saveSelectedBeachID(selectedBeach.id)
                 }
 
                 let tabBar = self.tabBarController?.tabBar
@@ -267,3 +279,4 @@ private extension Array {
         indices.contains(index) ? self[index] : nil
     }
 }
+

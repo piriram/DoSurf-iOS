@@ -11,8 +11,8 @@ final class RecordHistoryViewController: BaseViewController {
     // MARK: - UI Components
     private let locationButton: UIButton = {
         let button = UIButton()
-        button.setTitle(SurfBeach.songjeong.displayName, for: .normal)
-        button.setTitleColor(.label, for: .normal)
+        button.setTitle("\(SurfBeach.songjeong.region.displayName) \(SurfBeach.songjeong.displayName)해변", for: .normal)
+        button.setTitleColor(.black.withAlphaComponent(0.7), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
         button.tintColor = .label
@@ -60,6 +60,7 @@ final class RecordHistoryViewController: BaseViewController {
     private let disposeBag = DisposeBag()
     
     private let selectedBeachIDRelay = BehaviorRelay<Int>(value: SurfBeach.songjeong.rawValue)
+    private let ratingFilterSubject = PublishSubject<RecordFilter>()
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
@@ -124,7 +125,7 @@ final class RecordHistoryViewController: BaseViewController {
         filterScrollView.snp.makeConstraints {
             $0.top.equalTo(locationButton.snp.bottom).offset(12)
             $0.leading.trailing.equalToSuperview()
-            $0.height.equalTo(48)
+            $0.height.equalTo(36)
         }
         
         filterStackView.snp.makeConstraints {
@@ -159,7 +160,8 @@ final class RecordHistoryViewController: BaseViewController {
             filterSelection: Observable.merge(
                 allFilterButton.rx.tap.map { RecordFilter.all },
                 pinnedFilterButton.rx.tap.map { RecordFilter.pinned },
-                weatherFilterButton.rx.tap.map { RecordFilter.weather }
+                weatherFilterButton.rx.tap.map { RecordFilter.weather },
+                ratingFilterSubject.asObservable()
             ),
             sortSelection: sortButton.rx.tap.asObservable(),
             ratingSelection: ratingFilterButton.rx.tap.asObservable(),
@@ -219,6 +221,15 @@ final class RecordHistoryViewController: BaseViewController {
         allFilterButton.isSelected = (selectedFilter == .all)
         pinnedFilterButton.isSelected = (selectedFilter == .pinned)
         weatherFilterButton.isSelected = (selectedFilter == .weather)
+
+        switch selectedFilter {
+        case .rating(let r):
+            ratingFilterButton.isSelected = true
+            ratingFilterButton.setTitle("\(r)점", for: .normal)
+        default:
+            ratingFilterButton.isSelected = false
+            ratingFilterButton.setTitle("별점", for: .normal)
+        }
     }
     
     private func showActionSheet(
@@ -319,7 +330,7 @@ final class RecordHistoryViewController: BaseViewController {
         )
         SurfBeach.allCases.forEach { beach in
             let action = UIAlertAction(title: beach.displayName, style: .default) { [weak self] _ in
-                self?.locationButton.setTitle(beach.displayName, for: .normal)
+                self?.locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
                 self?.selectedBeachIDRelay.accept(beach.rawValue)
             }
             alertController.addAction(action)
@@ -356,19 +367,24 @@ final class RecordHistoryViewController: BaseViewController {
     private func showRatingFilter() {
         let alertController = UIAlertController(
             title: "별점 필터",
-            message: "별점을 선택하세요",
+            message: nil,
             preferredStyle: .actionSheet
         )
-        
+
         for rating in (1...5).reversed() {
-            let stars = String(repeating: "⭐", count: rating)
-            let action = UIAlertAction(title: "\(stars) \(rating)점 이상", style: .default) { _ in
-                // Handle rating filter
+            let action = UIAlertAction(title: "\(rating)점", style: .default) { [weak self] _ in
+                self?.ratingFilterButton.setTitle("\(rating)점", for: .normal)
+                self?.ratingFilterSubject.onNext(.rating(rating))
             }
             alertController.addAction(action)
         }
-        
-        alertController.addAction(UIAlertAction(title: "전체", style: .default))
+
+        let allAction = UIAlertAction(title: "전체", style: .default) { [weak self] _ in
+            self?.ratingFilterButton.setTitle("별점", for: .normal)
+            self?.ratingFilterSubject.onNext(.all)
+        }
+        alertController.addAction(allAction)
+
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         present(alertController, animated: true)
     }
@@ -395,22 +411,25 @@ final class FilterButton: UIButton {
         setTitleColor(.white, for: .selected)
         titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
         
-        backgroundColor = .secondarySystemBackground
-        layer.cornerRadius = 16
-        contentEdgeInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
+        backgroundColor = .white
+        layer.cornerRadius = 18
+        layer.borderWidth = 0.75
+        layer.borderColor = UIColor.black.withAlphaComponent(0.1).cgColor
+        contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
         
         if hasDropdown {
             setImage(UIImage(systemName: "chevron.down"), for: .normal)
             semanticContentAttribute = .forceRightToLeft
             imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: -4)
-            tintColor = .label
+            tintColor = .lableBlack
         }
     }
     
     override var isSelected: Bool {
         didSet {
-            backgroundColor = isSelected ? .surfBlue : .secondarySystemBackground
+            backgroundColor = isSelected ? .surfBlue : .white
             tintColor = isSelected ? .white : .label
+            layer.borderColor = isSelected ? UIColor.clear.cgColor : UIColor.black.withAlphaComponent(0.1).cgColor
         }
     }
 }

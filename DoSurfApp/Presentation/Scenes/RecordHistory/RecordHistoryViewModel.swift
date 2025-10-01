@@ -128,14 +128,47 @@ final class RecordHistoryViewModel {
             .bind(to: recordsRelay)
             .disposed(by: disposeBag)
         
-        // Handle pin record
+        // Handle pin record (toggle isPin and persist to Core Data)
         input.pinRecord
-            .withLatestFrom(recordsRelay) { objectID, records in
-                return (objectID, records)
+            .withLatestFrom(Observable.combineLatest(recordsRelay.asObservable(), selectedBeachIDRelay.asObservable())) { objectID, combined in
+                let (records, selectedBeachID) = combined
+                return (objectID, records, selectedBeachID)
             }
-            .subscribe(onNext: { [weak self] objectID, records in
-                // Toggle pin status - implementation needed in repository
-            })
+            .flatMapLatest { [weak self] (objectID, records, selectedBeachID) -> Observable<[SurfRecordData]> in
+                guard let self = self else { return .empty() }
+                guard let current = records.first(where: { $0.id == objectID }) else {
+                    return .empty()
+                }
+                // Toggle pin status
+                let updated = SurfRecordData(
+                    beachID: current.beachID,
+                    id: current.id,
+                    surfDate: current.surfDate,
+                    startTime: current.startTime,
+                    endTime: current.endTime,
+                    rating: current.rating,
+                    memo: current.memo,
+                    isPin: !current.isPin,
+                    charts: current.charts
+                )
+                
+                let update = self.useCase.updateSurfRecord(updated).asObservable()
+                
+                let fetch: Observable<[SurfRecordData]>
+                if let beachID = selectedBeachID {
+                    fetch = self.useCase.fetchSurfRecords(for: beachID).asObservable()
+                } else {
+                    fetch = self.useCase.fetchAllSurfRecords().asObservable()
+                }
+                
+                return update
+                    .flatMapLatest { fetch }
+                    .catch { [weak self] error in
+                        self?.errorRelay.accept(error)
+                        return .empty()
+                    }
+            }
+            .bind(to: recordsRelay)
             .disposed(by: disposeBag)
         
         // Combine records with filter and sort
@@ -155,8 +188,8 @@ final class RecordHistoryViewModel {
                 filteredRecords = records.filter { $0.isPin }
             case .weather:
                 break
-            case .rating(let minRating):
-                filteredRecords = records.filter { $0.rating >= minRating }
+            case .rating(let exactRating):
+                filteredRecords = records.filter { Int($0.rating) == exactRating }
             }
             
             // Apply sort
@@ -268,3 +301,4 @@ struct RecordCardViewModel {
         }
     }
 }
+

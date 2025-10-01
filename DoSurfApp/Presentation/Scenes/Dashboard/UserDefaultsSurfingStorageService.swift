@@ -17,6 +17,8 @@ protocol SurfingStorageService {
     func getSurfingEndTime() -> Date?
     func calculateSurfingDuration() -> TimeInterval?
     func clearSurfingData()
+    func saveSelectedBeachID(_ id: String)
+    func loadSelectedBeachID() -> String?
 }
 
 // MARK: - Implementation
@@ -27,6 +29,7 @@ final class UserDefaultsSurfingStorageService: SurfingStorageService {
         static let surfingStartTime = "surfingStartTime"
         static let surfingEndTime = "surfingEndTime"
         static let isSurfingActive = "isSurfingActive"
+        static let selectedBeachID = "selectedBeachID"
     }
     
     // MARK: - Properties
@@ -106,6 +109,18 @@ final class UserDefaultsSurfingStorageService: SurfingStorageService {
         
         print("🗑️ 서핑 데이터 삭제 완료")
     }
+    
+    func saveSelectedBeachID(_ id: String) {
+        userDefaults.set(id, forKey: Keys.selectedBeachID)
+        userDefaults.synchronize()
+        print("💾 선택한 해변 ID 저장: \(id)")
+    }
+
+    func loadSelectedBeachID() -> String? {
+        let id = userDefaults.string(forKey: Keys.selectedBeachID)
+        print("📂 선택한 해변 ID 로드: \(id ?? "nil")")
+        return id
+    }
 }
 
 // MARK: - Mock for Testing
@@ -114,6 +129,7 @@ final class MockSurfingStorageService: SurfingStorageService {
     var savedState: Bool = false
     var savedStartTime: Date?
     var savedEndTime: Date?
+    var savedSelectedBeachID: String?
     
     func saveSurfingState(_ isActive: Bool) {
         savedState = isActive
@@ -151,5 +167,14 @@ final class MockSurfingStorageService: SurfingStorageService {
         savedStartTime = nil
         savedEndTime = nil
     }
+    
+    func saveSelectedBeachID(_ id: String) {
+        savedSelectedBeachID = id
+    }
+
+    func loadSelectedBeachID() -> String? {
+        return savedSelectedBeachID
+    }
 }
 #endif
+

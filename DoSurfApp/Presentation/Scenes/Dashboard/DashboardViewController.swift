@@ -20,6 +20,7 @@ class DashboardViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: DashboardViewModel
     private let disposeBag = DisposeBag()
+    private let storageService: SurfingStorageService = UserDefaultsSurfingStorageService()
     
     private var currentBeachData: BeachData?
     private let viewDidLoadSubject = PublishSubject<Void>()
@@ -188,9 +189,10 @@ class DashboardViewController: BaseViewController {
                 self?.currentBeachData = beachData
                 let beachID = beachData.metadata.beachID
                 if let surfBeach = SurfBeach(rawValue: beachID) {
-                    self?.beachSelectButton.setTitle(surfBeach.displayName, for: .normal)
+                    let title = "\(surfBeach.region.displayName) \(surfBeach.displayName)해변"
+                    self?.beachSelectButton.setTitle(title, for: .normal)
                 } else {
-                    self?.beachSelectButton.setTitle(beachData.metadata.name, for: .normal)
+                    self?.beachSelectButton.setTitle("\(beachData.metadata.name)해변", for: .normal)
                 }
             })
             .disposed(by: disposeBag)
@@ -230,6 +232,10 @@ class DashboardViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
+        
+        if let savedID = storageService.loadSelectedBeachID() {
+            beachSelectedSubject.onNext(savedID)
+        }
         
         viewDidLoadSubject.onNext(())
     }
@@ -320,3 +326,4 @@ extension DIContainer {
         DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
     }
 }
+

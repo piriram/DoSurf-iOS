@@ -18,33 +18,9 @@ final class BeachChartListView: UIView {
         return view
     }()
     
-    private lazy var columnHeaderView: UIView = {
-        let headerView = UIView()
-        headerView.backgroundColor = .backgroundHeader.withAlphaComponent(0.5)
-
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.distribution = .equalSpacing
-        stackView.alignment = .center
-        stackView.spacing = 8
-
-        let labels = ["시간", "바람", "파도", "수온", "날씨"]
-        labels.forEach { text in
-            let label = UILabel()
-            label.text = text
-            label.font = UIFont.systemFont(ofSize: 12, weight: .medium)
-            label.textColor = .secondaryLabel
-            label.textAlignment = .center
-            stackView.addArrangedSubview(label)
-        }
-
-        headerView.addSubview(stackView)
-        stackView.snp.makeConstraints { make in
-            make.leading.trailing.equalToSuperview().inset(16)
-            make.centerY.equalToSuperview()
-        }
-
-        return headerView
+    private lazy var columnHeaderView: ColumnHeaderView = {
+        let view = ColumnHeaderView()
+        return view
     }()
 
     private let dateLabel: UILabel = {
@@ -253,4 +229,3 @@ extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
         if !decelerate { updateDateForVisibleSectionByCount() }
     }
 }
-
