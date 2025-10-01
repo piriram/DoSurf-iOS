@@ -1,5 +1,5 @@
 import Foundation
-internal import CoreData
+import CoreData
 
 final class CoreDataStack {
     static let shared = CoreDataStack()
