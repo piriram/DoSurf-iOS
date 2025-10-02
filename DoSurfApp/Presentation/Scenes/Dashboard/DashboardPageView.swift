@@ -172,6 +172,11 @@ final class DashboardPageView: UIView {
             }
         }
     }
+    
+    func getPage(at index: Int) -> UIView? {
+        guard index >= 0 && index < pages.count else { return nil }
+        return pages[index]
+    }
 }
 
 
