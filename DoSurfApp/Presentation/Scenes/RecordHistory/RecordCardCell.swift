@@ -40,6 +40,14 @@ final class RecordCardCell: UITableViewCell {
         return label
     }()
     
+    private let ratingBackgroundView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .white
+        view.layer.cornerRadius = 6
+        view.layer.masksToBounds = true
+        return view
+    }()
+    
     private let moreButton: UIButton = {
         let button = UIButton()
         button.setImage(UIImage(systemName: "ellipsis"), for: .normal)
@@ -111,6 +119,7 @@ final class RecordCardCell: UITableViewCell {
         contentView.addSubview(containerView)
         containerView.addSubview(headerView)
         headerView.addSubview(dateLabel)
+        headerView.addSubview(ratingBackgroundView)
         headerView.addSubview(ratingLabel)
         headerView.addSubview(moreButton)
         headerView.addSubview(memoButton)
@@ -149,6 +158,13 @@ final class RecordCardCell: UITableViewCell {
         ratingLabel.snp.makeConstraints {
             $0.top.equalTo(dateLabel.snp.bottom).offset(4)
             $0.leading.equalTo(dateLabel)
+        }
+        
+        ratingBackgroundView.snp.makeConstraints {
+            $0.top.equalTo(ratingLabel).offset(-4)
+            $0.leading.equalTo(ratingLabel).offset(-8)
+            $0.bottom.equalTo(ratingLabel).offset(4)
+            $0.trailing.equalTo(ratingLabel).offset(8)
         }
         
         moreButton.snp.makeConstraints {
@@ -273,4 +289,3 @@ extension RecordCardCell: UITableViewDelegate {
         return UITableView.automaticDimension
     }
 }
-
