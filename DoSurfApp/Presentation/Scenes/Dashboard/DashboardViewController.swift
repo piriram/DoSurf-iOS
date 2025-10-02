@@ -61,33 +61,50 @@ class DashboardViewController: BaseViewController {
     
     private lazy var statisticsHeaderView: UIView = {
         let view = UIView()
+        view.backgroundColor = .clear
+        
         let titleLabel = UILabel()
+        titleLabel.tag = 1001 // for lookup
         titleLabel.text = "선호하는 차트 통계"
         titleLabel.font = .systemFont(ofSize: 21, weight: .bold)
         titleLabel.textColor = .white
+        
         let infoButton = UIButton(type: .system)
+        infoButton.tag = 1002 // for lookup
         infoButton.setImage(UIImage(systemName: "info.circle"), for: .normal)
         infoButton.tintColor = .white
         
+        let seeAllButton = UIButton(type: .system)
+        seeAllButton.tag = 1003 // for lookup
+        seeAllButton.setTitle("모두 보기", for: .normal)
+        seeAllButton.setImage(UIImage(systemName: "chevron.right"), for: .normal)
+        seeAllButton.tintColor = .white
+        seeAllButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        seeAllButton.semanticContentAttribute = .forceRightToLeft
+        seeAllButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
+        seeAllButton.isHidden = true // default hidden on page 0
+        
         view.addSubview(titleLabel)
         view.addSubview(infoButton)
-        view.backgroundColor = .clear
-        titleLabel.snp.makeConstraints { make in make.leading.centerY.equalToSuperview() }
-        infoButton.snp.makeConstraints { make in make.trailing.centerY.equalToSuperview(); make.width.height.equalTo(24) }
+        view.addSubview(seeAllButton)
+        
+        titleLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(16)
+            make.centerY.equalToSuperview()
+        }
+        
+        seeAllButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(16)
+            make.centerY.equalToSuperview()
+        }
+        
+        infoButton.snp.makeConstraints { make in
+            make.trailing.equalToSuperview().inset(16)
+            make.centerY.equalToSuperview()
+            make.width.height.equalTo(24)
+        }
+        
         return view
-    }()
-    
-    private lazy var cardCollectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .horizontal
-        layout.minimumLineSpacing = 16
-        layout.minimumInteritemSpacing = 16
-        layout.sectionInset = UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20)
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.backgroundColor = .clear
-        collectionView.showsHorizontalScrollIndicator = false
-        collectionView.register(DashboardCardCell.self, forCellWithReuseIdentifier: DashboardCardCell.identifier)
-        return collectionView
     }()
     
     private lazy var pageControl: UIPageControl = {
@@ -98,6 +115,12 @@ class DashboardViewController: BaseViewController {
         pageControl.currentPageIndicatorTintColor = .white
         pageControl.hidesForSinglePage = true
         return pageControl
+    }()
+    
+    // cardCollectionView 대신 사용
+    private lazy var dashboardPageView: DashboardPageView = {
+        let pageView = DashboardPageView()
+        return pageView
     }()
     
     private lazy var chartContainerView: UIView = {
@@ -119,6 +142,17 @@ class DashboardViewController: BaseViewController {
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     
     // MARK: - Overrides
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        // 초기 페이지 상태 확실히 설정
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.pageControl.currentPage = 0
+            self.updateStatisticsHeader(for: 0)
+        }
+    }
+    
     override func configureNavigationBar() {
         super.configureNavigationBar()
         navigationController?.setNavigationBarHidden(true, animated: false)
@@ -132,7 +166,7 @@ class DashboardViewController: BaseViewController {
         view.addSubview(backgroundImageView)
         view.addSubview(locationHeaderView)
         view.addSubview(statisticsHeaderView)
-        view.addSubview(cardCollectionView)
+        view.addSubview(dashboardPageView)
         view.addSubview(pageControl)
         view.addSubview(chartContainerView)
         chartContainerView.addSubview(chartListView)
@@ -147,16 +181,16 @@ class DashboardViewController: BaseViewController {
         }
         statisticsHeaderView.snp.makeConstraints {
             $0.top.equalTo(locationHeaderView.snp.bottom).offset(6)
-            $0.leading.trailing.equalToSuperview().inset(16)
-            $0.height.equalTo(24)
+            $0.leading.trailing.equalToSuperview()
+            $0.height.equalTo(28)
         }
-        cardCollectionView.snp.makeConstraints {
+        dashboardPageView.snp.makeConstraints {
             $0.top.equalTo(statisticsHeaderView.snp.bottom).offset(24)
             $0.leading.trailing.equalToSuperview()
-            $0.height.equalTo(120)
+            $0.height.equalTo(200)
         }
         pageControl.snp.makeConstraints {
-            $0.top.equalTo(cardCollectionView.snp.bottom).offset(16)
+            $0.top.equalTo(dashboardPageView.snp.bottom).offset(16)
             $0.centerX.equalToSuperview()
             $0.height.equalTo(20)
         }
@@ -173,14 +207,46 @@ class DashboardViewController: BaseViewController {
             .disposed(by: disposeBag)
     }
     override func configureBind() {
-        cardCollectionView.rx.setDelegate(self).disposed(by: disposeBag)
-        
         let input = DashboardViewModel.Input(
             viewDidLoad: viewDidLoadSubject.asObservable(),
             beachSelected: beachSelectedSubject.asObservable(),
             refreshTriggered: refreshControl.rx.controlEvent(.valueChanged).asObservable()
         )
         let output = viewModel.transform(input: input)
+        
+        // 페이지 구성 - 명확한 순서 보장
+        let page1 = PreferredChartPage() // 첫 번째: 선호하는 차트 통계
+        let page2 = ChartListPage(title: "최근 기록 차트", showsHeader: false) // 두 번째: 최근 기록 차트
+        let page3 = ChartListPage(title: "고정 차트", showsHeader: false) // 세 번째: 고정 차트
+        dashboardPageView.configure(pages: [page1, page2, page3])
+
+        // 페이지 컨트롤 초기 설정
+        pageControl.numberOfPages = 3
+        pageControl.currentPage = 0
+        updateStatisticsHeader(for: 0)
+
+        // 페이지 변경 감지 및 동기화
+        dashboardPageView.currentPage
+            .distinctUntilChanged() // 중복 이벤트 방지
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] page in
+                guard let self = self else { return }
+                // 페이지 컨트롤과 헤더를 동시에 업데이트
+                self.pageControl.currentPage = page
+                self.updateStatisticsHeader(for: page)
+            })
+            .disposed(by: disposeBag)
+
+        // 페이지 컨트롤 터치 이벤트 처리
+        pageControl.rx.controlEvent(.valueChanged)
+            .throttle(.milliseconds(100), scheduler: MainScheduler.instance) // 빠른 탭 방지
+            .subscribe(onNext: { [weak self] in
+                guard let self = self else { return }
+                let targetPage = self.pageControl.currentPage
+                self.dashboardPageView.scrollToPage(targetPage)
+                self.updateStatisticsHeader(for: targetPage)
+            })
+            .disposed(by: disposeBag)
         
         // 해변 이름
         output.beachData
@@ -197,19 +263,12 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
-        // 카드
+        // 데이터 바인딩
         output.dashboardCards
             .observe(on: MainScheduler.instance)
-            .do(onNext: { [weak self] cards in
-                let cardsPerPage = 2
-                self?.pageControl.numberOfPages = Int(ceil(Double(cards.count) / Double(cardsPerPage)))
+            .subscribe(onNext: { cards in
+                page1.configure(with: cards)
             })
-            .bind(to: cardCollectionView.rx.items(
-                cellIdentifier: DashboardCardCell.identifier,
-                cellType: DashboardCardCell.self
-            )) { _, data, cell in
-                cell.configure(with: data)
-            }
             .disposed(by: disposeBag)
         
         // 차트 그룹 + 스냅샷
@@ -239,38 +298,6 @@ class DashboardViewController: BaseViewController {
         
         viewDidLoadSubject.onNext(())
     }
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        setupPageControlBinding()
-    }
-    
-    // MARK: - Private
-    private func setupPageControlBinding() {
-        cardCollectionView.rx.contentOffset
-            .observe(on: MainScheduler.instance)
-            .map { [weak self] offset -> Int in
-                guard let self = self else { return 0 }
-                let pageWidth = self.cardCollectionView.bounds.width
-                guard pageWidth > 0 else { return 0 }
-                let rawPage = (offset.x + pageWidth / 2) / pageWidth
-                let page = Int(rawPage.rounded(.down))
-                return max(0, min(page, self.pageControl.numberOfPages - 1))
-            }
-            .distinctUntilChanged()
-            .bind(to: pageControl.rx.currentPage)
-            .disposed(by: disposeBag)
-        
-        pageControl.rx.controlEvent(.valueChanged)
-            .subscribe(onNext: { [weak self] in
-                guard let self = self else { return }
-                let page = self.pageControl.currentPage
-                let pageWidth = self.cardCollectionView.bounds.width
-                guard pageWidth > 0 else { return }
-                let targetOffset = CGPoint(x: CGFloat(page) * pageWidth, y: 0)
-                self.cardCollectionView.setContentOffset(targetOffset, animated: true)
-            })
-            .disposed(by: disposeBag)
-    }
     
     private func pushBeachChoose() {
         let viewModel = BeachSelectViewModel(fetchBeachDataUseCase: DIContainer.shared.makeFetchBeachDataUseCase())
@@ -286,28 +313,41 @@ class DashboardViewController: BaseViewController {
         alert.addAction(UIAlertAction(title: "확인", style: .default))
         present(alert, animated: true)
     }
-}
-
-// MARK: - UICollectionViewDelegateFlowLayout
-extension DashboardViewController: UICollectionViewDelegateFlowLayout {
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let spacing: CGFloat = 16
-        let insets: CGFloat = 40
-        let width = (collectionView.frame.width - insets - spacing) / 2
-        return CGSize(width: width, height: 120)
-    }
-    func scrollViewWillEndDragging(_ scrollView: UIScrollView, withVelocity velocity: CGPoint, targetContentOffset: UnsafeMutablePointer<CGPoint>) {
-        guard scrollView == cardCollectionView else { return }
-        let pageWidth = scrollView.frame.width
-        guard pageWidth > 0 else { return }
-        let currentPage = Int((scrollView.contentOffset.x + pageWidth / 2) / pageWidth)
-        let targetPage: Int
-        if velocity.x > 0.5 { targetPage = currentPage + 1 }
-        else if velocity.x < -0.5 { targetPage = currentPage - 1 }
-        else { targetPage = currentPage }
-        let clampedPage = max(0, min(targetPage, pageControl.numberOfPages - 1))
-        targetContentOffset.pointee.x = CGFloat(clampedPage) * pageWidth
-        pageControl.currentPage = clampedPage
+    
+    private func updateStatisticsHeader(for page: Int) {
+        guard let titleLabel = statisticsHeaderView.viewWithTag(1001) as? UILabel,
+              let infoButton = statisticsHeaderView.viewWithTag(1002) as? UIButton,
+              let seeAllButton = statisticsHeaderView.viewWithTag(1003) as? UIButton else { return }
+        
+        // 페이지별 헤더 설정 (0: 선호하는 차트 통계, 1: 최근 기록 차트, 2: 고정 차트)
+        switch page {
+        case 0: // 첫 번째 페이지: 선호하는 차트 통계
+            titleLabel.text = "선호하는 차트 통계"
+            infoButton.isHidden = false
+            seeAllButton.isHidden = true
+            
+        case 1: // 두 번째 페이지: 최근 기록 차트
+            titleLabel.text = "최근 기록 차트"
+            infoButton.isHidden = true
+            seeAllButton.isHidden = false
+            
+        case 2: // 세 번째 페이지: 고정 차트
+            titleLabel.text = "고정 차트"
+            infoButton.isHidden = true
+            seeAllButton.isHidden = false
+            
+        default:
+            // 예상 범위를 벗어난 경우 첫 번째 페이지로 처리
+            titleLabel.text = "선호하는 차트 통계"
+            infoButton.isHidden = false
+            seeAllButton.isHidden = true
+        }
+        
+        // UI 업데이트를 애니메이션과 함께 처리
+        UIView.transition(with: statisticsHeaderView, duration: 0.2, options: [.transitionCrossDissolve], animations: {
+            // 변경사항이 즉시 반영되도록 레이아웃 업데이트
+            self.statisticsHeaderView.layoutIfNeeded()
+        }, completion: nil)
     }
 }
 
