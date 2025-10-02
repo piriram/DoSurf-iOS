@@ -22,7 +22,7 @@ final class BeachSelectViewController: BaseViewController {
     // MARK: - Properties
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
-    private let storageService: SurfingStorageService = UserDefaultsSurfingStorageService()
+    private let storageService: SurfingRecordService = UserDefaultsService()
 
     var onBeachSelected: ((LocationDTO) -> Void)?
 
@@ -82,7 +82,7 @@ final class BeachSelectViewController: BaseViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
         
-        if let savedID = storageService.loadSelectedBeachID(),
+        if let savedID = storageService.readSelectedBeachID(),
            let index = currentLocations.firstIndex(where: { $0.id == savedID }) {
             selectedLocationId = savedID
             selectedLocation = currentLocations[index]
@@ -180,7 +180,7 @@ final class BeachSelectViewController: BaseViewController {
                 guard let self = self else { return }
                 if let selectedBeach = selectedLocations.first {
                     self.onBeachSelected?(selectedBeach)
-                    self.storageService.saveSelectedBeachID(selectedBeach.id)
+                    self.storageService.createSelectedBeachID(selectedBeach.id)
                 }
 
                 let tabBar = self.tabBarController?.tabBar

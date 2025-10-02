@@ -15,7 +15,7 @@ class CustomTabBarController: BaseTabBarController {
     
     // MARK: - Properties
     private let customTabBar: CustomTabBar
-    private let storageService: SurfingStorageService
+    private let storageService: SurfingRecordService
     private let disposeBag = DisposeBag()
     
     // 기록 화면 표시 여부 추적
@@ -26,13 +26,13 @@ class CustomTabBarController: BaseTabBarController {
     private var surfEndOverlay: SurfEndOverlayView?
     
     // MARK: - Initialization
-    init(storageService: SurfingStorageService = UserDefaultsSurfingStorageService()) {
+    init(storageService: SurfingRecordService = UserDefaultsService()) {
         self.storageService = storageService
         self.customTabBar = CustomTabBar(storageService: storageService)
         super.init(nibName: nil, bundle: nil)
     }
     required init?(coder: NSCoder) {
-        self.storageService = UserDefaultsSurfingStorageService()
+        self.storageService = UserDefaultsService()
         self.customTabBar = CustomTabBar(storageService: self.storageService)
         super.init(coder: coder)
     }
@@ -109,7 +109,7 @@ class CustomTabBarController: BaseTabBarController {
     
     // MARK: - Binding
     private func bindCenterButton() {
-        let initialState = storageService.loadSurfingState()
+        let initialState = storageService.readSurfingState()
         isRecordingScreenPresented.accept(initialState)
         
         customTabBar.centerButtonTapped
@@ -124,13 +124,13 @@ class CustomTabBarController: BaseTabBarController {
     
     // MARK: - Actions
     private func handleCenterButtonTap() {
-        if storageService.loadSurfingState() { showSurfEndOverlay() }
+        if storageService.readSurfingState() { showSurfEndOverlay() }
         else { startSurfing() }
     }
     private func startSurfing() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        storageService.saveSurfingStartTime(Date())
-        storageService.saveSurfingState(true)
+        storageService.createSurfingStartTime(Date())
+        storageService.createSurfingState(true)
         isRecordingScreenPresented.accept(true)
     }
     private func showSurfEndOverlay() {
@@ -155,16 +155,16 @@ class CustomTabBarController: BaseTabBarController {
         }
     }
     private func endSurfing() {
-        storageService.saveSurfingEndTime(Date())
-        storageService.saveSurfingState(false)
+        storageService.createSurfingEndTime(Date())
+        storageService.createSurfingState(false)
         isRecordingScreenPresented.accept(false)
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         hideSurfEndOverlay { [weak self] in self?.pushToRecordWrite() }
     }
     
     private func pushToRecordWrite() {
-        let startTime = storageService.getSurfingStartTime()
-        let endTime   = storageService.getSurfingEndTime()
+        let startTime = storageService.readSurfingStartTime()
+        let endTime   = storageService.readSurfingEndTime()
         
         // ✅ 대시보드에서 “현재 해변의 차트 전체” 혹은 기간 필터된 차트 가져오기
         let chartsToPass: [Chart] = {
@@ -198,18 +198,18 @@ class CustomTabBarController: BaseTabBarController {
 // MARK: - CustomTabBar (원본 그대로 + 색 확장)
 class CustomTabBar: UITabBar {
     private let centerButton = UIButton()
-    private let storageService: SurfingStorageService
+    private let storageService: SurfingRecordService
     private let disposeBag = DisposeBag()
     let centerButtonTapped = PublishRelay<Void>()
     
-    init(storageService: SurfingStorageService) {
+    init(storageService: SurfingRecordService) {
         self.storageService = storageService
         super.init(frame: .zero)
         setupCenterButton()
         loadSurfingState()
     }
     required init?(coder: NSCoder) {
-        self.storageService = UserDefaultsSurfingStorageService()
+        self.storageService = UserDefaultsService()
         super.init(coder: coder); setupCenterButton(); loadSurfingState()
     }
     private func setupCenterButton() {
@@ -287,7 +287,7 @@ class CustomTabBar: UITabBar {
             .disposed(by: disposeBag)
     }
     func updateCenterButtonState(isSelected: Bool) {
-        storageService.saveSurfingState(isSelected)
+        storageService.createSurfingState(isSelected)
         UIView.transition(with: centerButton, duration: 0.2, options: .transitionCrossDissolve) {
             self.centerButton.isSelected = isSelected
             if #available(iOS 15.0, *) { self.centerButton.setNeedsUpdateConfiguration() }
@@ -304,11 +304,11 @@ class CustomTabBar: UITabBar {
         centerButton.layer.shadowOffset = CGSize(width: 0, height: 4)
         centerButton.layer.shadowRadius = 12
     }
-    var surfingState: Bool { storageService.loadSurfingState() }
-    private func loadSurfingState() { updateCenterButtonUI(isSelected: storageService.loadSurfingState()) }
+    var surfingState: Bool { storageService.readSurfingState() }
+    private func loadSurfingState() { updateCenterButtonUI(isSelected: storageService.readSurfingState()) }
     private func updateCenterButtonUI(isSelected: Bool) { updateCenterButtonState(isSelected: isSelected) }
     private func animateButtonPress(pressed: Bool) {
-        let isSurfing = storageService.loadSurfingState()
+        let isSurfing = storageService.readSurfingState()
         UIView.animate(withDuration: 0.1, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
             self.centerButton.transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
             self.centerButton.layer.shadowOpacity = pressed ? 0.1 : (isSurfing ? 0.4 : 0.25)
