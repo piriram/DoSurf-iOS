@@ -163,6 +163,17 @@ class DashboardViewController: BaseViewController {
             })
             .disposed(by: disposeBag)
         
+        // 최근 기록 차트(모든 비치) 바인딩
+        output.recentRecordCharts
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] charts in
+                guard let self = self else { return }
+                if let page2 = self.headerView.getPage(at: 1) as? ChartListPage {
+                    page2.configure(with: charts)
+                }
+            })
+            .disposed(by: disposeBag)
+        
         output.isLoading
             .observe(on: MainScheduler.instance)
             .bind(to: refreshControl.rx.isRefreshing)
