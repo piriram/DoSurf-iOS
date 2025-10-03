@@ -10,24 +10,16 @@ import SnapKit
 // MARK: - StatCardView (선호하는 차트 통계 카드)
 final class StatCardView: UIView {
     
-    private let iconBackgroundView: UIView = {
-        let view = UIView()
-        view.backgroundColor = UIColor(red: 0.2, green: 0.5, blue: 1.0, alpha: 1.0)
-        view.layer.cornerRadius = 20
-        return view
-    }()
-    
     private let iconImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.tintColor = .white
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white.withAlphaComponent(0.9)
+        label.font = .systemFont(ofSize: 16, weight: .bold)
+        label.textColor = .surfBlue
         return label
     }()
     
@@ -47,8 +39,6 @@ final class StatCardView: UIView {
     
     private let arrowImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(systemName: "arrow.up.right")
-        imageView.tintColor = .white.withAlphaComponent(0.6)
         imageView.contentMode = .scaleAspectFit
         return imageView
     }()
@@ -68,8 +58,7 @@ final class StatCardView: UIView {
         layer.cornerRadius = 20
         clipsToBounds = true
         
-        iconBackgroundView.addSubview(iconImageView)
-        addSubview(iconBackgroundView)
+        addSubview(iconImageView)
         addSubview(titleLabel)
         addSubview(valueLabel)
         addSubview(subValueLabel)
@@ -77,19 +66,14 @@ final class StatCardView: UIView {
     }
     
     private func configureLayout() {
-        iconBackgroundView.snp.makeConstraints { make in
-            make.top.leading.equalToSuperview().inset(12)
-            make.width.height.equalTo(40)
-        }
-        
         iconImageView.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-            make.width.height.equalTo(24)
+            make.top.leading.equalToSuperview().inset(12)
+            make.width.height.equalTo(30)
         }
         
         titleLabel.snp.makeConstraints { make in
-            make.leading.equalTo(iconBackgroundView.snp.trailing).offset(8)
-            make.centerY.equalTo(iconBackgroundView)
+            make.leading.equalTo(iconImageView.snp.trailing).offset(8)
+            make.centerY.equalTo(iconImageView)
         }
         
         valueLabel.snp.makeConstraints { make in
@@ -103,17 +87,94 @@ final class StatCardView: UIView {
         }
         
         arrowImageView.snp.makeConstraints { make in
-            make.trailing.bottom.equalToSuperview().inset(12)
-            make.width.height.equalTo(20)
+            make.trailing.bottom.equalToSuperview().inset(16)
+            make.width.equalTo(28)
+            make.height.equalTo(28)
         }
     }
     
     func configure(with data: DashboardCardData) {
-        iconImageView.image = UIImage(systemName: data.icon)
+        iconImageView.image = UIImage(named: data.icon)
         titleLabel.text = data.title
         valueLabel.text = data.value
         subValueLabel.text = data.subtitle ?? ""
-        subValueLabel.isHidden = (data.subtitle?.isEmpty ?? true)
-        iconBackgroundView.backgroundColor = data.color
+
+        let hasSubtitle = !(data.subtitle?.isEmpty ?? true)
+        let isWave = data.type == .wave && hasSubtitle
+
+        if isWave {
+            subValueLabel.isHidden = false
+
+            // Wave: place period below height
+            valueLabel.snp.remakeConstraints { make in
+                make.leading.equalToSuperview().inset(12)
+                make.bottom.equalTo(subValueLabel.snp.top).offset(-2)
+            }
+            subValueLabel.snp.remakeConstraints { make in
+                make.leading.equalTo(valueLabel)
+                make.bottom.equalToSuperview().inset(16)
+            }
+        } else {
+            // Wind (or no subtitle): show only value at bottom-left
+            subValueLabel.isHidden = true
+
+            valueLabel.snp.remakeConstraints { make in
+                make.leading.equalToSuperview().inset(12)
+                make.bottom.equalToSuperview().inset(16)
+            }
+            // Neutralize subValue constraints to avoid conflicts
+            subValueLabel.snp.remakeConstraints { make in
+                make.leading.equalTo(valueLabel)
+                make.top.equalTo(valueLabel.snp.bottom)
+                make.height.equalTo(0)
+            }
+        }
+        
+        // 카드 타입에 따라 방향 화살표 애셋 설정
+        let arrowAssetName: String = {
+            switch data.type {
+            case .wind: return "windDirectionIcon"
+            case .wave: return "swellDirectionIcon"
+            }
+        }()
+        arrowImageView.image = UIImage(named: arrowAssetName)?.withRenderingMode(.alwaysOriginal)
+        arrowImageView.tintColor = nil
+        
+        // 방향 화살표 회전 설정 (0° = 북/위쪽 기준, 시계방향 회전)
+        if let deg = data.directionDegrees {
+            arrowImageView.isHidden = false
+            let radians = CGFloat(deg) * .pi / 180.0
+            arrowImageView.transform = CGAffineTransform(rotationAngle: radians)
+        } else {
+            // 방향값이 없으면 숨김 처리
+            arrowImageView.isHidden = true
+            arrowImageView.transform = .identity
+        }
     }
 }
+
+struct DashboardCardData {
+    enum CardType {
+        case wind
+        case wave
+    }
+    
+    let type: CardType
+    let title: String
+    let value: String
+    let subtitle: String?
+    let directionDegrees: Double?
+    let icon: String
+    let color: UIColor
+    
+    init(type: CardType, title: String, value: String, subtitle: String? = nil, directionDegrees: Double? = nil, icon: String, color: UIColor) {
+        self.type = type
+        self.title = title
+        self.value = value
+        self.subtitle = subtitle
+        self.directionDegrees = directionDegrees
+        self.icon = icon
+        self.color = color
+    }
+}
+

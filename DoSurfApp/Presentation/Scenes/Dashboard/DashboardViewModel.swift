@@ -38,6 +38,9 @@ final class DashboardViewModel {
     
     private let disposeBag = DisposeBag()
     
+    // 모든 비치 평균 계산 대상 ID 목록 (필요 시 확장)
+    private let allBeachIDs: [String] = ["1001", "2001", "3001", "4001"]
+    
     // MARK: - Initialize
     init(fetchBeachDataUseCase: FetchBeachDataUseCase, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
@@ -87,38 +90,87 @@ final class DashboardViewModel {
             }
             .share(replay: 1)
         
-        // 이미 Domain Chart를 사용
-        let dashboardCards = beachData
-            .map { beachData -> [DashboardCardData] in
-                guard let latestChart = beachData.charts.first else {
-                    return []
-                }
-                
-                return [
-                    DashboardCardData(
-                        type: .wind,
-                        title: "바람",
-                        value: String(format: "%.1fm/s", latestChart.windSpeed),
-                        icon: "wind",
-                        color: .systemBlue
-                    ),
-                    DashboardCardData(
-                        type: .wave,
-                        title: "파도",
-                        value: String(format: "%.1fm", latestChart.waveHeight),
-                        subtitle: String(format: "%.1fs", latestChart.wavePeriod),
-                        icon: "water.waves",
-                        color: .systemBlue
-                    ),
-                    DashboardCardData(
-                        type: .temperature,
-                        title: "수온",
-                        value: String(format: "%.0f°C", latestChart.waterTemperature),
-                        icon: "thermometer.medium",
-                        color: .systemOrange
-                    )
-                ]
+        // 모든 비치의 최신 데이터를 기준으로 평균값 계산
+        let dashboardCards = loadTrigger
+            .flatMapLatest { [weak self] _ -> Observable<[DashboardCardData]> in
+                guard let self = self else { return .just([]) }
+                let requests: [Single<BeachData>] = self.allBeachIDs.map { self.fetchBeachDataUseCase.execute(beachId: $0) }
+                return Single.zip(requests)
+                    .asObservable()
+                    .map { beachDatas -> [DashboardCardData] in
+                        // 각 비치의 최신 차트(가장 최근 시간)를 사용
+                        let latestCharts: [Chart] = beachDatas.compactMap { $0.charts.last }
+                        guard !latestCharts.isEmpty else {
+                            return [
+                                DashboardCardData(
+                                    type: .wind,
+                                    title: "바람",
+                                    value: String(format: "%.1fm/s", 0.0),
+                                    icon: "windFillIcon",
+                                    color: .surfBlue
+                                ),
+                                DashboardCardData(
+                                    type: .wave,
+                                    title: "파도",
+                                    value: String(format: "%.1fm", 0.0),
+                                    subtitle: String(format: "%.1fs", 0.0),
+                                    icon: "waveFillIcon",
+                                    color: .surfBlue
+                                )
+                            ]
+                        }
+                        
+                        let count = Double(latestCharts.count)
+                        let avgWind = latestCharts.map { $0.windSpeed }.reduce(0, +) / count
+                        let avgWaveH = latestCharts.map { $0.waveHeight }.reduce(0, +) / count
+                        let avgWaveP = latestCharts.map { $0.wavePeriod }.reduce(0, +) / count
+                        let avgWindDir = self.averageDirectionDegrees(latestCharts.map { $0.windDirection })
+                        let avgWaveDir = self.averageDirectionDegrees(latestCharts.map { $0.waveDirection })
+                        
+                        return [
+                            DashboardCardData(
+                                type: .wind,
+                                title: "바람",
+                                value: String(format: "%.1fm/s", avgWind),
+                                subtitle: nil,
+                                directionDegrees: avgWindDir,
+                                icon: "windFillIcon",
+                                color: .surfBlue
+                            ),
+                            DashboardCardData(
+                                type: .wave,
+                                title: "파도",
+                                value: String(format: "%.1fm", avgWaveH),
+                                subtitle: String(format: "%.1fs", avgWaveP),
+                                directionDegrees: avgWaveDir,
+                                icon: "waveFillIcon",
+                                color: .surfBlue
+                            )
+                        ]
+                    }
+                    .catch { error in
+                        print("Failed to fetch all beaches for averages: \(error)")
+                        let zeroCards: [DashboardCardData] = [
+                            DashboardCardData(
+                                type: .wind,
+                                title: "바람",
+                                value: String(format: "%.1fm/s", 0.0),
+                                icon: "windFillIcon",
+                                color: .surfBlue
+                            ),
+                            DashboardCardData(
+                                type: .wave,
+                                title: "파도",
+                                value: String(format: "%.1fm", 0.0),
+                                subtitle: String(format: "%.1fs", 0.0),
+                                icon: "waveFillIcon",
+                                color: .surfBlue
+                            )
+                        ]
+                        return .just(zeroCards)
+                    }
             }
+            .share(replay: 1)
         
         // 이미 Domain Chart를 사용
         let groupedCharts = beachData
@@ -215,6 +267,19 @@ final class DashboardViewModel {
     }
     
     // MARK: - Private Helpers
+    // 원형 평균(벡터 평균)으로 각도(degree) 평균 계산 (0~360°)
+    private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {
+        guard !degrees.isEmpty else { return nil }
+        let radians = degrees.map { $0 * .pi / 180.0 }
+        let sumX = radians.reduce(0.0) { $0 + cos($1) }
+        let sumY = radians.reduce(0.0) { $0 + sin($1) }
+        // 합 벡터의 크기가 매우 작으면 방향이 정의되지 않음
+        if abs(sumX) < 1e-6 && abs(sumY) < 1e-6 { return nil }
+        var angle = atan2(sumY, sumX) * 180.0 / .pi
+        if angle < 0 { angle += 360.0 }
+        return angle
+    }
+    
     private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
         switch iconName {
         case "sun":
