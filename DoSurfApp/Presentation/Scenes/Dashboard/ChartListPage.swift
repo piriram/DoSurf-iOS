@@ -4,7 +4,6 @@
 //
 //  Created by 잠만보김쥬디 on 10/2/25.
 //
-
 import UIKit
 import SnapKit
 import RxSwift
@@ -227,11 +226,14 @@ final class ChartListHeaderView: UIView {
         return button
     }()
     
+    var filterToShow: String = "all" // "all" or "pinned"
+    
     init(title: String) {
         super.init(frame: .zero)
         titleLabel.text = title
         configureUI()
         configureLayout()
+        moreButton.addTarget(self, action: #selector(moreButtonTapped), for: .touchUpInside)
     }
     
     required init?(coder: NSCoder) {
@@ -255,8 +257,186 @@ final class ChartListHeaderView: UIView {
             make.centerY.equalToSuperview()
         }
     }
+    
+    @objc private func moreButtonTapped() {
+        // 1) Switch tab to "기록 차트" (tag == 2)
+        if let vc = findViewController(), let tbc = vc.tabBarController {
+            if let vcs = tbc.viewControllers, let idx = vcs.firstIndex(where: { $0.tabBarItem.tag == 2 }) {
+                tbc.selectedIndex = idx
+            } else {
+                tbc.selectedIndex = min(2, (tbc.viewControllers?.count ?? 1) - 1)
+            }
+        }
+        // 2) Notify RecordHistory to apply the requested filter
+        NotificationCenter.default.post(name: .recordHistoryApplyFilterRequested, object: nil, userInfo: ["filter": filterToShow])
+    }
+
+    private func findViewController() -> UIViewController? {
+        var nextResponder: UIResponder? = self
+        while let responder = nextResponder {
+            if let vc = responder as? UIViewController { return vc }
+            nextResponder = responder.next
+        }
+        return nil
+    }
 }
 
+// MARK: - ChartRowView (기존 차트용)
+final class ChartRowView: UIView {
+    
+    private let timeLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 13, weight: .medium)
+        label.textColor = .white
+        label.numberOfLines = 2
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let windLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let waveLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        return label
+    }()
+    
+    private let temperatureLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let ratingLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let ratingImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
+        imageView.tintColor = .systemYellow
+        imageView.contentMode = .scaleAspectFit
+        return imageView
+    }()
+    
+    private lazy var ratingStack: UIStackView = {
+        let sv = UIStackView(arrangedSubviews: [ratingImageView, ratingLabel])
+        sv.axis = .horizontal
+        sv.spacing = 4
+        sv.alignment = .center
+        return sv
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureUI()
+        configureLayout()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func configureUI() {
+        backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        
+        addSubview(timeLabel)
+        addSubview(windLabel)
+        addSubview(waveLabel)
+        addSubview(temperatureLabel)
+        addSubview(ratingStack)
+
+        // Keep star and text snug; prevent label from stretching
+        ratingLabel.setContentHuggingPriority(.required, for: .horizontal)
+        ratingLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        ratingImageView.setContentHuggingPriority(.required, for: .horizontal)
+    }
+    
+    private func configureLayout() {
+        // ChartTableHeaderView와 동일한 레이아웃
+        timeLabel.snp.makeConstraints { make in
+            make.leading.equalToSuperview().inset(8)
+            make.centerY.equalToSuperview()
+            make.width.equalTo(50)
+        }
+        
+        windLabel.snp.makeConstraints { make in
+            make.leading.equalTo(timeLabel.snp.trailing).offset(8)
+            make.centerY.equalToSuperview()
+            make.width.equalTo(60)
+        }
+        
+        waveLabel.snp.makeConstraints { make in
+            make.leading.equalTo(windLabel.snp.trailing).offset(8)
+            make.centerY.equalToSuperview()
+            make.width.equalTo(60)
+        }
+        
+        temperatureLabel.snp.makeConstraints { make in
+            make.leading.equalTo(waveLabel.snp.trailing).offset(8)
+            make.centerY.equalToSuperview()
+            make.width.equalTo(60)
+        }
+        
+        ratingStack.snp.makeConstraints { make in
+            make.leading.equalTo(temperatureLabel.snp.trailing).offset(8)
+            make.trailing.lessThanOrEqualToSuperview().inset(8)
+            make.centerY.equalToSuperview()
+        }
+        
+        ratingImageView.snp.makeConstraints { make in
+            make.width.height.equalTo(16)
+        }
+        
+        snp.makeConstraints { make in
+            make.height.equalTo(56)
+        }
+    }
+    
+    func configure(with chart: Chart) {
+        print("🔧 ChartRowView: Configuring with chart at time: \(chart.time)")
+        
+        // 시간 포맷팅
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "M/d"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH시"
+        
+        let dateString = dateFormatter.string(from: chart.time)
+        let timeString = timeFormatter.string(from: chart.time)
+        timeLabel.text = "\(dateString)\n\(timeString)"
+        
+        // 바람 속도
+        windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
+        
+        // 파도 높이와 주기
+        waveLabel.text = String(format: "%.1fm\n%.1fs", chart.waveHeight, chart.wavePeriod)
+        
+        // 수온
+        temperatureLabel.text = String(format: "%.0f°C", chart.waterTemperature)
+        
+        // 평점 (예시로 랜덤 점수 표시, 실제로는 데이터에 따라 결정)
+        let rating = Int.random(in: 1...5)
+        ratingLabel.text = "\(rating)점"
+        
+        print("🔧 ChartRowView: Configuration completed - \(dateString) \(timeString), Wind: \(chart.windSpeed)m/s, Wave: \(chart.waveHeight)m")
+    }
+}
 
 // MARK: - PinnedChartRowView (고정 차트용)
 final class PinnedChartRowView: UIView {
@@ -344,14 +524,16 @@ final class PinnedChartRowView: UIView {
     }
     
     private func configureLayout() {
+        // PinnedChartTableHeaderView와 동일한 레이아웃
         pinImageView.snp.makeConstraints { make in
             make.leading.equalToSuperview().inset(12)
             make.centerY.equalToSuperview()
-            make.width.height.equalTo(20)
+            make.width.equalTo(20)
+            make.height.equalTo(20)
         }
         
         windLabel.snp.makeConstraints { make in
-            make.leading.equalTo(pinImageView.snp.trailing).offset(16)
+            make.leading.equalTo(pinImageView.snp.trailing).offset(24) // 44 - 20 = 24
             make.centerY.equalToSuperview()
             make.width.equalTo(60)
         }
@@ -370,9 +552,10 @@ final class PinnedChartRowView: UIView {
         
         ratingStack.snp.makeConstraints { make in
             make.leading.equalTo(temperatureLabel.snp.trailing).offset(16)
-            make.trailing.equalToSuperview().inset(12)
+            make.trailing.lessThanOrEqualToSuperview().inset(12)
             make.centerY.equalToSuperview()
         }
+        
         ratingImageView.snp.makeConstraints { make in
             make.width.height.equalTo(16)
         }
@@ -616,167 +799,5 @@ final class PinnedChartTableHeaderView: UIView {
             make.trailing.equalToSuperview().inset(12)
             make.centerY.equalToSuperview()
         }
-    }
-}
-
-// MARK: - ChartRowView (기존 차트용)
-final class ChartRowView: UIView {
-    
-    // MARK: - Layout Constants
-    private enum Layout {
-        static let horizontalInset: CGFloat = 8
-        static let columnSpacing: CGFloat = 8
-        static let timeWidth: CGFloat = 50
-        static let windWidth: CGFloat = 60
-        static let waveWidth: CGFloat = 60
-        static let temperatureWidth: CGFloat = 60
-        static let rowHeight: CGFloat = 56
-        static let starSize: CGFloat = 16
-        static let starLabelSpacing: CGFloat = 4
-    }
-    
-    private let timeLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .medium)
-        label.textColor = .white
-        label.numberOfLines = 2
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let windLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let waveLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        label.numberOfLines = 2
-        return label
-    }()
-    
-    private let temperatureLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let ratingLabel: UILabel = {
-        let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
-        label.textColor = .white
-        label.textAlignment = .center
-        return label
-    }()
-    
-    private let ratingImageView: UIImageView = {
-        let imageView = UIImageView()
-        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
-        imageView.tintColor = .systemYellow
-        imageView.contentMode = .scaleAspectFit
-        return imageView
-    }()
-    
-    private lazy var ratingStack: UIStackView = {
-        let sv = UIStackView(arrangedSubviews: [ratingImageView, ratingLabel])
-        sv.axis = .horizontal
-        sv.spacing = Layout.starLabelSpacing
-        sv.alignment = .center
-        return sv
-    }()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        configureUI()
-        configureLayout()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func configureUI() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.08)
-        
-        addSubview(timeLabel)
-        addSubview(windLabel)
-        addSubview(waveLabel)
-        addSubview(temperatureLabel)
-        addSubview(ratingStack)
-        
-        ratingLabel.setContentHuggingPriority(.required, for: .horizontal)
-        ratingLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        ratingImageView.setContentHuggingPriority(.required, for: .horizontal)
-    }
-    
-    private func configureLayout() {
-        timeLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(Layout.horizontalInset)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(Layout.timeWidth)
-        }
-        
-        windLabel.snp.makeConstraints { make in
-            make.leading.equalTo(timeLabel.snp.trailing).offset(Layout.columnSpacing)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(Layout.windWidth)
-        }
-        
-        waveLabel.snp.makeConstraints { make in
-            make.leading.equalTo(windLabel.snp.trailing).offset(Layout.columnSpacing)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(Layout.waveWidth)
-        }
-        
-        temperatureLabel.snp.makeConstraints { make in
-            make.leading.equalTo(waveLabel.snp.trailing).offset(Layout.columnSpacing)
-            make.centerY.equalToSuperview()
-            make.width.equalTo(Layout.temperatureWidth)
-        }
-        
-        ratingStack.snp.makeConstraints { make in
-            make.leading.equalTo(temperatureLabel.snp.trailing).offset(Layout.columnSpacing)
-            make.trailing.lessThanOrEqualToSuperview().inset(Layout.horizontalInset)
-            make.centerY.equalToSuperview()
-        }
-        
-        ratingImageView.snp.makeConstraints { make in
-            make.width.height.equalTo(Layout.starSize)
-        }
-        
-        snp.makeConstraints { make in
-            make.height.equalTo(Layout.rowHeight)
-        }
-    }
-    
-    // MARK: - Configure
-    func configure(with chart: Chart) {
-        // 시간 표시 (KST 기준 HH시)
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ko_KR")
-        formatter.timeZone = TimeZone(identifier: "Asia/Seoul")
-        formatter.dateFormat = "HH시"
-        timeLabel.text = formatter.string(from: chart.time)
-        
-        // 바람 속도
-        windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
-        
-        // 파도 높이와 주기 (2줄)
-        waveLabel.text = String(format: "%.1fm\n%.1fs", chart.waveHeight, chart.wavePeriod)
-        
-        // 수온
-        temperatureLabel.text = String(format: "%.0f°C", chart.waterTemperature)
-        
-        // 일반 차트에는 별도 평가 점수가 없으므로 별 아이콘 숨김
-        ratingImageView.isHidden = true
-        ratingLabel.text = ""
     }
 }

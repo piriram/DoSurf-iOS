@@ -188,6 +188,16 @@ final class DashboardHeaderView: UIView {
             self.pageControl.currentPage = 0
             self.updateStatisticsHeader(for: 0)
         }
+        
+        // "모두 보기" 버튼 탭 → 기록 차트 탭으로 이동
+        if let seeAllButton = self.statisticsHeaderView.viewWithTag(1003) as? UIButton {
+            seeAllButton.addTarget(self, action: #selector(self.handleSeeAllTapped), for: .touchUpInside)
+        }
+        
+        // "정보(Info)" 버튼 탭 → InfoSheetViewController 표시
+        if let infoButton = self.statisticsHeaderView.viewWithTag(1002) as? UIButton {
+            infoButton.addTarget(self, action: #selector(self.handleInfoTapped), for: .touchUpInside)
+        }
     }
     
     // MARK: - Public Methods
@@ -238,5 +248,39 @@ final class DashboardHeaderView: UIView {
             self.statisticsHeaderView.layoutIfNeeded()
         }, completion: nil)
     }
-}
+    
+    @objc private func handleSeeAllTapped() {
+        // 1) 탭바에서 "기록 차트" 탭(tag == 2)으로 전환
+        if let vc = findViewController(), let tbc = vc.tabBarController {
+            if let vcs = tbc.viewControllers, let idx = vcs.firstIndex(where: { $0.tabBarItem.tag == 2 }) {
+                tbc.selectedIndex = idx
+            } else {
+                tbc.selectedIndex = min(2, (tbc.viewControllers?.count ?? 1) - 1)
+            }
+        }
+        // 2) 현재 페이지에 따라 필터 적용 요청 브로드캐스트 (1: 최근 기록 차트 → all, 2: 고정 차트 → pinned)
+        let page = currentPage.value
+        let filter = (page == 2) ? "pinned" : "all"
+        NotificationCenter.default.post(name: .recordHistoryApplyFilterRequested, object: nil, userInfo: ["filter": filter])
+    }
+    
+    @objc private func handleInfoTapped() {
+        guard let vc = findViewController() else { return }
+        let viewController = InfoSheetViewController()
+        viewController.modalPresentationStyle = .pageSheet
+        if let sheet = viewController.sheetPresentationController {
+            sheet.detents = [.medium()]
+            sheet.preferredCornerRadius = 20
+        }
+        vc.present(viewController, animated: true)
+    }
 
+    private func findViewController() -> UIViewController? {
+        var nextResponder: UIResponder? = self
+        while let responder = nextResponder {
+            if let vc = responder as? UIViewController { return vc }
+            nextResponder = responder.next
+        }
+        return nil
+    }
+}

@@ -4,6 +4,7 @@ import RxCocoa
 import RxRelay
 import SnapKit
 import CoreData
+import Foundation
 
 // MARK: - RecordHistoryViewController
 final class RecordHistoryViewController: BaseViewController {
@@ -66,6 +67,7 @@ final class RecordHistoryViewController: BaseViewController {
     private var customStartDate: Date?
     private var customEndDate: Date?
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
+    private let allBeachesID = -1
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
@@ -75,6 +77,11 @@ final class RecordHistoryViewController: BaseViewController {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        NotificationCenter.default.addObserver(self, selector: #selector(handleApplyFilterNotification(_:)), name: .recordHistoryApplyFilterRequested, object: nil)
     }
     
     // MARK: - BaseViewController Overrides
@@ -268,6 +275,24 @@ final class RecordHistoryViewController: BaseViewController {
             weatherFilterButton.setTitle("날짜 선택", for: .normal)
             ratingFilterButton.isSelected = false
             ratingFilterButton.setTitle("별점", for: .normal)
+        }
+    }
+    
+    @objc private func handleApplyFilterNotification(_ note: Notification) {
+        guard let info = note.userInfo, let filter = info["filter"] as? String else { return }
+        switch filter {
+        case "pinned":
+            updateFilterButtons(selectedFilter: .pinned)
+            ratingFilterSubject.onNext(.all)
+            dateFilterSubject.onNext(.all)
+            // Simulate user selecting pinned filter
+            pinnedFilterButton.sendActions(for: .touchUpInside)
+        default:
+            // default to all
+            updateFilterButtons(selectedFilter: .all)
+            ratingFilterSubject.onNext(.all)
+            dateFilterSubject.onNext(.all)
+            allFilterButton.sendActions(for: .touchUpInside)
         }
     }
     
@@ -500,6 +525,18 @@ final class RecordHistoryViewController: BaseViewController {
             message: nil,
             preferredStyle: .actionSheet
         )
+
+        // '전체' 옵션 추가
+        let allAction = UIAlertAction(title: "전체", style: .default) { [weak self] _ in
+            self?.locationButton.setTitle("전체 해변", for: .normal)
+            if let allID = self?.allBeachesID {
+                self?.selectedBeachIDRelay.accept(allID)
+            } else {
+                self?.selectedBeachIDRelay.accept(-1)
+            }
+        }
+        alertController.addAction(allAction)
+
         SurfBeach.allCases.forEach { beach in
             let action = UIAlertAction(title: beach.displayName, style: .default) { [weak self] _ in
                 self?.locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
@@ -508,6 +545,13 @@ final class RecordHistoryViewController: BaseViewController {
             alertController.addAction(action)
         }
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
+
+        // iPad 팝오버 앵커 지정
+        if let pop = alertController.popoverPresentationController {
+            pop.sourceView = locationButton
+            pop.sourceRect = locationButton.bounds
+        }
+
         present(alertController, animated: true)
     }
     
@@ -632,6 +676,10 @@ final class RecordHistoryViewController: BaseViewController {
 
         present(alertController, animated: true)
     }
+    
+    @MainActor deinit {
+        NotificationCenter.default.removeObserver(self, name: .recordHistoryApplyFilterRequested, object: nil)
+    }
 }
 
 extension RecordHistoryViewController: UIPopoverPresentationControllerDelegate {
@@ -729,3 +777,6 @@ final class EmptyStateView: UIView {
     }
 }
 
+extension Notification.Name {
+    static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
+}
