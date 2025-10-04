@@ -8,7 +8,7 @@
 import UIKit
 import SnapKit
 // MARK: - StatCardView (선호하는 차트 통계 카드)
-final class StatCardView: UIView {
+final class PreferredCardView: UIView {
     
     private let iconImageView: UIImageView = {
         let imageView = UIImageView()
