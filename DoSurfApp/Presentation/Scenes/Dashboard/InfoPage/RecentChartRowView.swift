@@ -9,19 +9,27 @@ import SnapKit
 import RxSwift
 // MARK: - ChartColumnRatio
 enum ChartColumnRatio {
-    static let time: CGFloat = 0.10        // 가장 좁게
-    static let wind: CGFloat = 0.26        // 가장 넓게
-    static let wave: CGFloat = 0.24
-    static let temperature: CGFloat = 0.20
-    static let rating: CGFloat = 0.20
-    // 합계: 1.00
+    private static let rawTime: CGFloat = 0.3
+    private static let rawWind: CGFloat = 0.55
+    private static let rawWave: CGFloat = 0.54
+    private static let rawTemperature: CGFloat = 0.32
+    private static let rawRating: CGFloat = 0.42
+    
+    private static let total: CGFloat = rawTime + rawWind + rawWave + rawTemperature + rawRating
+    private static let contentFraction: CGFloat = 0.90
+    
+    static let time: CGFloat = (rawTime / total) * contentFraction
+    static let wind: CGFloat = (rawWind / total) * contentFraction
+    static let wave: CGFloat = (rawWave / total) * contentFraction
+    static let temperature: CGFloat = (rawTemperature / total) * contentFraction
+    static let rating: CGFloat = (rawRating / total) * contentFraction
 }
 
 final class RecentChartRowView: UIView {
     
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.semibold)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -51,13 +59,30 @@ final class RecentChartRowView: UIView {
         return label
     }()
     
-    private let waveLabel: UILabel = {
+    private let waveHeightLabel: UILabel = {
         let label = UILabel()
         label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
         label.textAlignment = .center
-        label.numberOfLines = 2
+        label.numberOfLines = 1
         return label
+    }()
+    
+    private let wavePeriodLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.numberOfLines = 1
+        return label
+    }()
+    
+    private lazy var waveValueStack: UIStackView = {
+        let sv = UIStackView(arrangedSubviews: [waveHeightLabel, wavePeriodLabel])
+        sv.axis = .vertical
+        sv.spacing = 0
+        sv.alignment = .center
+        return sv
     }()
     
     private let windDirectionImageView: UIImageView = {
@@ -81,7 +106,7 @@ final class RecentChartRowView: UIView {
     }()
     
     private lazy var waveStack: UIStackView = {
-        let sv = UIStackView(arrangedSubviews: [waveDirectionImageView, waveLabel])
+        let sv = UIStackView(arrangedSubviews: [waveDirectionImageView, waveValueStack])
         sv.axis = .horizontal
         sv.spacing = 4
         sv.alignment = .center
@@ -131,8 +156,8 @@ final class RecentChartRowView: UIView {
             timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
         ])
         sv.axis = .horizontal
-        sv.distribution = .fill
-        sv.spacing = 6
+        sv.distribution = .equalSpacing
+        sv.spacing = 0
         return sv
     }()
     
@@ -251,7 +276,8 @@ final class RecentChartRowView: UIView {
         hourLabel.text = timeString
         
         windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
-        waveLabel.text = String(format: "%.1fm\n%.1fs", chart.waveHeight, chart.wavePeriod)
+        waveHeightLabel.text = String(format: "%.1fm", chart.waveHeight)
+        wavePeriodLabel.text = String(format: "%.1fs", chart.wavePeriod)
         temperatureLabel.text = String(format: "%.0f°C", chart.waterTemperature)
         
         ratingLabel.text = "—점"
@@ -339,8 +365,8 @@ final class ChartTableHeaderView: UIView {
             timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
         ])
         sv.axis = .horizontal
-        sv.distribution = .fill
-        sv.spacing = 8
+        sv.distribution = .equalSpacing
+        sv.spacing = 0
         return sv
     }()
     
