@@ -112,6 +112,7 @@ class CustomTabBarController: BaseTabBarController {
             selectedImage: UIImage(named: AssetImage.chartSymbolFill)
         )
         chartNav.tabBarItem.tag = 0
+        chartNav.delegate = self
         
         // 더미
         let dummyVC = UIViewController()
@@ -127,6 +128,7 @@ class CustomTabBarController: BaseTabBarController {
             selectedImage: UIImage(named: AssetImage.recordSymbolFill)
         )
         recordNav.tabBarItem.tag = 2
+        recordNav.delegate = self
         
         viewControllers = [chartNav, dummyVC, recordNav]
         selectedIndex = 0
@@ -278,6 +280,11 @@ class CustomTabBarController: BaseTabBarController {
         recordVC.title = "파도 기록"
         recordVC.hidesBottomBarWhenPushed = true
         
+        if #available(iOS 26.0, *) {
+            // 네비게이션 push 시 플로팅 버튼이 보이지 않도록 미리 페이드 아웃
+            self.floatingCenterButton?.alpha = 0
+        }
+        
         if let nav = selectedViewController as? UINavigationController {
             nav.pushViewController(recordVC, animated: true)
         } else if let nav = navigationController {
@@ -302,6 +309,18 @@ class CustomTabBarController: BaseTabBarController {
                     ? CGAffineTransform(translationX: 0, y: self.tabBar.frame.height)
                     : .identity
             }
+        }
+    }
+}
+
+// MARK: - UINavigationControllerDelegate
+extension CustomTabBarController: UINavigationControllerDelegate {
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        guard #available(iOS 26.0, *) else { return }
+        // hidesBottomBarWhenPushed가 true인 화면에서는 플로팅 버튼을 숨김
+        let shouldHideFloating = viewController.hidesBottomBarWhenPushed
+        UIView.animate(withDuration: animated ? 0.2 : 0.0, delay: 0, options: [.curveEaseInOut]) {
+            self.floatingCenterButton?.alpha = shouldHideFloating ? 0 : 1
         }
     }
 }
