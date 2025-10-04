@@ -286,15 +286,21 @@ class CustomTabBarController: BaseTabBarController {
     }
     
     private func animateTabBarVisibility(hidden: Bool) {
-        UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
-            self.tabBar.alpha = hidden ? 0 : 1
-            self.tabBar.transform = hidden
-                ? CGAffineTransform(translationX: 0, y: self.tabBar.frame.height)
-                : .identity
-            
-            // iOS 26+에서는 플로팅 버튼도 함께 숨김
-            if #available(iOS 26.0, *) {
+        if #available(iOS 26.0, *) {
+            // iOS 26+에서는 탭바를 이동시키지 않고 알파만 조절해 숨김/표시를 연출
+            UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
+                self.tabBar.alpha = hidden ? 0 : 1
+                self.tabBar.transform = .identity // 이동 금지
+                // 플로팅 버튼도 함께 페이드 처리
                 self.floatingCenterButton?.alpha = hidden ? 0 : 1
+            }
+        } else {
+            // iOS 26 미만에서는 기존 슬라이드 다운 애니메이션 유지
+            UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut]) {
+                self.tabBar.alpha = hidden ? 0 : 1
+                self.tabBar.transform = hidden
+                    ? CGAffineTransform(translationX: 0, y: self.tabBar.frame.height)
+                    : .identity
             }
         }
     }
@@ -662,3 +668,4 @@ class CustomTabBar: UITabBar {
         }
     }
 }
+
