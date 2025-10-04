@@ -12,7 +12,7 @@ final class RecordHistoryViewController: BaseViewController {
     // MARK: - UI Components
     private let locationButton: UIButton = {
         let button = UIButton()
-        button.setTitle("\(SurfBeach.songjeong.region.displayName) \(SurfBeach.songjeong.displayName)해변", for: .normal)
+        button.setTitle("\(SurfBeach.songjeong.region.displayName) \(SurfBeach.songjeong.name)해변", for: .normal)
         button.setTitleColor(.black.withAlphaComponent(0.7), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
@@ -519,7 +519,7 @@ final class RecordHistoryViewController: BaseViewController {
     
     private func updateLocationButtonTitle(for beachID: Int) {
         if let beach = SurfBeach(rawValue: beachID) {
-            locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
+            locationButton.setTitle(beach.displayName, for: .normal)
         } else {
             locationButton.setTitle("전체 해변", for: .normal)
         }
@@ -562,17 +562,15 @@ final class RecordHistoryViewController: BaseViewController {
             guard let self = self else { return }
             self.locationButton.setTitle("전체 해변", for: .normal)
             self.selectedBeachIDRelay.accept(nil)
-            // Scroll to top when beach changes (via selector)
             self.scrollTableViewToTop(animated: true)
         }
         alertController.addAction(allAction)
         
         SurfBeach.allCases.forEach { beach in
-            let action = UIAlertAction(title: beach.displayName, style: .default) { [weak self] _ in
+            let action = UIAlertAction(title: beach.name, style: .default) { [weak self] _ in
                 guard let self = self else { return }
-                self.locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
+                self.locationButton.setTitle(beach.displayName, for: .normal)
                 self.selectedBeachIDRelay.accept(beach.rawValue)
-                // Scroll to top when beach changes (via selector)
                 self.scrollTableViewToTop(animated: true)
             }
             alertController.addAction(action)
@@ -817,3 +815,4 @@ final class EmptyStateView: UIView {
 extension Notification.Name {
     static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }
+

@@ -130,7 +130,7 @@ class DashboardViewController: BaseViewController {
                 let beachID = beachData.metadata.beachID
                 
                 if let surfBeach = SurfBeach(rawValue: beachID) {
-                    let title = "\(surfBeach.region.displayName) \(surfBeach.displayName)해변"
+                    let title = surfBeach.displayName
                     self.headerView.updateBeachTitle(title)
                 } else {
                     self.headerView.updateBeachTitle("\(beachData.metadata.name)해변")

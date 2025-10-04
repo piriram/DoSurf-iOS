@@ -30,13 +30,17 @@ enum SurfBeach: Int, CaseIterable, Codable {
     case jungmun = 3001
     case songjeong = 4001
     
-    var displayName: String {
+    var name: String {
         switch self {
         case .jukdo: return "죽도"
         case .wolpo: return "월포"
         case .jungmun: return "중문"
         case .songjeong: return "송정"
         }
+    }
+    
+    var displayName: String {
+        "\(region.displayName) \(name)해변"
     }
     
     var firebaseBeachID: String {
@@ -97,6 +101,7 @@ struct LocationDTO: Sendable, Hashable {
     
     var displayText: String { place }
     var passText: String { "\(region.displayName) \(place)" }
+    var displayName: String { "\(region.displayName) \(place)해변" }
     
     var beach: SurfBeach? {
         guard let beachID = Int(id) else { return nil }
@@ -111,3 +116,4 @@ struct LocationDTO: Sendable, Hashable {
         hasher.combine(id)
     }
 }
+
