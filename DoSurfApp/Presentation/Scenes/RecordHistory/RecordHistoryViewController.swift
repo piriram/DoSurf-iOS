@@ -61,13 +61,13 @@ final class RecordHistoryViewController: BaseViewController {
     private let viewModel: RecordHistoryViewModel
     private let disposeBag = DisposeBag()
     
-    private let selectedBeachIDRelay = BehaviorRelay<Int>(value: SurfBeach.songjeong.rawValue)
+    private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: SurfBeach.songjeong.rawValue)
     private let ratingFilterSubject = PublishSubject<RecordFilter>()
     private let dateFilterSubject = PublishSubject<RecordFilter>()
     private var customStartDate: Date?
     private var customEndDate: Date?
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
-    private let allBeachesID = -1
+    private let storageService: SurfingRecordService = UserDefaultsService()
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
@@ -82,6 +82,15 @@ final class RecordHistoryViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         NotificationCenter.default.addObserver(self, selector: #selector(handleApplyFilterNotification(_:)), name: .recordHistoryApplyFilterRequested, object: nil)
+
+        // Seed initial selected beach from persistent storage
+        if let saved = storageService.readSelectedBeachID(), let id = Int(saved) {
+            selectedBeachIDRelay.accept(id)
+            updateLocationButtonTitle(for: id)
+        }
+        
+        // Observe beach changes coming from Dashboard
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSelectedBeachChanged(_:)), name: .selectedBeachIDDidChange, object: nil)
     }
     
     // MARK: - BaseViewController Overrides
@@ -119,6 +128,8 @@ final class RecordHistoryViewController: BaseViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
+        // Refresh records whenever this tab becomes visible again
+        selectedBeachIDRelay.accept(selectedBeachIDRelay.value)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -440,10 +451,10 @@ final class RecordHistoryViewController: BaseViewController {
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] in
+                // Broadcast global change so all views reload
+                NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
                 // 목록 갱신
-                if let current = self?.selectedBeachIDRelay.value {
-                    self?.selectedBeachIDRelay.accept(current)
-                }
+                if let relay = self?.selectedBeachIDRelay { relay.accept(relay.value) }
                 let alert = UIAlertController(title: "메모 저장", message: "메모가 저장되었습니다.", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "확인", style: .default))
                 self?.present(alert, animated: true)
@@ -451,6 +462,14 @@ final class RecordHistoryViewController: BaseViewController {
                 self?.showErrorAlert(message: error.localizedDescription)
             })
             .disposed(by: disposeBag)
+    }
+    
+    private func updateLocationButtonTitle(for beachID: Int) {
+        if let beach = SurfBeach(rawValue: beachID) {
+            locationButton.setTitle("\(beach.region.displayName) \(beach.displayName) 해변", for: .normal)
+        } else {
+            locationButton.setTitle("전체 해변", for: .normal)
+        }
     }
     
     // MARK: - Actions
@@ -474,11 +493,20 @@ final class RecordHistoryViewController: BaseViewController {
         showCreateMemoSheet()
     }
     
+    @objc private func handleSelectedBeachChanged(_ note: Notification) {
+        guard let idStr = note.userInfo?["beachID"] as? String, let id = Int(idStr) else { return }
+        selectedBeachIDRelay.accept(id)
+        updateLocationButtonTitle(for: id)
+    }
+    
     private func showCreateMemoSheet() {
         let createVC = CreateMemoViewController()
         createVC.onSave = { [weak self] text in
             guard let self = self else { return }
-            let beachID = self.selectedBeachIDRelay.value
+            guard let beachID = self.selectedBeachIDRelay.value else {
+                self.showErrorAlert(message: "해변을 먼저 선택해주세요.")
+                return
+            }
             let now = Date()
             let end = Calendar.current.date(byAdding: .hour, value: 1, to: now) ?? now
 
@@ -495,10 +523,10 @@ final class RecordHistoryViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(
                 onSuccess: { [weak self] in
+                    // Broadcast global change so all views reload
+                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
                     // 저장 후 목록 새로고침: 같은 beachID를 다시 방출
-                    if let current = self?.selectedBeachIDRelay.value {
-                        self?.selectedBeachIDRelay.accept(current)
-                    }
+                    if let relay = self?.selectedBeachIDRelay { relay.accept(relay.value) }
                     let alert = UIAlertController(title: "메모 저장", message: "메모가 저장되었습니다.", preferredStyle: .alert)
                     alert.addAction(UIAlertAction(title: "확인", style: .default))
                     self?.present(alert, animated: true)
@@ -529,11 +557,7 @@ final class RecordHistoryViewController: BaseViewController {
         // '전체' 옵션 추가
         let allAction = UIAlertAction(title: "전체", style: .default) { [weak self] _ in
             self?.locationButton.setTitle("전체 해변", for: .normal)
-            if let allID = self?.allBeachesID {
-                self?.selectedBeachIDRelay.accept(allID)
-            } else {
-                self?.selectedBeachIDRelay.accept(-1)
-            }
+            self?.selectedBeachIDRelay.accept(nil)
         }
         alertController.addAction(allAction)
 
@@ -679,6 +703,7 @@ final class RecordHistoryViewController: BaseViewController {
     
     @MainActor deinit {
         NotificationCenter.default.removeObserver(self, name: .recordHistoryApplyFilterRequested, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .selectedBeachIDDidChange, object: nil)
     }
 }
 

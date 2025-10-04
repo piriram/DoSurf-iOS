@@ -91,7 +91,8 @@ class CustomTabBarController: BaseTabBarController {
     private func createRecordListViewController() -> UIViewController {
         let repository = SurfRecordRepository()
         let useCase = SurfRecordUseCase(repository: repository)
-        let viewModel = RecordHistoryViewModel(useCase: useCase)
+        let storage = UserDefaultsService()
+        let viewModel = RecordHistoryViewModel(useCase: useCase, storageService: storage)
         let vc = RecordHistoryViewController(viewModel: viewModel)
         vc.title = "기록 차트"
         vc.navigationItem.leftBarButtonItem = nil

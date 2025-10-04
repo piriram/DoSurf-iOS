@@ -186,6 +186,7 @@ class DashboardViewController: BaseViewController {
         
         if let savedID = storageService.readSelectedBeachID() {
             beachSelectedSubject.onNext(savedID)
+            NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": savedID])
         }
         
         viewDidLoadSubject.onNext(())
@@ -197,6 +198,8 @@ class DashboardViewController: BaseViewController {
         vc.hidesBottomBarWhenPushed = true
         vc.onBeachSelected = { [weak self] locationDTO in
             self?.beachSelectedSubject.onNext(locationDTO.id)
+            // Broadcast selection change so RecordHistory can pick it up when user switches tabs
+            NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": locationDTO.id])
         }
         navigationController?.pushViewController(vc, animated: true)
     }
