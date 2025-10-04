@@ -24,7 +24,7 @@ final class ChartListPage: UIView {
     init(title: String, showsTableHeader: Bool = true, isPinnedChart: Bool = false, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
         self.showsTableHeader = showsTableHeader
         self.isPinnedChart = isPinnedChart
-        self.tableHeaderView = isPinnedChart ? PinnedChartTableHeaderView() : ChartTableHeaderView()
+        self.tableHeaderView = ChartTableHeaderView(isTimeMode: !isPinnedChart)
         self.surfRecordUseCase = surfRecordUseCase
         super.init(frame: .zero)
         configureUI()
@@ -95,7 +95,7 @@ final class ChartListPage: UIView {
         let chartsToShow = Array(charts.prefix(3))
         
         chartsToShow.enumerated().forEach { index, chart in
-            let rowView = RecentChartRowView()
+            let rowView = ChartRowView(isTimeMode: true)
             rowView.tag = index
             rowView.configure(with: chart)
             stackView.addArrangedSubview(rowView)
@@ -160,7 +160,7 @@ final class ChartListPage: UIView {
         stackView.distribution = .fillEqually
         
         records.enumerated().forEach { index, record in
-            let rowView = PinnedChartRowView()
+            let rowView = ChartRowView(isTimeMode: false)
             rowView.tag = index
             rowView.configure(with: record)
             stackView.addArrangedSubview(rowView)
@@ -185,6 +185,7 @@ final class ChartListPage: UIView {
         }
     }
 }
+
 
 
 
