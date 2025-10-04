@@ -67,7 +67,7 @@ class CustomTabBarController: BaseTabBarController {
             self.dashboardProvider = provider // ✅ 프로토콜 참조 보관
         }
         let chartNav = UINavigationController(rootViewController: chartVC)
-        chartNav.tabBarItem = UITabBarItem(title: "파도차트", image: UIImage(named: "chartSymbol"), selectedImage: UIImage(named: "chartSymbol.fill"))
+        chartNav.tabBarItem = UITabBarItem(title: "파도차트", image: UIImage(named: AssetImage.chartSymbol), selectedImage: UIImage(named: AssetImage.chartSymbolFill))
         chartNav.tabBarItem.tag = 0
         
         // 더미
@@ -78,7 +78,7 @@ class CustomTabBarController: BaseTabBarController {
         // 기록차트
         let recordListVC = createRecordListViewController()
         let recordNav = UINavigationController(rootViewController: recordListVC)
-        recordNav.tabBarItem = UITabBarItem(title: "기록 차트", image: UIImage(named: "recordSymbol"), selectedImage: UIImage(named: "recordSymbol.fill"))
+        recordNav.tabBarItem = UITabBarItem(title: "기록 차트", image: UIImage(named: AssetImage.recordSymbol), selectedImage: UIImage(named: AssetImage.recordSymbolFill))
         recordNav.tabBarItem.tag = 2
         
         viewControllers = [chartNav, dummyVC, recordNav]
@@ -234,7 +234,7 @@ class CustomTabBar: UITabBar {
         centerButton.layer.masksToBounds = false
         centerButton.imageView?.contentMode = .scaleAspectFit
         centerButton.tintColor = .white
-        let startWaveImage = UIImage(named: "startWave")
+        let startWaveImage = UIImage(named: AssetImage.startWave)
         centerButton.setImage(startWaveImage, for: .normal)
         centerButton.setImage(startWaveImage, for: .selected)
         centerButton.setTitleColor(.white, for: .normal)

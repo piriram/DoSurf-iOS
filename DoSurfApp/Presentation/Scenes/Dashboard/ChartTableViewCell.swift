@@ -63,7 +63,7 @@ class ChartTableViewCell: UITableViewCell {
         timeLabel.textAlignment = .center
         
         // Wind Components
-        windIconImageView.image = UIImage(named: "windDirectionIcon")
+        windIconImageView.image = UIImage(named: AssetImage.windDirection)
         windIconImageView.contentMode = .scaleAspectFit
         
         // Wind Speed Label - Typography 적용
@@ -72,7 +72,7 @@ class ChartTableViewCell: UITableViewCell {
         windSpeedLabel.minimumScaleFactor = 0.8
         
         // Wave Components
-        waveIconImageView.image = UIImage(named: "swellDirectionIcon")
+        waveIconImageView.image = UIImage(named: AssetImage.swellDirection)
         waveIconImageView.tintColor = .systemCyan
         waveIconImageView.contentMode = .scaleAspectFit
         
@@ -102,7 +102,7 @@ class ChartTableViewCell: UITableViewCell {
         waterTemperatureLabel.minimumScaleFactor = 0.8
         
         // Water Temperature Image
-        waterTemperatureImageView.image = UIImage(named: "waterTemperature") ?? UIImage(systemName: "drop.fill")
+        waterTemperatureImageView.image = UIImage(named: AssetImage.waterTemperature)
         waterTemperatureImageView.contentMode = .scaleAspectFit
         
         // Stack Views

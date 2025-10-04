@@ -7,23 +7,45 @@
 import UIKit
 import SnapKit
 import RxSwift
+// MARK: - ChartColumnRatio
+enum ChartColumnRatio {
+    static let time: CGFloat = 0.10        // 가장 좁게
+    static let wind: CGFloat = 0.26        // 가장 넓게
+    static let wave: CGFloat = 0.24
+    static let temperature: CGFloat = 0.20
+    static let rating: CGFloat = 0.20
+    // 합계: 1.00
+}
 
 final class RecentChartRowView: UIView {
     
-    // MARK: - UI Components
-    
-    private let timeLabel: UILabel = {
+    private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 13, weight: .medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
-        label.numberOfLines = 2
         label.textAlignment = .center
         return label
     }()
     
+    private let hourLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: ChartFont.twelve, weight: ChartFont.medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private lazy var timeStack: UIStackView = {
+        let sv = UIStackView(arrangedSubviews: [dateLabel, hourLabel])
+        sv.axis = .vertical
+        sv.spacing = 0
+        sv.alignment = .center
+        return sv
+    }()
+    
     private let windLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -31,7 +53,7 @@ final class RecentChartRowView: UIView {
     
     private let waveLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
         label.textAlignment = .center
         label.numberOfLines = 2
@@ -39,13 +61,13 @@ final class RecentChartRowView: UIView {
     }()
     
     private let windDirectionImageView: UIImageView = {
-        let iv = UIImageView(image: UIImage(named: "windDirectionIcon"))
+        let iv = UIImageView(image: UIImage(named: AssetImage.windDirection))
         iv.contentMode = .scaleAspectFit
         return iv
     }()
     
     private let waveDirectionImageView: UIImageView = {
-        let iv = UIImageView(image: UIImage(named: "waveDirectionIcon"))
+        let iv = UIImageView(image: UIImage(named: AssetImage.swellDirection))
         iv.contentMode = .scaleAspectFit
         return iv
     }()
@@ -68,7 +90,7 @@ final class RecentChartRowView: UIView {
     
     private let temperatureLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -76,7 +98,7 @@ final class RecentChartRowView: UIView {
     
     private let ratingLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.font = .systemFont(ofSize: ChartFont.fourteen, weight: ChartFont.medium)
         label.textColor = .white
         label.textAlignment = .center
         return label
@@ -84,7 +106,7 @@ final class RecentChartRowView: UIView {
     
     private let ratingImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "rating.star.fill") ?? UIImage(systemName: "star.fill")
+        imageView.image = UIImage(named: AssetImage.ratingStarFill)
         imageView.tintColor = .systemYellow
         imageView.contentMode = .scaleAspectFit
         return imageView
@@ -98,12 +120,24 @@ final class RecentChartRowView: UIView {
         return sv
     }()
     
-    // MARK: - Properties
+    private let timeColumn = UIView()
+    private let windColumn = UIView()
+    private let waveColumn = UIView()
+    private let tempColumn = UIView()
+    private let ratingColumn = UIView()
+    
+    private lazy var columnStackView: UIStackView = {
+        let sv = UIStackView(arrangedSubviews: [
+            timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
+        ])
+        sv.axis = .horizontal
+        sv.distribution = .fill
+        sv.spacing = 6
+        return sv
+    }()
     
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
     private var configureBag = DisposeBag()
-    
-    // MARK: - Initialization
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -115,68 +149,88 @@ final class RecentChartRowView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // MARK: - UI Configuration
-    
     private func configureUI() {
         backgroundColor = UIColor.white.withAlphaComponent(0.08)
         
+        timeColumn.addSubview(timeStack)
+        windColumn.addSubview(windStack)
+        waveColumn.addSubview(waveStack)
+        tempColumn.addSubview(temperatureLabel)
+        ratingColumn.addSubview(ratingStack)
+        
+        addSubview(columnStackView)
+        
         ratingLabel.setContentHuggingPriority(.required, for: .horizontal)
-        ratingLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         ratingImageView.setContentHuggingPriority(.required, for: .horizontal)
     }
     
     private func configureLayout() {
-        let timeContainer = makeColumnContainer(with: timeLabel)
-        let windContainer = makeColumnContainer(with: windStack)
-        let waveContainer = makeColumnContainer(with: waveStack)
-        let temperatureContainer = makeColumnContainer(with: temperatureLabel)
-        let ratingContainer = makeColumnContainer(with: ratingStack)
-        
-        let mainStack = UIStackView(arrangedSubviews: [
-            timeContainer,
-            windContainer,
-            waveContainer,
-            temperatureContainer,
-            ratingContainer
-        ])
-        mainStack.axis = .horizontal
-        mainStack.distribution = .fill
-        mainStack.spacing = 8
-        
-        addSubview(mainStack)
-        
-        mainStack.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 8))
+        columnStackView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(8)
+            make.centerY.equalToSuperview()
         }
         
-        // 컬럼 비율 설정 (헤더와 동일하게 맞춰야 함)
-        timeContainer.snp.makeConstraints { make in
-            make.width.equalTo(mainStack).multipliedBy(0.15)
+        timeColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.time)
         }
         
-        windContainer.snp.makeConstraints { make in
-            make.width.equalTo(mainStack).multipliedBy(0.20)
+        windColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.wind)
         }
         
-        waveContainer.snp.makeConstraints { make in
-            make.width.equalTo(mainStack).multipliedBy(0.25)
+        waveColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.wave)
         }
         
-        temperatureContainer.snp.makeConstraints { make in
-            make.width.equalTo(mainStack).multipliedBy(0.20)
+        tempColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.temperature)
         }
         
-        ratingContainer.snp.makeConstraints { make in
-            make.width.equalTo(mainStack).multipliedBy(0.20)
+        ratingColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.rating)
         }
         
-        // 아이콘 크기 고정
+        timeStack.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.greaterThanOrEqualToSuperview().priority(.high)
+            make.trailing.lessThanOrEqualToSuperview().priority(.high)
+            make.width.lessThanOrEqualToSuperview()
+        }
+        
+        windStack.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.greaterThanOrEqualToSuperview().priority(.high)
+            make.trailing.lessThanOrEqualToSuperview().priority(.high)
+            make.width.lessThanOrEqualToSuperview()
+        }
+        
+        waveStack.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.greaterThanOrEqualToSuperview().priority(.high)
+            make.trailing.lessThanOrEqualToSuperview().priority(.high)
+            make.width.lessThanOrEqualToSuperview()
+        }
+        
+        temperatureLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.greaterThanOrEqualToSuperview().priority(.high)
+            make.trailing.lessThanOrEqualToSuperview().priority(.high)
+            make.width.lessThanOrEqualToSuperview()
+        }
+        
+        ratingStack.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+            make.leading.greaterThanOrEqualToSuperview().priority(.high)
+            make.trailing.lessThanOrEqualToSuperview().priority(.high)
+            make.width.lessThanOrEqualToSuperview()
+        }
+        
         windDirectionImageView.snp.makeConstraints { make in
-            make.height.equalTo(18)
+            make.width.height.equalTo(18)
         }
         
         waveDirectionImageView.snp.makeConstraints { make in
-            make.height.equalTo(18)
+            make.width.height.equalTo(18)
         }
         
         ratingImageView.snp.makeConstraints { make in
@@ -188,23 +242,13 @@ final class RecentChartRowView: UIView {
         }
     }
     
-    private func makeColumnContainer(with content: UIView) -> UIView {
-        let container = UIView()
-        container.addSubview(content)
-        content.snp.makeConstraints { make in
-            make.center.equalToSuperview()
-        }
-        return container
-    }
-    
-    // MARK: - Configuration
-    
     func configure(with chart: Chart) {
         configureBag = DisposeBag()
         
         let dateString = chart.time.toFormattedString(format: "M/d")
         let timeString = chart.time.toFormattedString(format: "HH시")
-        timeLabel.text = "\(dateString)\n\(timeString)"
+        dateLabel.text = dateString
+        hourLabel.text = timeString
         
         windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
         waveLabel.text = String(format: "%.1fm\n%.1fs", chart.waveHeight, chart.wavePeriod)
@@ -235,3 +279,138 @@ final class RecentChartRowView: UIView {
         print("🔧 ChartRowView: Configuration completed - \(dateString) \(timeString), Wind: \(chart.windSpeed)m/s, Wave: \(chart.waveHeight)m")
     }
 }
+
+// MARK: - ChartTableHeaderView
+final class ChartTableHeaderView: UIView {
+    
+    private let timeLabel: UILabel = {
+        let label = UILabel()
+        label.text = "시간"
+        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.textColor = .white.withAlphaComponent(0.8)
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let windLabel: UILabel = {
+        let label = UILabel()
+        label.text = "바람"
+        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.textColor = .white.withAlphaComponent(0.8)
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let waveLabel: UILabel = {
+        let label = UILabel()
+        label.text = "파도"
+        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.textColor = .white.withAlphaComponent(0.8)
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let temperatureLabel: UILabel = {
+        let label = UILabel()
+        label.text = "수온"
+        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.textColor = .white.withAlphaComponent(0.8)
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let ratingLabel: UILabel = {
+        let label = UILabel()
+        label.text = "평가"
+        label.font = .systemFont(ofSize: ChartFont.thirteen, weight: ChartFont.semibold)
+        label.textColor = .white.withAlphaComponent(0.8)
+        label.textAlignment = .center
+        return label
+    }()
+    
+    private let timeColumn = UIView()
+    private let windColumn = UIView()
+    private let waveColumn = UIView()
+    private let tempColumn = UIView()
+    private let ratingColumn = UIView()
+    
+    private lazy var columnStackView: UIStackView = {
+        let sv = UIStackView(arrangedSubviews: [
+            timeColumn, windColumn, waveColumn, tempColumn, ratingColumn
+        ])
+        sv.axis = .horizontal
+        sv.distribution = .fill
+        sv.spacing = 8
+        return sv
+    }()
+    
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        configureUI()
+        configureLayout()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func configureUI() {
+        backgroundColor = UIColor.white.withAlphaComponent(0.15)
+        
+        timeColumn.addSubview(timeLabel)
+        windColumn.addSubview(windLabel)
+        waveColumn.addSubview(waveLabel)
+        tempColumn.addSubview(temperatureLabel)
+        ratingColumn.addSubview(ratingLabel)
+        
+        addSubview(columnStackView)
+    }
+    
+    private func configureLayout() {
+        columnStackView.snp.makeConstraints { make in
+            make.leading.trailing.equalToSuperview().inset(8)
+            make.centerY.equalToSuperview()
+        }
+        
+        timeColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.time)
+        }
+        
+        windColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.wind)
+        }
+        
+        waveColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.wave)
+        }
+        
+        tempColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.temperature)
+        }
+        
+        ratingColumn.snp.makeConstraints { make in
+            make.width.equalTo(columnStackView.snp.width).multipliedBy(ChartColumnRatio.rating)
+        }
+        
+        timeLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+        }
+        
+        windLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+        }
+        
+        waveLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+        }
+        
+        temperatureLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+        }
+        
+        ratingLabel.snp.makeConstraints { make in
+            make.center.equalToSuperview()
+        }
+    }
+}
+

@@ -133,8 +133,8 @@ final class PreferredCardView: UIView {
         // 카드 타입에 따라 방향 화살표 애셋 설정
         let arrowAssetName: String = {
             switch data.type {
-            case .wind: return "windDirectionIcon"
-            case .wave: return "swellDirectionIcon"
+            case .wind: return AssetImage.windDirection
+            case .wave: return AssetImage.swellDirection
             }
         }()
         arrowImageView.image = UIImage(named: arrowAssetName)?.withRenderingMode(.alwaysOriginal)

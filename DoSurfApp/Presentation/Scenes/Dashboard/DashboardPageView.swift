@@ -4,7 +4,6 @@
 //
 //  Created by 잠만보김쥬디 on 10/2/25.
 //
-
 import UIKit
 import SnapKit
 import RxSwift
@@ -31,7 +30,6 @@ final class DashboardPageView: UIView {
         configureLayout()
         configureBind()
         
-        // 디버깅용 로그
         print("🔄 DashboardPageView initialized")
     }
     
@@ -66,11 +64,9 @@ final class DashboardPageView: UIView {
     }
     
     private func configureBind() {
-        // 스크롤이 끝날 때만 페이지 변경 감지 (드래그 중에는 감지하지 않음)
         scrollView.rx.observe(CGPoint.self, #keyPath(UIScrollView.contentOffset))
             .compactMap { $0 }
             .filter { [weak self] _ in
-                // 스크롤이 진행 중이 아닐 때만 페이지 변경 감지
                 guard let self = self else { return false }
                 return !self.scrollView.isDragging && !self.scrollView.isDecelerating
             }
@@ -86,7 +82,6 @@ final class DashboardPageView: UIView {
             .bind(to: currentPage)
             .disposed(by: disposeBag)
         
-        // 스크롤 끝남 감지를 위한 추가 바인딩
         scrollView.rx.didEndDecelerating
             .subscribe(onNext: { [weak self] in
                 self?.updateCurrentPageFromContentOffset()
@@ -94,7 +89,7 @@ final class DashboardPageView: UIView {
             .disposed(by: disposeBag)
         
         scrollView.rx.didEndDragging
-            .filter { !$0 } // willDecelerate가 false인 경우 (바로 멈춤)
+            .filter { !$0 }
             .subscribe(onNext: { [weak self] _ in
                 self?.updateCurrentPageFromContentOffset()
             })
@@ -107,7 +102,6 @@ final class DashboardPageView: UIView {
         let rawPage = scrollView.contentOffset.x / pageWidth
         let calculatedPage = max(0, min(Int(rawPage.rounded()), pages.count - 1))
         
-        // 페이지가 실제로 변경된 경우에만 업데이트
         if calculatedPage != currentPageIndex {
             print("📄 Page changed: \(currentPageIndex) → \(calculatedPage)")
             currentPageIndex = calculatedPage
@@ -128,22 +122,32 @@ final class DashboardPageView: UIView {
         
         // 새 페이지 추가
         pages.enumerated().forEach { index, page in
+            // 기존 superview에서 제거 (중요!)
+            page.removeFromSuperview()
+            
             let containerView = UIView()
-            containerView.tag = index // 디버깅용 태그
-            containerView.addSubview(page)
+            containerView.tag = index
             
-            page.snp.makeConstraints { make in
-                make.edges.equalToSuperview().inset(8)
-            }
-            
+            // containerView를 먼저 stackView에 추가
             contentStackView.addArrangedSubview(containerView)
             
+            // containerView에 page 추가 (이 순서가 중요!)
+            containerView.addSubview(page)
+            
+            // containerView의 제약 조건 먼저 설정
             containerView.snp.makeConstraints { make in
                 make.width.equalTo(scrollView.snp.width)
+            }
+            
+            // page의 제약 조건은 addSubview 후에 설정
+            page.snp.makeConstraints { make in
+                make.edges.equalToSuperview().inset(8)
             }
         }
         
         // 초기 상태 설정
+        layoutIfNeeded() // 레이아웃 즉시 적용
+        
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.scrollView.contentOffset = .zero
@@ -153,11 +157,10 @@ final class DashboardPageView: UIView {
     
     func scrollToPage(_ index: Int, animated: Bool = true) {
         guard index >= 0 && index < pages.count else { return }
-        guard index != currentPageIndex else { return } // 이미 같은 페이지면 리턴
+        guard index != currentPageIndex else { return }
         
         currentPageIndex = index
         
-        // 레이아웃이 완료된 후 스크롤
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             let pageWidth = self.scrollView.bounds.width
@@ -166,7 +169,6 @@ final class DashboardPageView: UIView {
             let targetOffset = CGPoint(x: CGFloat(index) * pageWidth, y: 0)
             self.scrollView.setContentOffset(targetOffset, animated: animated)
             
-            // 애니메이션이 없는 경우 즉시 페이지 업데이트
             if !animated {
                 self.currentPage.accept(index)
             }
@@ -178,14 +180,3 @@ final class DashboardPageView: UIView {
         return pages[index]
     }
 }
-
-
-
-
-
-
-
-
-
-
-
