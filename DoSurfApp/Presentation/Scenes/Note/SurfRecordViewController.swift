@@ -38,6 +38,8 @@ final class SurfRecordViewController: BaseViewController {
     
     // State
     private var memoOpened = false
+    // Edit mode state
+    private var editingRecord: SurfRecordData?
     private let disposeBag = DisposeBag()
     
     // Dependencies
@@ -79,6 +81,31 @@ final class SurfRecordViewController: BaseViewController {
         self.injectedCharts = nil
     }
     
+    /// 편집 모드 이니셜라이저 (기존 기록 주입)
+    convenience init(editing record: SurfRecordData, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+        self.init(surfRecordUseCase: surfRecordUseCase)
+        self.editingRecord = record
+        // 초기 값 주입
+        self.surfStartTime = record.startTime
+        self.surfEndTime = record.endTime
+        // 차트 복원 (SurfChartData -> Chart)
+        let charts: [Chart] = record.charts.map { data in
+            Chart(
+                beachID: record.beachID,
+                time: data.time,
+                windDirection: data.windDirection,
+                windSpeed: data.windSpeed,
+                waveDirection: data.waveDirection,
+                waveHeight: data.waveHeight,
+                wavePeriod: data.wavePeriod,
+                waterTemperature: data.waterTemperature,
+                weather: WeatherType(rawValue: Int(data.weatherIconName) ?? 999) ?? .unknown,
+                airTemperature: data.airTemperature
+            )
+        }
+        self.injectedCharts = charts
+    }
+    
     // 외부에서 차트를 나중에 주입/갱신하고 싶을 때 사용
     func applyInjectedCharts(_ charts: [Chart]) {
         self.injectedCharts = charts
@@ -97,6 +124,9 @@ final class SurfRecordViewController: BaseViewController {
         if title == nil || title?.isEmpty == true {
             title = "서핑 기록"
         }
+        if editingRecord != nil {
+            title = "기록 수정"
+        }
         
         // 모달 루트로 표시된 경우 닫기 버튼
         if presentingViewController != nil && navigationController?.viewControllers.first === self {
@@ -107,7 +137,7 @@ final class SurfRecordViewController: BaseViewController {
     override func configureBind() {
         bind()
         saveButton.rx.tap
-            .bind(onNext: { [weak self] in self?.saveSurfRecordToCoreData() })
+            .bind(onNext: { [weak self] in self?.saveOrUpdateRecord() })
             .disposed(by: disposeBag)
     }
     
@@ -298,6 +328,12 @@ final class SurfRecordViewController: BaseViewController {
         memoTextView.textContainerInset = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         memoTextView.snp.makeConstraints { $0.height.greaterThanOrEqualTo(100) }
         
+        if let existing = editingRecord, let memo = existing.memo, !memo.isEmpty {
+            memoTextView.isHidden = false
+            memoTextView.text = memo
+            memoOpened = true
+        }
+        
         let cStack = UIStackView(arrangedSubviews: [commentTitle, addMemoButton, memoTextView])
         cStack.axis = .vertical
         cStack.spacing = 12
@@ -469,6 +505,54 @@ final class SurfRecordViewController: BaseViewController {
         .disposed(by: disposeBag)
     }
     
+    private func saveOrUpdateRecord() {
+        if let existing = editingRecord {
+            updateSurfRecordInCoreData(existing: existing)
+        } else {
+            saveSurfRecordToCoreData()
+        }
+    }
+    
+    private func updateSurfRecordInCoreData(existing: SurfRecordData) {
+        // beachID 유지 또는 차트에서 추론
+        let beachID = existing.beachID != 0 ? existing.beachID : (charts.first?.beachID ?? injectedCharts?.first?.beachID ?? 0)
+        let updated = SurfRecordData(
+            beachID: beachID,
+            id: existing.id,
+            surfDate: datePicker.date,
+            startTime: startTimePicker.date,
+            endTime: endTimePicker.date,
+            rating: Int16(ratingCardView.selectedRating.value),
+            memo: memoTextView.isHidden || memoTextView.text.isEmpty ? existing.memo : memoTextView.text,
+            isPin: existing.isPin,
+            charts: charts.map { c in
+                SurfChartData(
+                    time: c.time,
+                    windSpeed: c.windSpeed,
+                    windDirection: c.windDirection,
+                    waveHeight: c.waveHeight,
+                    wavePeriod: c.wavePeriod,
+                    waveDirection: c.waveDirection,
+                    airTemperature: c.airTemperature,
+                    waterTemperature: c.waterTemperature,
+                    weatherIconName: c.weather.iconName
+                )
+            }
+        )
+        surfRecordUseCase.updateSurfRecord(updated)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] in
+                // 갱신 알림 브로드캐스트
+                NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                self?.handleSaveSuccess()
+            }, onFailure: { [weak self] error in
+                let alert = UIAlertController(title: "수정 실패", message: error.localizedDescription, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "확인", style: .default))
+                self?.present(alert, animated: true)
+            })
+            .disposed(by: disposeBag)
+    }
+    
     private func handleSaveSuccess() {
         // 저장 성공 시 화면 닫기 (pop 또는 dismiss)
         if let nav = navigationController {
@@ -491,6 +575,12 @@ private extension SurfRecordViewController {
     func setupPickersWithInitialTimes(start: Date?, end: Date?) {
         let now = Date()
         var baseDate = start ?? now
+        
+        if let existing = editingRecord {
+            // 우선 날짜를 기존 surfDate로 설정
+            let base = existing.surfDate
+            datePicker.date = base
+        }
         
         var startTime: Date
         var endTime: Date
@@ -521,7 +611,9 @@ private extension SurfRecordViewController {
         }
         
         // datePicker의 날짜를 기준으로 동일한 날짜선상에 정렬
-        datePicker.date = baseDate
+        if editingRecord == nil {
+            datePicker.date = baseDate
+        }
         let normalizedStart = combine(date: datePicker.date, withTimeOf: startTime)
         var normalizedEnd   = combine(date: datePicker.date, withTimeOf: endTime)
         
