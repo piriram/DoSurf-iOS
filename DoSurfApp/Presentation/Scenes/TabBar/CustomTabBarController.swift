@@ -99,11 +99,30 @@ class CustomTabBarController: BaseTabBarController {
         return vc
     }
     private func setupTabBarDelegate() {
+        // 더미 탭 선택 방지 및 좌/우 탭 유지
         rx.didSelect
             .filter { $0.tabBarItem.tag == 1 }
             .subscribe(onNext: { [weak self] _ in
                 guard let self = self else { return }
                 self.selectedIndex = self.selectedIndex == 0 ? 0 : 2
+            })
+            .disposed(by: disposeBag)
+        
+        // 기록 차트 탭을 클릭할 때마다 필터 초기화
+        rx.didSelect
+            .filter { $0.tabBarItem.tag == 2 }
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                // 현재 탭바의 해당 네비게이션 컨트롤러/뷰컨 찾아서 리셋 호출
+                if let nav = self.viewControllers?.first(where: { $0.tabBarItem.tag == 2 }) as? UINavigationController,
+                   let recordVC = nav.viewControllers.first as? RecordHistoryViewController {
+                    recordVC.resetAllFilters()
+                } else if let recordVC = (self.viewControllers?.first(where: { $0.tabBarItem.tag == 2 }) as? RecordHistoryViewController) {
+                    recordVC.resetAllFilters()
+                } else if let nav = self.selectedViewController as? UINavigationController,
+                          let recordVC = nav.viewControllers.first as? RecordHistoryViewController {
+                    recordVC.resetAllFilters()
+                }
             })
             .disposed(by: disposeBag)
     }
