@@ -20,5 +20,6 @@ enum AssetImage {
     static let recordSymbol = "recordSymbol"
     static let recordSymbolFill = "recordSymbol.fill"
     static let startWave = "startWave"
+    static let pinFill = "pin.fill"
 }
 
