@@ -171,8 +171,8 @@ final class ChartListPage: UIView {
         
         tableContainerView.addSubview(stackView)
         stackView.snp.makeConstraints { make in
-            make.top.leading.trailing.equalToSuperview().inset(12)
-            make.bottom.lessThanOrEqualToSuperview().inset(12)
+            make.top.leading.trailing.equalToSuperview()
+            make.bottom.lessThanOrEqualToSuperview()
         }
     }
     
