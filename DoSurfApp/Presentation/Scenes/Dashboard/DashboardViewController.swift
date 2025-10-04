@@ -184,6 +184,17 @@ class DashboardViewController: BaseViewController {
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
         
+        // Observe global surf record changes (add/edit/pin/delete) and refresh dashboard lists
+        NotificationCenter.default.rx.notification(.surfRecordsDidChange)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] _ in
+                guard let self = self else { return }
+                // trigger refresh flow used by dashboard to reload data
+                self.refreshControl.beginRefreshing()
+                self.refreshControl.sendActions(for: .valueChanged)
+            })
+            .disposed(by: disposeBag)
+        
         if let savedID = storageService.readSelectedBeachID() {
             beachSelectedSubject.onNext(savedID)
             NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": savedID])
@@ -226,3 +237,4 @@ extension DIContainer {
         DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
     }
 }
+

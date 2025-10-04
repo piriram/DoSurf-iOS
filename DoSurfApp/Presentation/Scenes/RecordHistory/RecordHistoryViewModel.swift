@@ -197,6 +197,9 @@ final class RecordHistoryViewModel {
                 
                 return update
                     .flatMapLatest { fetch }
+                    .do(onNext: { _ in
+                        NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                    })
                     .catch { [weak self] error in
                         self?.errorRelay.accept(error)
                         return .empty()
