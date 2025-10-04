@@ -6,10 +6,6 @@
 //
 
 import UIKit
-#if canImport(SwiftUI)
-import SwiftUI
-#endif
-
 // MARK: - UIColor + Design System Palette
 extension UIColor {
     /// Initialize a UIColor from a hex integer (e.g., 0x004AC7) and optional alpha.
@@ -68,7 +64,7 @@ extension UIColor {
     static var iconWaterOrange: UIColor { UIColor(hex: 0xFFB891) } // #FFB891
     static var iconStarOrange: UIColor { UIColor(hex: 0xEA8F5B) }  // #EA8F5B
     static var lableBlack: UIColor { UIColor(hex:0x222222) }
-    static var pinBlue: UIColor { UIColor(hex: 0x007AF7) }        
+    static var pinBlue: UIColor { UIColor(hex: 0x007AF7) }
     
     // MARK: Background / Neutrals
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
@@ -77,26 +73,3 @@ extension UIColor {
     static var backgroundWhite: UIColor { UIColor(hex:0xEFF1F6)}
     static var backgroundHeader: UIColor { UIColor(hex:0xE5EDF9)}
 }
-
-// MARK: - SwiftUI Color Mirrors
-#if canImport(SwiftUI)
-extension Color {
-    /// Initialize a SwiftUI Color from a hex string (e.g., "004AC7", "#004AC7", "0x004AC7").
-    /// Mirrors UIColor's hex parsing rules.
-    init(hex: String, alpha: Double = 1.0) {
-        self.init(UIColor(hex: hex, alpha: CGFloat(alpha)))
-    }
-    
-    static var surfBlue: Color { Color(UIColor.surfBlue) }
-    static var iconBlue: Color { Color(UIColor.iconBlue) }
-    static var iconSkyblue: Color { Color(UIColor.iconSkyblue) }
-    static var iconGreen: Color { Color(UIColor.iconGreen) }
-    static var iconPurple: Color { Color(UIColor.iconPurple) }
-    static var iconWaterOrange: Color { Color(UIColor.iconWaterOrange) }
-    static var iconStarOrange: Color { Color(UIColor.iconStarOrange) }
-    
-    static var brightGray: Color { Color(UIColor.brightGray) }
-    static var backgroundGray: Color { Color(UIColor.backgroundGray) }
-    static var backgroundSkyblue: Color { Color(UIColor.backgroundSkyblue) }
-}
-#endif

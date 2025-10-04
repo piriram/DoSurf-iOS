@@ -137,7 +137,7 @@ class DashboardViewController: BaseViewController {
                 }
                 
                 if let page3 = self.headerView.getPage(at: 2) as? ChartListPage {
-                    let beachIDInt = Int(beachID) ?? 4001
+                    let beachIDInt = Int(beachID)
                     page3.configureWithPinnedRecords(beachID: beachIDInt)
                 }
             })

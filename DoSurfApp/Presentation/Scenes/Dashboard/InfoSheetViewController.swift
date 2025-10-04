@@ -21,7 +21,6 @@ final class InfoSheetViewController: UIViewController {
     
     private let sheetImageView: UIImageView = {
         let iv = UIImageView(image: UIImage(named: "sheetImage"))
-        iv.backgroundColor = .systemGray6  // 배경색으로 영역 확인
         iv.contentMode = .scaleToFill
         iv.clipsToBounds = true
         return iv

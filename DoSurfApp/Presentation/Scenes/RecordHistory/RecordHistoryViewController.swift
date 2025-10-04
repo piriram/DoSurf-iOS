@@ -49,7 +49,7 @@ final class RecordHistoryViewController: BaseViewController {
         tableView.backgroundColor = .systemBackground
         tableView.separatorStyle = .none
         tableView.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
-        tableView.register(RecordCardCell.self, forCellReuseIdentifier: RecordCardCell.identifier)
+        tableView.register(RecordHistoryCell.self, forCellReuseIdentifier: RecordHistoryCell.identifier)
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 140
         return tableView
@@ -201,8 +201,8 @@ final class RecordHistoryViewController: BaseViewController {
         
         output.records
             .drive(tableView.rx.items(
-                cellIdentifier: RecordCardCell.identifier,
-                cellType: RecordCardCell.self
+                cellIdentifier: RecordHistoryCell.identifier,
+                cellType: RecordHistoryCell.self
             )) { [weak self] index, viewModel, cell in
                 cell.configure(with: viewModel)
                 cell.onMoreButtonTap = { [weak self] in
