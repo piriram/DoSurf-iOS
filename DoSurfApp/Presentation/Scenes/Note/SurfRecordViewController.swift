@@ -10,6 +10,8 @@ final class SurfRecordViewController: BaseViewController {
     private let content = UIStackView()
     private let headerCard = UIView()
     private let tableCard = UIView()
+    private let topGroupCard = UIView()
+    private let bottomGroupCard = UIView()
     private let ratingCardView = SurfRatingCardView()
     private let commentCard = UIView()
     private let addMemoButton = UIButton(type: .system)
@@ -188,10 +190,24 @@ final class SurfRecordViewController: BaseViewController {
             $0.width.equalTo(scrollView.snp.width).offset(-32)
         }
         
+        // --- Grouped Top Card (날짜/시간 + 차트)
+        topGroupCard.layer.cornerRadius = 12
+        topGroupCard.layer.masksToBounds = true
+        topGroupCard.backgroundColor = .white
+        content.addArrangedSubview(topGroupCard)
+        
+        let topGroupStack = UIStackView()
+        topGroupStack.axis = .vertical
+        topGroupStack.spacing = 12
+        topGroupCard.addSubview(topGroupStack)
+        topGroupStack.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(12)
+        }
+        
         // --- Header (날짜/시작/종료) 카드
-        headerCard.layer.cornerRadius = 12
-        headerCard.backgroundColor = .white
-        content.addArrangedSubview(headerCard)
+        headerCard.layer.cornerRadius = 0
+        headerCard.backgroundColor = .clear
+        topGroupStack.addArrangedSubview(headerCard)
         
         // Configure inline pickers
         datePicker.datePickerMode = .date
@@ -221,15 +237,15 @@ final class SurfRecordViewController: BaseViewController {
         headerStack.axis = .vertical
         headerStack.spacing = 0
         headerCard.addSubview(headerStack)
-        headerStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
+        headerStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(0) }
         
         // >>> 전달된 start/end를 기준으로 3개 피커 정렬
         setupPickersWithInitialTimes(start: surfStartTime, end: surfEndTime)
         
         // --- 표 카드
-        tableCard.layer.cornerRadius = 12
-        tableCard.backgroundColor = .white
-        content.addArrangedSubview(tableCard)
+        tableCard.layer.cornerRadius = 0
+        tableCard.backgroundColor = .clear
+        topGroupStack.addArrangedSubview(tableCard)
         tableCard.snp.makeConstraints { make in
             // ✅ 고정 높이 + 스크롤
             tableCardHeightConstraint = make.height.equalTo(tableFixedHeight).constraint
@@ -301,8 +317,24 @@ final class SurfRecordViewController: BaseViewController {
         tableContainer.addArrangedSubview(headerRow)
         tableContainer.addArrangedSubview(tableView)
         
+        // --- Grouped Bottom Card (별점 + 메모)
+        bottomGroupCard.layer.cornerRadius = 12
+        bottomGroupCard.layer.masksToBounds = true
+        bottomGroupCard.backgroundColor = .white
+        content.addArrangedSubview(bottomGroupCard)
+        
+        let bottomGroupStack = UIStackView()
+        bottomGroupStack.axis = .vertical
+        bottomGroupStack.spacing = 12
+        bottomGroupCard.addSubview(bottomGroupStack)
+        bottomGroupStack.snp.makeConstraints { make in
+            make.edges.equalToSuperview().inset(12)
+        }
+        
         // --- 파도 평가 카드
-        content.addArrangedSubview(ratingCardView)
+        bottomGroupStack.addArrangedSubview(ratingCardView)
+        ratingCardView.layer.cornerRadius = 0
+        ratingCardView.backgroundColor = .clear
         
         // 기본 별점: 새 기록은 3점, 편집 모드는 기존 값 유지
         if let existing = editingRecord {
@@ -313,9 +345,9 @@ final class SurfRecordViewController: BaseViewController {
         }
         
         // --- 코멘트 카드
-        commentCard.layer.cornerRadius = 12
-        commentCard.backgroundColor = .white
-        content.addArrangedSubview(commentCard)
+        commentCard.layer.cornerRadius = 0
+        commentCard.backgroundColor = .clear
+        bottomGroupStack.addArrangedSubview(commentCard)
         
         let commentTitle = UILabel()
         commentTitle.text = "파도 코멘트"
@@ -351,7 +383,7 @@ final class SurfRecordViewController: BaseViewController {
         cStack.spacing = 12
         
         commentCard.addSubview(cStack)
-        cStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(12) }
+        cStack.snp.makeConstraints { $0.edges.equalToSuperview().inset(0) }
         
         if let injected = injectedCharts, !injected.isEmpty {
             filterAndApplyCharts()
