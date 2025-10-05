@@ -144,9 +144,9 @@ final class SurfRatingCardView: UIView {
         for (index, description) in ratingDescriptions.enumerated() {
             let containerView = UIView()
             
-            containerView.backgroundColor = .white
-            containerView.layer.cornerRadius = 12
-            containerView.clipsToBounds = true
+            containerView.backgroundColor = .clear
+            containerView.layer.cornerRadius = 0
+            containerView.clipsToBounds = false
             
             let pointLabel = UILabel()
             pointLabel.text = "\(index + 1)점"
@@ -306,3 +306,4 @@ final class SurfRatingCardView: UIView {
         }
     }
 }
+
