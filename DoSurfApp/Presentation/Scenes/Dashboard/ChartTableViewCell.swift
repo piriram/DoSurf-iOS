@@ -150,7 +150,7 @@ class ChartTableViewCell: UITableViewCell {
         weatherStackView.addArrangedSubview(weatherInfoStack)
         weatherStackView.axis = .horizontal
         weatherStackView.alignment = .center
-        weatherStackView.spacing = 1
+        weatherStackView.spacing = 4
         
         // Water Temperature Stack
         let waterTempInfoStack = UIStackView(arrangedSubviews: [waterTemperatureLabel])

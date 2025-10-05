@@ -135,6 +135,12 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
                                 precipitationProbability: data["precipitation_probability"] as? Double
                             )
                             
+                            let wavePeriod = Self.estimateWavePeriod(
+                                windSpeed: data["wind_speed"] as? Double,
+                                waveHeight: waveHeight,
+                                omWaveHeight: data["om_wave_height"] as? Double
+                            )
+                            
                             let forecast = FirestoreChartDTO(
                                 documentId: document.documentID,
                                 beachId: data["beach_id"] as? Int ?? Int(beachId) ?? 0,
@@ -145,6 +151,7 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
                                 windSpeed: data["wind_speed"] as? Double,
                                 windDirection: data["wind_direction"] as? Double,
                                 waveHeight: waveHeight,
+                                wavePeriod: wavePeriod,
                                 airTemperature: data["air_temperature"] as? Double,
                                 precipitationProbability: data["precipitation_probability"] as? Double,
                                 precipitationType: data["precipitation_type"] as? Int,
@@ -165,6 +172,19 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
             
             return Disposables.create()
         }
+    }
+    
+    private static func estimateWavePeriod(
+        windSpeed: Double?,
+        waveHeight: Double?,
+        omWaveHeight: Double?
+    ) -> Double? {
+        guard let u = windSpeed, u.isFinite, u > 0 else { return nil }
+        // Pierson–Moskowitz fully developed sea approximation:
+        // Tp ≈ 0.83 * U10 (seconds), clamped to 2–18s typical surf range
+        let raw = 0.83 * u
+        let clamped = max(2.0, min(18.0, raw))
+        return clamped
     }
     
     private static func computeWeatherCode(
