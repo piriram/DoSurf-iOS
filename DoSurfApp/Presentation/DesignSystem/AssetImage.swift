@@ -10,7 +10,7 @@ import UIKit
 enum AssetImage {
     static let windDirection = "windDirectionIcon"
     static let swellDirection = "swellDirectionIcon"
-    static let ratingStarFill = "rating.star.fill"
+    static let ratingStarFill = "ratingStar"
     static let line = "line"
     static let waterTemperature = "waterTemperature"
     static let backgroundMain = "backgroundMain"

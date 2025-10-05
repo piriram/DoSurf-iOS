@@ -304,6 +304,14 @@ final class SurfRecordViewController: BaseViewController {
         // --- 파도 평가 카드
         content.addArrangedSubview(ratingCardView)
         
+        // 기본 별점: 새 기록은 3점, 편집 모드는 기존 값 유지
+        if let existing = editingRecord {
+            let existingRating = max(1, min(5, Int(existing.rating)))
+            ratingCardView.selectedRating.accept(existingRating)
+        } else {
+            ratingCardView.selectedRating.accept(3)
+        }
+        
         // --- 코멘트 카드
         commentCard.layer.cornerRadius = 12
         commentCard.backgroundColor = .white
@@ -311,15 +319,19 @@ final class SurfRecordViewController: BaseViewController {
         
         let commentTitle = UILabel()
         commentTitle.text = "파도 코멘트"
-        commentTitle.font = .systemFont(ofSize: 16, weight: .semibold)
+        commentTitle.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.bold)
+        commentTitle.textColor = .surfBlue
         
         addMemoButton.setTitle("메모 추가  ", for: .normal)
         addMemoButton.setImage(UIImage(systemName: "plus.circle.fill"), for: .normal)
         addMemoButton.tintColor = .surfBlue
-        addMemoButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
-        addMemoButton.backgroundColor = .surfBlue.withAlphaComponent(0.08)
+        addMemoButton.titleLabel?.font = .systemFont(ofSize: FontSize.sixteen, weight: FontSize.semibold)
+        addMemoButton.semanticContentAttribute = .forceRightToLeft
+        addMemoButton.backgroundColor = .white
         addMemoButton.layer.cornerRadius = 20
-        addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 12, left: 14, bottom: 12, right: 10)
+        addMemoButton.layer.borderWidth = 1
+        addMemoButton.layer.borderColor = UIColor.surfBlue.cgColor
+        addMemoButton.contentEdgeInsets = UIEdgeInsets(top: 10, left: 14, bottom: 10, right: 10)
         
         memoTextView.isHidden = true
         memoTextView.font = .systemFont(ofSize: 15)
@@ -435,31 +447,57 @@ final class SurfRecordViewController: BaseViewController {
     }
     
     @objc private func handleDateChanged() {
+        let dayStart = startOfDayKST(for: datePicker.date)
+        let dayEnd   = endOfDayKST(for: datePicker.date)
+
         // 선택 날짜로 start/end를 같은 날짜선상으로 이동
         let newStart = combine(date: datePicker.date, withTimeOf: startTimePicker.date)
         let newEnd   = combine(date: datePicker.date, withTimeOf: endTimePicker.date)
-        startTimePicker.date = newStart
-        endTimePicker.minimumDate = newStart
-        if endTimePicker.date < newStart {
-            endTimePicker.date = newStart
-        }
+
+        // 클램프
+        let clampedStart = min(max(newStart, dayStart), dayEnd)
+        var clampedEnd   = min(max(newEnd, clampedStart), dayEnd)
+
+        // 피커 경계 갱신
+        startTimePicker.minimumDate = dayStart
+        startTimePicker.maximumDate = dayEnd
+        startTimePicker.date = clampedStart
+
+        endTimePicker.minimumDate = clampedStart
+        endTimePicker.maximumDate = dayEnd
+        endTimePicker.date = clampedEnd
+
         updateChartDateLabel()
         filterAndApplyCharts()          // ✅ 날짜 변경 시 재필터
     }
     
     @objc private func handleStartTimeChanged() {
+        let dayEnd = endOfDayKST(for: datePicker.date)
         let start = startTimePicker.date
+
+        // 종료 시간은 시작 이상, 같은 날의 끝 이하
         endTimePicker.minimumDate = start
+        endTimePicker.maximumDate = dayEnd
+
         if endTimePicker.date < start {
             endTimePicker.date = start
+        } else if endTimePicker.date > dayEnd {
+            endTimePicker.date = dayEnd
         }
+
         filterAndApplyCharts()          // ✅ 시작 변경 시 재필터
     }
     
     @objc private func handleEndTimeChanged() {
-        if endTimePicker.date < startTimePicker.date {
-            endTimePicker.date = startTimePicker.date
+        let start = startTimePicker.date
+        let dayEnd = endOfDayKST(for: datePicker.date)
+
+        if endTimePicker.date < start {
+            endTimePicker.date = start
+        } else if endTimePicker.date > dayEnd {
+            endTimePicker.date = dayEnd
         }
+
         filterAndApplyCharts()          // ✅ 종료 변경 시 재필터
     }
     
@@ -589,8 +627,9 @@ private extension SurfRecordViewController {
         case let (s?, e?):
             startTime = stripSeconds(s)
             endTime   = stripSeconds(e)
+            // 종료 시간이 시작 시간보다 이르면 같은 날 범위를 유지하도록 종료 시간을 시작 시간으로 맞춤
             if endTime < startTime {
-                endTime = Calendar.current.date(byAdding: .day, value: 1, to: endTime) ?? endTime
+                endTime = startTime
             }
             baseDate = startTime
             
@@ -615,16 +654,25 @@ private extension SurfRecordViewController {
             datePicker.date = baseDate
         }
         let normalizedStart = combine(date: datePicker.date, withTimeOf: startTime)
-        var normalizedEnd   = combine(date: datePicker.date, withTimeOf: endTime)
-        
-        if normalizedEnd < normalizedStart {
-            normalizedEnd = Calendar.current.date(byAdding: .day, value: 1, to: normalizedEnd) ?? normalizedEnd
-        }
-        
-        startTimePicker.date = normalizedStart
-        endTimePicker.minimumDate = normalizedStart
-        endTimePicker.date = max(normalizedEnd, normalizedStart)
-        
+        let candidateEnd    = combine(date: datePicker.date, withTimeOf: endTime)
+
+        // 같은 날짜 안에서만 허용 (하루를 넘길 수 없음)
+        let dayStart = startOfDayKST(for: datePicker.date)
+        let dayEnd   = endOfDayKST(for: datePicker.date)
+
+        // 시작/종료 값을 날짜 경계 내로 클램프
+        let clampedStart = min(max(normalizedStart, dayStart), dayEnd)
+        var clampedEnd   = min(max(candidateEnd, clampedStart), dayEnd)
+
+        // 피커 경계 업데이트
+        startTimePicker.minimumDate = dayStart
+        startTimePicker.maximumDate = dayEnd
+        startTimePicker.date = clampedStart
+
+        endTimePicker.minimumDate = clampedStart
+        endTimePicker.maximumDate = dayEnd
+        endTimePicker.date = clampedEnd
+
         updateChartDateLabel()
         filterAndApplyCharts() // ✅ 초기에도 필터 적용
     }
@@ -657,6 +705,17 @@ private extension SurfRecordViewController {
         aligned.second = 0
         return cal.date(from: aligned) ?? date
     }
+    
+    /// KST 기준 선택 날짜의 시작과 끝
+    private func startOfDayKST(for date: Date) -> Date {
+        kstCalendar().startOfDay(for: date)
+    }
+    private func endOfDayKST(for date: Date) -> Date {
+        let cal = kstCalendar()
+        let start = cal.startOfDay(for: date)
+        return cal.date(byAdding: DateComponents(day: 1, second: -1), to: start) ?? date
+    }
+    
     /// 3시간 간격(10800초) 점검용 디버그
     private func debugCheckThreeHourSpacing(_ charts: [Chart]) {
         guard charts.count > 1 else { return }
