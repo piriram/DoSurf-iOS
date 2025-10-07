@@ -133,6 +133,22 @@ final class SurfRecordViewController: BaseViewController {
         }
     }
     
+    override func configureNavigationBar() {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = .backgroundWhite
+        appearance.shadowColor = .clear
+        appearance.titleTextAttributes = [.foregroundColor: UIColor.surfBlue]
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.surfBlue]
+
+        guard let navBar = navigationController?.navigationBar else { return }
+        navBar.standardAppearance = appearance
+        navBar.compactAppearance = appearance
+        navBar.scrollEdgeAppearance = appearance
+        navBar.isTranslucent = false
+        navBar.tintColor = .surfBlue
+    }
+    
     @objc private func dismissSelf() {
         dismiss(animated: true)
     }
@@ -588,6 +604,7 @@ private extension SurfRecordViewController {
         // (선택) 간격 검증
         debugCheckThreeHourSpacing(filtered)
     }
+   
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
@@ -608,4 +625,3 @@ extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
-
