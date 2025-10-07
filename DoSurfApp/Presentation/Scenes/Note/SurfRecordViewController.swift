@@ -239,26 +239,41 @@ final class SurfRecordViewController: BaseViewController {
                 self?.handleMemoButtonTapped()
             })
             .disposed(by: disposeBag)
+        
+        // Bottom Card - Request scroll to memo when it gains focus or opens
+        bottomCard.requestScrollToMemo
+            .asSignal()
+            .emit(onNext: { [weak self] in
+                guard let self = self else { return }
+                // Ensure layout reflects keyboard guide before scrolling
+                self.view.layoutIfNeeded()
+
+                let targetView = self.bottomCard.memoTextView
+                let rectInScroll = targetView.convert(targetView.bounds, to: self.scrollView)
+                let visibleRect = rectInScroll.insetBy(dx: 0, dy: -20)
+                self.scrollView.scrollRectToVisible(visibleRect, animated: true)
+            })
+            .disposed(by: disposeBag)
     }
     
     // MARK: - Event Handlers
     private func handleDateChanged() {
         let dayStart = startOfDayKST(for: topCard.datePicker.date)
         let dayEnd   = endOfDayKST(for: topCard.datePicker.date)
-
+        
         // 선택 날짜로 start/end를 같은 날짜선상으로 이동
         let newStart = combine(date: topCard.datePicker.date, withTimeOf: topCard.startTimePicker.date)
         let newEnd   = combine(date: topCard.datePicker.date, withTimeOf: topCard.endTimePicker.date)
-
+        
         // 클램프
         let clampedStart = min(max(newStart, dayStart), dayEnd)
         let clampedEnd   = min(max(newEnd, clampedStart), dayEnd)
-
+        
         // 피커 경계 갱신
         topCard.updatePickerBounds(dayStart: dayStart, dayEnd: dayEnd, startTime: clampedStart)
         topCard.startTimePicker.date = clampedStart
         topCard.endTimePicker.date = clampedEnd
-
+        
         topCard.updateChartDateLabel()
         filterAndApplyCharts()
     }
@@ -266,29 +281,29 @@ final class SurfRecordViewController: BaseViewController {
     private func handleStartTimeChanged() {
         let dayEnd = endOfDayKST(for: topCard.datePicker.date)
         let start = topCard.startTimePicker.date
-
+        
         // 종료 시간은 시작 이상, 같은 날의 끝 이하
         topCard.updatePickerBounds(dayStart: startOfDayKST(for: topCard.datePicker.date), dayEnd: dayEnd, startTime: start)
-
+        
         if topCard.endTimePicker.date < start {
             topCard.endTimePicker.date = start
         } else if topCard.endTimePicker.date > dayEnd {
             topCard.endTimePicker.date = dayEnd
         }
-
+        
         filterAndApplyCharts()
     }
     
     private func handleEndTimeChanged() {
         let start = topCard.startTimePicker.date
         let dayEnd = endOfDayKST(for: topCard.datePicker.date)
-
+        
         if topCard.endTimePicker.date < start {
             topCard.endTimePicker.date = start
         } else if topCard.endTimePicker.date > dayEnd {
             topCard.endTimePicker.date = dayEnd
         }
-
+        
         filterAndApplyCharts()
     }
     
@@ -296,17 +311,16 @@ final class SurfRecordViewController: BaseViewController {
         if !bottomCard.isMemoOpened {
             bottomCard.showMemoTextView()
             scrollView.isScrollEnabled = true
-            
+
             UIView.animate(withDuration: 0.25) {
                 self.view.layoutIfNeeded()
             } completion: { _ in
                 self.bottomCard.memoTextView.becomeFirstResponder()
-                // 입력창이 보이도록 스크롤
-                let rect = self.bottomCard.convert(self.bottomCard.memoTextView.frame, to: self.scrollView)
-                self.scrollView.scrollRectToVisible(rect.insetBy(dx: 0, dy: -20), animated: true)
+                // Scrolling is handled by requestScrollToMemo subscription
             }
         } else {
             bottomCard.memoTextView.becomeFirstResponder()
+            // Scrolling is handled by requestScrollToMemo subscription
         }
     }
     
@@ -475,19 +489,19 @@ private extension SurfRecordViewController {
         let pickerDate = editingRecord?.surfDate ?? baseDate
         let normalizedStart = combine(date: pickerDate, withTimeOf: startTime)
         let candidateEnd    = combine(date: pickerDate, withTimeOf: endTime)
-
+        
         // 같은 날짜 안에서만 허용 (하루를 넘길 수 없음)
         let dayStart = startOfDayKST(for: pickerDate)
         let dayEnd   = endOfDayKST(for: pickerDate)
-
+        
         // 시작/종료 값을 날짜 경계 내로 클램프
         let clampedStart = min(max(normalizedStart, dayStart), dayEnd)
         let clampedEnd   = min(max(candidateEnd, clampedStart), dayEnd)
-
+        
         // TopCard에 설정
         topCard.setupPickers(date: pickerDate, startTime: clampedStart, endTime: clampedEnd)
         topCard.updatePickerBounds(dayStart: dayStart, dayEnd: dayEnd, startTime: clampedStart)
-
+        
         filterAndApplyCharts() // ✅ 초기에도 필터 적용
     }
     
@@ -594,3 +608,4 @@ extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
     }
 }
+

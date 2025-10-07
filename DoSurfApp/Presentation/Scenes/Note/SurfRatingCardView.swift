@@ -80,8 +80,8 @@ final class SurfRatingCardView: UIView {
         trackContainerView.addSubview(trackLineView)
         
         titleLabel.snp.makeConstraints {
-            $0.top.equalToSuperview().offset(20)
-            $0.leading.equalToSuperview().offset(20)
+            $0.top.equalToSuperview()
+            $0.leading.equalToSuperview().offset(16)
         }
         
         trackContainerView.snp.makeConstraints {

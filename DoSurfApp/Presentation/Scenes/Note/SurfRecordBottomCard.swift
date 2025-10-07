@@ -31,6 +31,8 @@ final class SurfRecordBottomCard: UIView {
     
     // MARK: - Rx
     let memoButtonTapped = PublishRelay<Void>()
+    // Emits when the memo text view should be scrolled into view (e.g., when editing begins or memo opens)
+    let requestScrollToMemo = PublishRelay<Void>()
     private let disposeBag = DisposeBag()
     
     // MARK: - Initialization
@@ -58,7 +60,7 @@ final class SurfRecordBottomCard: UIView {
         containerStack.spacing = 12
         addSubview(containerStack)
         containerStack.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(12)
+            make.verticalEdges.equalToSuperview().inset(16)
         }
         
         // Rating
@@ -111,12 +113,33 @@ final class SurfRecordBottomCard: UIView {
         
         commentCard.addSubview(commentStack)
         commentStack.snp.makeConstraints { $0.edges.equalToSuperview() }
+        
+        commentTitle.snp.makeConstraints { make in
+            make.leading.equalTo(commentStack.snp.leading).inset(16)
+        }
+        
+        addMemoButton.snp.makeConstraints { make in
+            make.leading.equalTo(commentStack.snp.leading).inset(16)
+            make.trailing.equalTo(commentStack.snp.trailing).inset(16)
+        }
+        
+        memoTextView.snp.makeConstraints { make in
+            make.leading.equalTo(commentStack.snp.leading).inset(16)
+            make.trailing.equalTo(commentStack.snp.trailing).inset(16)
+        }
     }
     
     // MARK: - Bind
     private func bind() {
+        // Forward add memo button taps
         addMemoButton.rx.tap
             .bind(to: memoButtonTapped)
+            .disposed(by: disposeBag)
+
+        // When memo text view begins editing, request parent to scroll to it
+        memoTextView.rx.didBeginEditing
+            .map { }
+            .bind(to: requestScrollToMemo)
             .disposed(by: disposeBag)
     }
     
@@ -125,6 +148,8 @@ final class SurfRecordBottomCard: UIView {
         guard !isMemoOpened else { return }
         isMemoOpened = true
         memoTextView.isHidden = false
+        // Ask parent to scroll to the memo area
+        requestScrollToMemo.accept(())
     }
     
     func setupRating(_ rating: Int) {
@@ -137,6 +162,8 @@ final class SurfRecordBottomCard: UIView {
         memoTextView.text = memo
         memoTextView.isHidden = false
         isMemoOpened = true
+        // Ensure visibility when a memo is preset
+        requestScrollToMemo.accept(())
     }
     
     func getRating() -> Int {
@@ -150,3 +177,4 @@ final class SurfRecordBottomCard: UIView {
         return memoTextView.text
     }
 }
+
