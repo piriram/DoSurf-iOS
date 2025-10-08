@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		21356D8C2E9572B6003C84FA /* DoSurfWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39B2E8CDF8C00682B29 /* Differentiator */; };
 		2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39D2E8CDF8C00682B29 /* RxDataSources */; };
 		21E7A4952E843062008EFDDA /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 21E7A4942E843062008EFDDA /* .gitignore */; };
@@ -17,12 +18,44 @@
 		21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052E2E85358E004EFEE3 /* RxSwift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		21356D8A2E9572B6003C84FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21E7A4742E842FED008EFDDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 21356D812E9572B4003C84FA;
+			remoteInfo = "DoSurfWatch Watch App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		21356D902E9572B6003C84FA /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				21356D8C2E9572B6003C84FA /* DoSurfWatch Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DoSurfWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		21E7A47C2E842FED008EFDDA /* DoSurfApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DoSurfApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		21E7A4942E843062008EFDDA /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		21356D9B2E957910003C84FA /* Exceptions for "SharedKit" folder in "DoSurfWatch Watch App" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SurfSessionSummary.swift,
+			);
+			target = 21356D812E9572B4003C84FA /* DoSurfWatch Watch App */;
+		};
 		21FE051A2E851725004EFEE3 /* Exceptions for "DoSurfApp" folder in "DoSurfApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -33,6 +66,19 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		21356D832E9572B4003C84FA /* DoSurfWatch Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "DoSurfWatch Watch App";
+			sourceTree = "<group>";
+		};
+		21356D952E9578EF003C84FA /* SharedKit */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				21356D9B2E957910003C84FA /* Exceptions for "SharedKit" folder in "DoSurfWatch Watch App" target */,
+			);
+			path = SharedKit;
+			sourceTree = "<group>";
+		};
 		21E7A47E2E842FED008EFDDA /* DoSurfApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -44,6 +90,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		21356D7F2E9572B4003C84FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21E7A4792E842FED008EFDDA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -64,8 +117,10 @@
 		21E7A4732E842FED008EFDDA = {
 			isa = PBXGroup;
 			children = (
+				21356D952E9578EF003C84FA /* SharedKit */,
 				21E7A4942E843062008EFDDA /* .gitignore */,
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
+				21356D832E9572B4003C84FA /* DoSurfWatch Watch App */,
 				21E7A47D2E842FED008EFDDA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -74,6 +129,7 @@
 			isa = PBXGroup;
 			children = (
 				21E7A47C2E842FED008EFDDA /* DoSurfApp.app */,
+				21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -81,6 +137,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		21356D812E9572B4003C84FA /* DoSurfWatch Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21356D8D2E9572B6003C84FA /* Build configuration list for PBXNativeTarget "DoSurfWatch Watch App" */;
+			buildPhases = (
+				21356D7E2E9572B4003C84FA /* Sources */,
+				21356D7F2E9572B4003C84FA /* Frameworks */,
+				21356D802E9572B4003C84FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				21356D832E9572B4003C84FA /* DoSurfWatch Watch App */,
+			);
+			name = "DoSurfWatch Watch App";
+			packageProductDependencies = (
+			);
+			productName = "DoSurfWatch Watch App";
+			productReference = 21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
 		21E7A47B2E842FED008EFDDA /* DoSurfApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 21E7A48F2E842FEF008EFDDA /* Build configuration list for PBXNativeTarget "DoSurfApp" */;
@@ -88,12 +166,15 @@
 				21E7A4782E842FED008EFDDA /* Sources */,
 				21E7A4792E842FED008EFDDA /* Frameworks */,
 				21E7A47A2E842FED008EFDDA /* Resources */,
+				21356D902E9572B6003C84FA /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				21356D8B2E9572B6003C84FA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				21356D952E9578EF003C84FA /* SharedKit */,
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
 			);
 			name = DoSurfApp;
@@ -120,6 +201,9 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					21356D812E9572B4003C84FA = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					21E7A47B2E842FED008EFDDA = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -146,11 +230,19 @@
 			projectRoot = "";
 			targets = (
 				21E7A47B2E842FED008EFDDA /* DoSurfApp */,
+				21356D812E9572B4003C84FA /* DoSurfWatch Watch App */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		21356D802E9572B4003C84FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21E7A47A2E842FED008EFDDA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -162,6 +254,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		21356D7E2E9572B4003C84FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21E7A4782E842FED008EFDDA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -171,12 +270,95 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		21356D8B2E9572B6003C84FA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 21356D812E9572B4003C84FA /* DoSurfWatch Watch App */;
+			targetProxy = 21356D8A2E9572B6003C84FA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		21356D8E2E9572B6003C84FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "DoSurfWatch Watch App/DoSurfWatch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 557346W8SC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DoSurfWatch-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DoSurfWatch;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "이 앱은 서핑 운동 기록을 건강 앱에 저장하기 위해 건강 데이터를 씁니다.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = app.NewT.DoSurf;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf.watch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.6;
+			};
+			name = Debug;
+		};
+		21356D8F2E9572B6003C84FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "DoSurfWatch Watch App/DoSurfWatch Watch App.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 557346W8SC;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "DoSurfWatch-Watch-App-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = DoSurfWatch;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "이 앱은 서핑 운동 기록을 건강 앱에 저장하기 위해 건강 데이터를 씁니다.";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = app.NewT.DoSurf;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf.watch;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 9.6;
+			};
+			name = Release;
+		};
 		21E7A4902E842FEF008EFDDA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DoSurfApp/DoSurfApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 557346W8SC;
@@ -185,6 +367,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "두섭이";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -216,6 +399,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = DoSurfApp/DoSurfApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 557346W8SC;
@@ -224,6 +408,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "두섭이";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.sports";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -372,6 +557,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		21356D8D2E9572B6003C84FA /* Build configuration list for PBXNativeTarget "DoSurfWatch Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21356D8E2E9572B6003C84FA /* Debug */,
+				21356D8F2E9572B6003C84FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		21E7A4772E842FED008EFDDA /* Build configuration list for PBXProject "DoSurfApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
