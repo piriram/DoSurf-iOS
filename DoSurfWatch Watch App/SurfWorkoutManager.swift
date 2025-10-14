@@ -23,6 +23,9 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     @Published var distance: Double = 0
     @Published var isRunning: Bool = false
     @Published var sessionEnded: Bool = false
+    @Published var heartRate: Double = 0
+    @Published var activeCalories: Double = 0
+    @Published var strokeCount: Int = 0 // 패들링 횟수 추적
     
     // MARK: - Internal states
     private var startDate = Date()
@@ -30,6 +33,12 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     private var timer: Timer?
     var startTime: Date?
     private var isSessionActive = false  // 세션 상태 추적
+    private var _heartRateHistory: [Double] = [] // 심박수 기록용
+    
+    // 심박수 기록에 접근할 수 있는 공개 프로퍼티
+    var heartRateHistory: [Double] {
+        return _heartRateHistory
+    }
     
     private var isSimulator: Bool {
         #if targetEnvironment(simulator)
@@ -53,11 +62,18 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     // MARK: - Permissions (권한은 App 시작 시 한 번만 요청)
     func requestPermissions() async {
         do {
-            let toShare: Set = [HKObjectType.workoutType()]
+            let toShare: Set = [
+                HKObjectType.workoutType(),
+                HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
+                HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!
+            ]
             let toRead: Set = [
                 HKObjectType.quantityType(forIdentifier: .heartRate)!,
                 HKObjectType.quantityType(forIdentifier: .activeEnergyBurned)!,
-                HKObjectType.quantityType(forIdentifier: .distanceWalkingRunning)!
+                HKObjectType.quantityType(forIdentifier: .basalEnergyBurned)!,
+                HKObjectType.quantityType(forIdentifier: .distanceSwimming)!,
+                HKObjectType.quantityType(forIdentifier: .swimmingStrokeCount)!,
+                HKObjectType.workoutType()
             ]
             try await healthStore.requestAuthorization(toShare: toShare, read: toRead)
         } catch {
@@ -144,9 +160,14 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         session = nil
         builder = nil
         isSessionActive = false
+        _heartRateHistory.removeAll() // 심박수 기록 초기화
         
         DispatchQueue.main.async {
             self.isRunning = false
+            // 다른 메트릭들도 초기화
+            self.heartRate = 0
+            self.activeCalories = 0
+            self.strokeCount = 0
         }
     }
     
@@ -157,9 +178,32 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
                 // 시간 업데이트
                 self.elapsed = Date().timeIntervalSince(self.startDate)
                 
-                // 가상 거리 증가 (초당 약 1-3미터, 서핑 속도 시뮬레이션)
-                let speedVariation = Double.random(in: 1.0...3.0)
-                self.distance += speedVariation
+                // 서핑은 주기적인 활동 - 웨이브 라이딩과 패들링이 번갈아 나타남
+                let elapsedMinutes = self.elapsed / 60.0
+                let isRiding = Int(elapsedMinutes * 6) % 2 == 0 // 10초마다 라이딩/패들링 전환
+                
+                if isRiding {
+                    // 웨이브 라이딩: 빠른 속도, 높은 심박수
+                    let ridingSpeed = Double.random(in: 8.0...15.0) // 초당 8-15미터
+                    self.distance += ridingSpeed
+                    let currentHR = Double.random(in: 140...170)
+                    self.heartRate = currentHR
+                    self._heartRateHistory.append(currentHR)
+                    self.activeCalories += Double.random(in: 0.3...0.5)
+                } else {
+                    // 패들링: 느린 속도, 중간 심박수, 스트로크 카운트 증가
+                    let paddlingSpeed = Double.random(in: 1.0...3.0) // 초당 1-3미터
+                    self.distance += paddlingSpeed
+                    let currentHR = Double.random(in: 120...140)
+                    self.heartRate = currentHR
+                    self._heartRateHistory.append(currentHR)
+                    self.activeCalories += Double.random(in: 0.2...0.3)
+                    
+                    // 패들링할 때마다 스트로크 카운트 증가 (약 30% 확률)
+                    if Double.random(in: 0...1) < 0.3 {
+                        self.strokeCount += 1
+                    }
+                }
             }
         }
     }
@@ -267,8 +311,43 @@ extension SurfWorkoutManager: HKLiveWorkoutBuilderDelegate {
     // 필수 (데이터 타입 수집 콜백)
     func workoutBuilder(_ workoutBuilder: HKLiveWorkoutBuilder,
                         didCollectDataOf collectedTypes: Set<HKSampleType>) {
-        // 필요하면 심박/에너지/거리 등 처리
-        // 여기서는 Location 기반 거리로 충분하므로 비워둬도 OK
+        
+        for type in collectedTypes {
+            guard let quantityType = type as? HKQuantityType else { continue }
+            
+            // 최신 데이터 가져오기
+            let predicate = HKQuery.predicateForSamples(withStart: startTime, end: Date(), options: .strictStartDate)
+            let query = HKStatisticsQuery(quantityType: quantityType,
+                                        quantitySamplePredicate: predicate,
+                                        options: [.mostRecent]) { [weak self] _, result, error in
+                guard let result = result,
+                      let quantity = result.mostRecentQuantity() else { return }
+                
+                DispatchQueue.main.async {
+                    switch quantityType.identifier {
+                    case HKQuantityTypeIdentifier.heartRate.rawValue:
+                        let bpm = quantity.doubleValue(for: HKUnit.count().unitDivided(by: HKUnit.minute()))
+                        self?.heartRate = bpm
+                        self?._heartRateHistory.append(bpm) // 기록 저장
+                        
+                    case HKQuantityTypeIdentifier.activeEnergyBurned.rawValue:
+                        self?.activeCalories = quantity.doubleValue(for: HKUnit.kilocalorie())
+                        
+                    case HKQuantityTypeIdentifier.distanceSwimming.rawValue:
+                        let meters = quantity.doubleValue(for: HKUnit.meter())
+                        self?.distance = meters
+                        
+                    case HKQuantityTypeIdentifier.swimmingStrokeCount.rawValue:
+                        self?.strokeCount = Int(quantity.doubleValue(for: HKUnit.count()))
+                        
+                    default:
+                        break
+                    }
+                }
+            }
+            
+            healthStore.execute(query)
+        }
     }
 
     // 필수 (이벤트 수집 콜백)

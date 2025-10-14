@@ -14,6 +14,10 @@ struct WatchSurfSessionData: Codable {
     let startTime: Date
     let endTime: Date
     let waveCount: Int = 0
+    let maxHeartRate: Double
+    let avgHeartRate: Double
+    let activeCalories: Double
+    let strokeCount: Int
     
     var dictionary: [String: Any] {
         return [
@@ -21,7 +25,11 @@ struct WatchSurfSessionData: Codable {
             "duration": duration,
             "startTime": startTime.timeIntervalSince1970,
             "endTime": endTime.timeIntervalSince1970,
-            "waveCount": waveCount
+            "waveCount": waveCount,
+            "maxHeartRate": maxHeartRate,
+            "avgHeartRate": avgHeartRate,
+            "activeCalories": activeCalories,
+            "strokeCount": strokeCount
         ]
     }
 }
