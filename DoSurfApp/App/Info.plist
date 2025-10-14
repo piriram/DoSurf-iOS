@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ko</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>서핑 기록을 위한 위치 데이터를 입력받습니다.</string>
 	<key>CFBundleLocalizations</key>
 	<array>
 		<string>ko</string>
