@@ -6,10 +6,10 @@
 //
 
 import Foundation
-import Combine            // ✅ ObservableObject, @Published
+import Combine
 import HealthKit
 import CoreLocation
-import CoreMotion         // 가속도계, 자이로스코프 등
+import CoreMotion
 import WatchConnectivity
 
 final class SurfWorkoutManager: NSObject, ObservableObject {
@@ -133,7 +133,6 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         altimeter.stopRelativeAltitudeUpdates()
         print("🛑 Auto detection stopped")
     }
-    
     // MARK: - Data Processing
     private func processAltitudeData(_ data: CMAltitudeData) {
         let altitude = data.relativeAltitude.doubleValue
@@ -291,7 +290,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
             builder.beginCollection(withStart: startDate) { [weak self] success, error in
                 DispatchQueue.main.async {
                     self?.isRunning = success
-                    if let error = error { print("⚠️ beginCollection error:", error) }
+                    if let error { print("⚠️ beginCollection error:", error) }
                     
                     // 시뮬레이터에서는 타이머로 가상 데이터 생성
                     if self?.isSimulator == true && success {
@@ -558,8 +557,8 @@ extension SurfWorkoutManager: HKWorkoutSessionDelegate {
             // 수집 종료 → 피니시 → 요약 전송
             builder?.endCollection(withEnd: Date()) { [weak self] success, error in
                 self?.builder?.finishWorkout { _, finishError in
-                    if let error = error { print("⚠️ endCollection error:", error) }
-                    if let finishError = finishError { print("⚠️ finishWorkout error:", finishError) }
+                    if let error { print("⚠️ endCollection error:", error) }
+                    if let finishError { print("⚠️ finishWorkout error:", finishError) }
                     self?.sendSummaryToPhone()
                 }
             }

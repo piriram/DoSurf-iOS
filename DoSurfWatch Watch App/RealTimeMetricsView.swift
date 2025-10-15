@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+
 // MARK: - Real-time Surf Metrics View
 struct RealTimeMetricsView: View {
     @ObservedObject var manager: SurfWorkoutManager
