@@ -34,7 +34,7 @@ final class BeachSelectViewController: BaseViewController {
     private let storageService: SurfingRecordService = UserDefaultsManager() // 마지막 선택된 비치 id 저장/읽기
     
     // Persist last selected category index
-    private let lastCategoryIndexKey = "BeachSelectViewController.lastCategoryIndex" // UserDefaults 키 (마지막 카테고리 인덱스)
+    private let lastRegionsIndexKey = "BeachSelectViewController.lastCategoryIndex" // UserDefaults 키 (마지막 카테고리 인덱스)
     private var didEmitInitialCategorySelection = false // 초기 선택 이벤트 중복 방지 플래그
     
     // Subjects to emit initial selections programmatically
@@ -171,7 +171,7 @@ final class BeachSelectViewController: BaseViewController {
         output.categories
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] categories in
-                self?.applyCategories(categories)
+                self?.applyRegions(categories)
             })
             .disposed(by: disposeBag)
         
@@ -180,7 +180,7 @@ final class BeachSelectViewController: BaseViewController {
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] locations in
                 guard let self = self else { return }
-                self.applyLocations(locations)
+                self.applyBeaches(locations)
                 
                 // 저장소에서 현재 카테고리 내 저장된 비치 선택 id 복원 시도
                 if let savedID = self.storageService.readSelectedBeachID(),
@@ -209,7 +209,7 @@ final class BeachSelectViewController: BaseViewController {
                 let indexPath = IndexPath(row: index, section: 0)
                 self?.regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
                 // 마지막 선택된 카테고리 인덱스 저장 (UserDefaults)
-                UserDefaults.standard.set(index, forKey: self?.lastCategoryIndexKey ?? "BeachSelectViewController.lastCategoryIndex")
+                UserDefaults.standard.set(index, forKey: self?.lastRegionsIndexKey ?? "BeachSelectViewController.lastCategoryIndex")
             })
             .disposed(by: disposeBag)
         
@@ -341,7 +341,7 @@ final class BeachSelectViewController: BaseViewController {
     /// 1) 현재 배열 갱신 2) 스냅샷에 섹션과 아이템 추가 3) 애니메이션 없이 적용
     /// 4) UserDefaults에서 마지막 선택된 인덱스 복원 및 범위 클램프 5) 해당 행 선택 표시
     /// 6) 초기 선택 이벤트는 한 번만 ViewModel에 전달
-    private func applyCategories(_ categories: [CategoryDTO]) {
+    private func applyRegions(_ categories: [CategoryDTO]) {
         currentBeaches = categories
         var snapshot = RegionSnapshot()
         snapshot.appendSections([0])
@@ -349,7 +349,7 @@ final class BeachSelectViewController: BaseViewController {
         regionDataSource.apply(snapshot, animatingDifferences: false)
         
         if !categories.isEmpty {
-            let savedIndex = (UserDefaults.standard.object(forKey: lastCategoryIndexKey) as? Int) ?? 0
+            let savedIndex = (UserDefaults.standard.object(forKey: lastRegionsIndexKey) as? Int) ?? 0
             let clampedIndex = max(0, min(savedIndex, categories.count - 1))
             let indexPath = IndexPath(row: clampedIndex, section: 0)
             regionTableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
@@ -362,7 +362,7 @@ final class BeachSelectViewController: BaseViewController {
     
     /// 위치(비치) 배열 업데이트 및 스냅샷 적용
     /// 1) 배열 갱신 2) 섹션과 아이템 추가 3) 애니메이션과 함께 적용
-    private func applyLocations(_ locations: [BeachDTO]) {
+    private func applyBeaches(_ locations: [BeachDTO]) {
         currentRegions = locations
         var snapshot = BeachSnapshot()
         snapshot.appendSections([0])

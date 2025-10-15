@@ -196,7 +196,7 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
     ) -> Int? {
         let sky = skyCondition ?? 0
         let pty = precipitationType ?? 0
-
+        
         // 1) Precipitation priority
         if pty != 0 {
             switch pty {
@@ -205,14 +205,14 @@ final class RxFirestoreBeachRepository: RxBeachRepository {
             default: break
             }
         }
-
+        
         // 2) Fog heuristic: humidity ≥ 95 and wind ≤ 2.0 m/s
         let h = humidity ?? -1
         let w = windSpeed ?? Double.greatestFiniteMagnitude
         if h >= 95, w <= 2.0 {
             return WeatherType.fog.rawValue
         }
-
+        
         // 3) Sky-based
         switch sky {
         case 1:
