@@ -14,7 +14,7 @@ final class RecordHistoryViewController: BaseViewController {
         let button = UIButton()
         button.setTitle("\(SurfBeach.songjeong.region.displayName) \(SurfBeach.songjeong.name)해변", for: .normal)
         button.setTitleColor(.black.withAlphaComponent(0.7), for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        button.titleLabel?.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.semibold)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
         button.tintColor = .label
         button.semanticContentAttribute = .forceRightToLeft
@@ -46,7 +46,7 @@ final class RecordHistoryViewController: BaseViewController {
     
     private lazy var tableView: UITableView = {
         let tableView = UITableView(frame: .zero, style: .plain)
-        tableView.backgroundColor = .systemBackground
+        tableView.backgroundColor = .backgroundWhite
         tableView.separatorStyle = .none
         tableView.contentInset = UIEdgeInsets(top: 8, left: 0, bottom: 8, right: 0)
         tableView.register(RecordHistoryCell.self, forCellReuseIdentifier: RecordHistoryCell.identifier)
@@ -148,12 +148,12 @@ final class RecordHistoryViewController: BaseViewController {
         filterScrollView.snp.makeConstraints {
             $0.top.equalTo(locationButton.snp.bottom).offset(12)
             $0.leading.trailing.equalToSuperview()
-            $0.height.equalTo(36)
+            $0.height.equalTo(28)
         }
         
         filterStackView.snp.makeConstraints {
-            $0.edges.equalToSuperview()
-            $0.height.equalToSuperview()
+            $0.horizontalEdges.equalToSuperview()
+            $0.centerY.equalToSuperview()
         }
         
         tableView.snp.makeConstraints {
@@ -588,8 +588,8 @@ final class RecordHistoryViewController: BaseViewController {
     
     private func showSortMenu() {
         let alertController = UIAlertController(
-            title: "정렬",
-            message: "정렬 방식을 선택하세요",
+            title: nil,
+            message: nil,
             preferredStyle: .actionSheet
         )
         
@@ -742,13 +742,13 @@ final class FilterButton: UIButton {
         setTitle(title, for: .normal)
         setTitleColor(.label, for: .normal)
         setTitleColor(.white, for: .selected)
-        titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
+        titleLabel?.font = .systemFont(ofSize: FontSize.body2Size, weight: .medium)
         
         backgroundColor = .white
-        layer.cornerRadius = 18
+        layer.cornerRadius = 14
         layer.borderWidth = 0.75
         layer.borderColor = UIColor.black.withAlphaComponent(0.1).cgColor
-        contentEdgeInsets = UIEdgeInsets(top: 4, left: 10, bottom: 4, right: 10)
+        contentEdgeInsets = UIEdgeInsets(top: 2, left: 12, bottom: 2, right: 12)
         
         if hasDropdown {
             setImage(UIImage(systemName: "chevron.down"), for: .normal)
@@ -756,6 +756,13 @@ final class FilterButton: UIButton {
             imageEdgeInsets = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: -4)
             tintColor = .lableBlack
         }
+        
+        sizeToFit()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(width: size.width, height: 28)
     }
     
     override var isSelected: Bool {
@@ -765,6 +772,7 @@ final class FilterButton: UIButton {
             layer.borderColor = isSelected ? UIColor.clear.cgColor : UIColor.black.withAlphaComponent(0.1).cgColor
         }
     }
+
 }
 
 // MARK: - EmptyStateView
@@ -815,4 +823,3 @@ final class EmptyStateView: UIView {
 extension Notification.Name {
     static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }
-
