@@ -22,7 +22,7 @@ protocol SurfingRecordService {
 }
 
 // MARK: - Implementation
-final class UserDefaultsService: SurfingRecordService {
+final class UserDefaultsManager: SurfingRecordService {
     
     // MARK: - Keys
     private struct Keys {

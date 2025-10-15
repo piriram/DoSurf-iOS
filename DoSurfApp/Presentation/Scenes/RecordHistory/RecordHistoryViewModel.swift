@@ -55,7 +55,7 @@ final class RecordHistoryViewModel {
     private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: nil)
     
     // MARK: - Initializer
-    init(useCase: SurfRecordUseCaseProtocol = SurfRecordUseCase(), storageService: SurfingRecordService = UserDefaultsService()) {
+    init(useCase: SurfRecordUseCaseProtocol = SurfRecordUseCase(), storageService: SurfingRecordService = UserDefaultsManager()) {
         self.useCase = useCase
         self.storageService = storageService
     }

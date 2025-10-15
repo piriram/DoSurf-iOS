@@ -94,7 +94,7 @@ struct CategoryDTO: Sendable, Hashable {
     }
 }
 
-struct LocationDTO: Sendable, Hashable {
+struct BeachDTO: Sendable, Hashable {
     let id: String           // "1001", "2001", "3001", "4001"
     let region: BeachRegion
     let place: String        // "죽도", "월포", "중문", "송정"
@@ -108,7 +108,7 @@ struct LocationDTO: Sendable, Hashable {
         return SurfBeach(rawValue: beachID)
     }
     
-    static func == (lhs: LocationDTO, rhs: LocationDTO) -> Bool {
+    static func == (lhs: BeachDTO, rhs: BeachDTO) -> Bool {
         lhs.id == rhs.id
     }
     
