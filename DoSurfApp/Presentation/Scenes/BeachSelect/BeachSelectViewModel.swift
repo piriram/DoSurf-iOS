@@ -145,7 +145,11 @@ final class BeachSelectViewModel {
         
         let mockLocations = [
             LocationDTO(id: "1001", region: .gangreung, place: "죽도 해변"),
+            LocationDTO(id: "1002", region: .gangreung, place: "사천진 해변"),
+            LocationDTO(id: "1003", region: .gangreung, place: "사근진 해변"),
+            LocationDTO(id: "1004", region: .gangreung, place: "사천 해변"),
             LocationDTO(id: "2001", region: .pohang, place: "월포 해변"),
+            LocationDTO(id: "2002", region: .pohang, place: "신항만 해변"),
             LocationDTO(id: "3001", region: .jeju, place: "중문 해변"),
             LocationDTO(id: "4001", region: .busan, place: "송정 해변"),
         ]

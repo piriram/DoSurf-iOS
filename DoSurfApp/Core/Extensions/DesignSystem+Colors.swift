@@ -70,6 +70,6 @@ extension UIColor {
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
     static var backgroundGray: UIColor { UIColor(hex: 0xDEDFE4) }  // #DEDFE4
     static var backgroundSkyblue: UIColor { UIColor(hex: 0xCCDBF4) } // #CCDBF4
-    static var backgroundWhite: UIColor { UIColor(hex:0xEFF1F6)}
+    static var backgroundWhite: UIColor { UIColor(hex:0xEEF1F6)}
     static var backgroundHeader: UIColor { UIColor(hex:0xE5EDF9)}
 }
