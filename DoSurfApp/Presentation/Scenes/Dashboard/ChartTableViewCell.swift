@@ -59,7 +59,7 @@ class ChartTableViewCell: UITableViewCell {
         selectionStyle = .none
         
         // Time Label - Typography 적용
-        timeLabel.applyTypography(.body2Medium, color: UIColor(white: 1, alpha: 0.7))
+        timeLabel.applyTypography(.captionMedium, color: UIColor(white: 1, alpha: 0.7))
         timeLabel.textAlignment = .center
         
         // Wind Components
@@ -67,7 +67,7 @@ class ChartTableViewCell: UITableViewCell {
         windIconImageView.contentMode = .scaleAspectFit
         
         // Wind Speed Label - Typography 적용
-        windSpeedLabel.applyTypography(.body1Medium, color: .label)
+        windSpeedLabel.applyTypography(.body2Medium, color: .lableBlack)
         windSpeedLabel.adjustsFontSizeToFitWidth = true
         windSpeedLabel.minimumScaleFactor = 0.8
         
@@ -77,13 +77,12 @@ class ChartTableViewCell: UITableViewCell {
         waveIconImageView.contentMode = .scaleAspectFit
         
         // Wave Height Label - Typography 적용
-//        waveHeightLabel.applyTypography(.body1Medium, color: .label)
-        waveHeightLabel.font = UIFont.systemFont(ofSize: 18, weight: .medium)
+        waveHeightLabel.applyTypography(.body2Medium, color: .lableBlack)
         waveHeightLabel.adjustsFontSizeToFitWidth = true
         waveHeightLabel.minimumScaleFactor = 0.8
         
         // Wave Speed Label - Typography 적용 (더 작은 텍스트용)
-        waveSpeedLabel.applyTypography(.captionMedium, color: .label)
+        waveSpeedLabel.applyTypography(.body2Medium, color: .lableBlack)
         waveSpeedLabel.adjustsFontSizeToFitWidth = true
         waveSpeedLabel.minimumScaleFactor = 0.7
         
@@ -92,12 +91,12 @@ class ChartTableViewCell: UITableViewCell {
         weatherIconImageView.tintColor = .systemOrange
         
         // Air Temperature Label - Typography 적용
-        airTemperatureLabel.applyTypography(.body1Medium, color: .label)
+        airTemperatureLabel.applyTypography(.body2Medium, color: .lableBlack)
         airTemperatureLabel.adjustsFontSizeToFitWidth = true
         airTemperatureLabel.minimumScaleFactor = 0.8
         
         // Water Temperature Label - Typography 적용
-        waterTemperatureLabel.applyTypography(.body1Medium, color: .label)
+        waterTemperatureLabel.applyTypography(.body2Medium, color: .lableBlack)
         waterTemperatureLabel.adjustsFontSizeToFitWidth = true
         waterTemperatureLabel.minimumScaleFactor = 0.8
         
