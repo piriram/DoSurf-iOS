@@ -204,10 +204,13 @@ class DashboardViewController: BaseViewController {
     }
     
     private func pushBeachChoose() {
-        let viewModel = BeachSelectViewModel(fetchBeachDataUseCase: DIContainer.shared.makeFetchBeachDataUseCase())
+        let viewModel = BeachSelectViewModel(
+            fetchBeachDataUseCase: DIContainer.shared.makeFetchBeachDataUseCase(),
+            fetchBeachListUseCase: DIContainer.shared.makeFetchBeachListUseCase()
+        )
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
-        vc.onBeachSelected = { [weak self] locationDTO in
+        vc.onBeachSelected = { [weak self] (locationDTO: BeachDTO) in
             self?.beachSelectedSubject.onNext(locationDTO.id)
             // Broadcast selection change so RecordHistory can pick it up when user switches tabs
             NotificationCenter.default.post(name: .selectedBeachIDDidChange, object: nil, userInfo: ["beachID": locationDTO.id])
@@ -237,4 +240,3 @@ extension DIContainer {
         DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
     }
 }
-
