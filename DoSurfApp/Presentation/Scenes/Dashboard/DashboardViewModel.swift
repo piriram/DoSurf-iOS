@@ -39,8 +39,18 @@ final class DashboardViewModel {
     
     private let disposeBag = DisposeBag()
     
-    // 모든 비치 평균 계산 대상 ID 목록 (필요 시 확장)
-    private let allBeachIDs: [String] = ["1001", "2001", "3001", "4001"]
+    // 모든 비치 평균 계산 시 사용될 **고정된 지역-해변 매핑**
+    // findRegion() 을 호출하지 않고, 권한 오류(alreadyExists, permission) 회피
+    private let knownBeaches: [(beachId: String, region: String)] = [
+        ("1001", "gangreung"),
+        ("1002", "gangreung"),
+        ("1003", "gangreung"),
+        ("1004", "gangreung"),
+        ("2001", "pohang"),
+        ("2002", "pohang"),
+        ("3001", "jeju"),
+        ("4001", "busan")
+    ]
     
     // MARK: - Initialize
     init(fetchBeachDataUseCase: FetchBeachDataUseCase, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
@@ -66,6 +76,7 @@ final class DashboardViewModel {
             input.refreshTriggered.withLatestFrom(currentBeachId.asObservable())
         )
         
+        // 단일 해변(현재 선택) 데이터 로드: 기존 execute(beachId:) 사용 (변경 없음)
         let beachData = loadTrigger
             .do(onNext: { [weak self] _ in
                 self?.isLoadingRelay.accept(true)
@@ -95,15 +106,26 @@ final class DashboardViewModel {
             .share(replay: 1)
         
         // 모든 비치의 최신 데이터를 기준으로 평균값 계산
+        // ⚠️ findRegion() 호출 제거 → 알려진 매핑 기반으로 직접 조회
         let dashboardCards = loadTrigger
             .flatMapLatest { [weak self] _ -> Observable<[DashboardCardData]> in
                 guard let self = self else { return .just([]) }
-                let requests: [Single<BeachData>] = self.allBeachIDs.map { self.fetchBeachDataUseCase.execute(beachId: $0) }
+                
+                // 각 (beachId, region) 를 이용해 직접 Fetch
+                let requests: [Single<BeachData?>] = self.knownBeaches.map { pair in
+                    self.fetchBeachDataDirectly(beachId: pair.beachId, region: pair.region)
+                        .map { $0 as BeachData? }
+                        .catch { _ in .just(nil) }  // 일부 실패해도 전체 평균은 계산
+                }
+                
                 return Single.zip(requests)
                     .asObservable()
                     .map { beachDatas -> [DashboardCardData] in
                         // 각 비치의 최신 차트(가장 최근 시간)를 사용
-                        let latestCharts: [Chart] = beachDatas.compactMap { $0.charts.last }
+                        let latestCharts: [Chart] = beachDatas
+                            .compactMap { $0 }
+                            .compactMap { $0.charts.last }
+                        
                         guard !latestCharts.isEmpty else {
                             return [
                                 DashboardCardData(
@@ -153,7 +175,7 @@ final class DashboardViewModel {
                         ]
                     }
                     .catch { error in
-                        print("Failed to fetch all beaches for averages: \(error)")
+                        print("Failed to fetch known beaches for averages: \(error)")
                         let zeroCards: [DashboardCardData] = [
                             DashboardCardData(
                                 type: .wind,
@@ -268,6 +290,13 @@ final class DashboardViewModel {
     }
     
     // MARK: - Private Helpers
+    
+    /// 지역을 이미 아는 경우, findRegion()을 거치지 않고 직접 비치 데이터를 가져옵니다.
+    /// FetchBeachDataUseCase 에 `execute(beachId:region:)`가 구현되어 있어야 합니다.
+    private func fetchBeachDataDirectly(beachId: String, region: String) -> Single<BeachData> {
+        return fetchBeachDataUseCase.execute(beachId: beachId, region: region)
+    }
+    
     // 원형 평균(벡터 평균)으로 각도(degree) 평균 계산 (0~360°)
     private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {
         guard !degrees.isEmpty else { return nil }
@@ -322,6 +351,7 @@ final class DashboardViewModel {
         print("[WeatherDebug] \(tag) total=\(charts.count) counts=\(counts) icons=\(iconSet) samples=\(samples)")
     }
 }
+
 // MARK: - Weather Type Enum
 enum WeatherType: Int, CaseIterable, Codable {
     case clear = 1
@@ -408,7 +438,7 @@ extension WeatherType {
                 return .unknown
             }
         }
-
+        
         // 2) 안개 휴리스틱 (습도 높고, 바람 약할 때)
         //    임계값은 필요시 조정 가능: 습도 ≥ 95%, 풍속 ≤ 2.0 m/s
         let h = humidity ?? -1
@@ -416,7 +446,7 @@ extension WeatherType {
         if h >= 95, w <= 2.0 {
             return .fog
         }
-
+        
         // 3) 하늘 상태 기반
         switch skyCondition {
         case 1: // 맑음
@@ -453,10 +483,10 @@ extension WeatherType {
  
  // 예제 2: Firestore 데이터로 계산
  let firestoreData: [String: Any] = [
-     "sky_condition": 3,
-     "precipitation_type": 0,
-     "wind_speed": 3.3,
-     // ... 기타 필드들
+ "sky_condition": 3,
+ "precipitation_type": 0,
+ "wind_speed": 3.3,
+ // ... 기타 필드들
  ]
  
  let weatherType = WeatherType.from(firestoreData: firestoreData)
@@ -496,4 +526,3 @@ extension WeatherType {
  SKY 4 → WeatherType.cloudy
  
  */
-
