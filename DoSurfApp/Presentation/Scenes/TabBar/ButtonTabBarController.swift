@@ -37,7 +37,8 @@ final class ButtonTabBarController: UIViewController {
         let repository = SurfRecordRepository()
         let useCase = SurfRecordUseCase(repository: repository)
         let viewModel = RecordHistoryViewModel(useCase: useCase, storageService: storageService)
-        let vc = RecordHistoryViewController(viewModel: viewModel)
+        let fetchBeachListUseCase = DIContainer.shared.makeFetchBeachListUseCase()
+        let vc = RecordHistoryViewController(viewModel: viewModel, fetchBeachListUseCase: fetchBeachListUseCase)
         vc.title = "기록 차트"
         return vc
     }()
@@ -348,6 +349,7 @@ extension ButtonTabBarController: UINavigationControllerDelegate {
         }
     }
 }
+
 
 
 
