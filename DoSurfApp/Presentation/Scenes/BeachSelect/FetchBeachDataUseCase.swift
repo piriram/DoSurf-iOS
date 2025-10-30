@@ -10,40 +10,26 @@ import FirebaseFirestore
 
 // MARK: - UseCase
 protocol FetchBeachDataUseCase {
-    /// 지역을 탐색해서(beachId → region) 가져오는 기본 메서드
-    func execute(beachId: String) -> Single<BeachData>
-    /// 지역을 이미 알고 있을 때 직접 가져오는 메서드 (findRegion() 미호출)
+    /// beachId와 region을 알고 있을 때 사용하는 메서드
     func execute(beachId: String, region: String) -> Single<BeachData>
 }
 
 final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
     private let repository: RxBeachRepository
-    private let knownRegions: [String]
     
-    init(
-        repository: RxBeachRepository,
-        knownRegions: [String] = BeachRegion.allCases.map { $0.rawValue }
-    ) {
+    init(repository: RxBeachRepository) {
         self.repository = repository
-        self.knownRegions = knownRegions
     }
     
-    // MARK: - Execute (auto region lookup)
-    func execute(beachId: String) -> Single<BeachData> {
-        return repository.findRegion(for: beachId, among: knownRegions)
-            .flatMap { [weak self] foundRegion -> Single<BeachData> in
-                guard let self = self, let region = foundRegion else {
-                    return .error(FirebaseAPIError.beachNotFoundInAnyRegion(beachId: beachId))
-                }
-                return self.fetch(beachId: beachId, region: region)
-            }
-            .catch { error in .error(FirebaseAPIError.map(error)) }
-    }
-    
-    // MARK: - Execute (known region, no findRegion)
+    // MARK: - Execute
     func execute(beachId: String, region: String) -> Single<BeachData> {
         return fetch(beachId: beachId, region: region)
-            .catch { error in .error(FirebaseAPIError.map(error)) }
+            .catch { error in
+                if let apiError = error as? FirebaseAPIError {
+                    return .error(apiError)
+                }
+                return .error(FirebaseAPIError.map(error))
+            }
     }
     
     // MARK: - Private
@@ -73,7 +59,7 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
 }
 
 // MARK: - Error
-enum FirebaseAPIError: Error, LocalizedError, Equatable {
+enum FirebaseAPIError: Error, LocalizedError {
     case notFound
     case permissionDenied
     case unauthenticated
@@ -139,7 +125,8 @@ enum FirebaseAPIError: Error, LocalizedError, Equatable {
     }
 }
 
-extension FirebaseAPIError {
+// MARK: - Equatable Conformance
+extension FirebaseAPIError: Equatable {
     static func == (lhs: FirebaseAPIError, rhs: FirebaseAPIError) -> Bool {
         switch (lhs, rhs) {
         case (.notFound, .notFound),
