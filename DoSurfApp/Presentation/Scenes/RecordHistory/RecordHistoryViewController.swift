@@ -12,7 +12,7 @@ final class RecordHistoryViewController: BaseViewController {
     // MARK: - UI Components
     private let locationButton: UIButton = {
         let button = UIButton()
-        button.setTitle("\(SurfBeach.songjeong.region.displayName) \(SurfBeach.songjeong.name)해변", for: .normal)
+        button.setTitle("전체 해변", for: .normal)
         button.setTitleColor(.black.withAlphaComponent(0.7), for: .normal)
         button.titleLabel?.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.semibold)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
@@ -59,9 +59,10 @@ final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - Properties
     private let viewModel: RecordHistoryViewModel
+    private let fetchBeachListUseCase: FetchBeachListUseCase
     private let disposeBag = DisposeBag()
     
-    private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: SurfBeach.songjeong.rawValue)
+    private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: nil)
     private let ratingFilterSubject = PublishSubject<RecordFilter>()
     private let dateFilterSubject = PublishSubject<RecordFilter>()
     private var customStartDate: Date?
@@ -69,9 +70,13 @@ final class RecordHistoryViewController: BaseViewController {
     private let surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()
     private let storageService: SurfingRecordService = UserDefaultsManager()
     
+    // 백엔드에서 가져온 해변 목록
+    private var allBeaches: [BeachDTO] = []
+    
     // MARK: - Initializer
-    init(viewModel: RecordHistoryViewModel) {
+    init(viewModel: RecordHistoryViewModel, fetchBeachListUseCase: FetchBeachListUseCase) {
         self.viewModel = viewModel
+        self.fetchBeachListUseCase = fetchBeachListUseCase
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -82,6 +87,9 @@ final class RecordHistoryViewController: BaseViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         NotificationCenter.default.addObserver(self, selector: #selector(handleApplyFilterNotification(_:)), name: .recordHistoryApplyFilterRequested, object: nil)
+        
+        // 해변 목록 로드
+        loadBeachList()
         
         // Seed initial selected beach from persistent storage
         if let saved = storageService.readSelectedBeachID(), let id = Int(saved) {
@@ -180,7 +188,7 @@ final class RecordHistoryViewController: BaseViewController {
         let editSubject = PublishSubject<NSManagedObjectID>()
         
         let input = RecordHistoryViewModel.Input(
-            viewDidLoad: Observable.just(()) ,
+            viewDidLoad: Observable.just(()),
             filterSelection: Observable.merge(
                 allFilterButton.rx.tap.map { RecordFilter.all },
                 pinnedFilterButton.rx.tap.map { RecordFilter.pinned },
@@ -248,27 +256,32 @@ final class RecordHistoryViewController: BaseViewController {
     
     // MARK: - Helper Methods
     
+    private func loadBeachList() {
+        fetchBeachListUseCase.executeAll()
+            .observe(on: MainScheduler.instance)
+            .subscribe(onSuccess: { [weak self] beaches in
+                self?.allBeaches = beaches
+            }, onFailure: { error in
+                print("Failed to load beach list: \(error)")
+            })
+            .disposed(by: disposeBag)
+    }
+    
     private func scrollTableViewToTop(animated: Bool = true) {
-        // Scroll to the very top, accounting for adjusted content inset
         let topOffsetY = -tableView.adjustedContentInset.top
         tableView.setContentOffset(CGPoint(x: 0, y: topOffsetY), animated: animated)
     }
     
-    /// 모든 필터를 기본 상태(전체)로 초기화
     func resetAllFilters() {
-        // UI 초기화
         updateFilterButtons(selectedFilter: .all)
         sortButton.setTitle("최신순", for: .normal)
         
-        // 내부 상태 초기화
         customStartDate = nil
         customEndDate = nil
         
-        // ViewModel 입력으로 전달
         ratingFilterSubject.onNext(.all)
         dateFilterSubject.onNext(.all)
         
-        // 사용자가 '전체' 버튼을 누른 것과 동일하게 처리
         allFilterButton.sendActions(for: .touchUpInside)
     }
     
@@ -323,12 +336,10 @@ final class RecordHistoryViewController: BaseViewController {
             updateFilterButtons(selectedFilter: .pinned)
             ratingFilterSubject.onNext(.all)
             dateFilterSubject.onNext(.all)
-            // Simulate user selecting pinned filter
             pinnedFilterButton.sendActions(for: .touchUpInside)
         case "all":
             resetAllFilters()
         default:
-            // no-op
             break
         }
     }
@@ -414,10 +425,8 @@ final class RecordHistoryViewController: BaseViewController {
     private func handleMemoTap(for viewModel: RecordCardViewModel) {
         let currentMemo = viewModel.memo
         if (currentMemo?.isEmpty ?? true) {
-            // 메모가 없으면 바로 편집기로 이동
             presentMemoEditor(for: viewModel, initialText: nil)
         } else {
-            // 메모가 있으면 보기/편집 선택
             let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
             let viewAction = UIAlertAction(title: "메모 보기", style: .default) { [weak self] _ in
                 self?.showMemoDetail(for: viewModel)
@@ -429,7 +438,6 @@ final class RecordHistoryViewController: BaseViewController {
             sheet.addAction(viewAction)
             sheet.addAction(editAction)
             sheet.addAction(cancel)
-            // iPad popover anchor
             if let pop = sheet.popoverPresentationController {
                 pop.sourceView = self.weatherFilterButton
                 pop.sourceRect = self.weatherFilterButton.bounds
@@ -478,9 +486,7 @@ final class RecordHistoryViewController: BaseViewController {
             }
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] in
-                // Broadcast global change so all views reload
                 NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
-                // 목록 갱신
                 if let relay = self?.selectedBeachIDRelay { relay.accept(relay.value) }
                 let alert = UIAlertController(title: "메모 저장", message: "메모가 저장되었습니다.", preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "확인", style: .default))
@@ -500,7 +506,6 @@ final class RecordHistoryViewController: BaseViewController {
                     self.showErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
                     return
                 }
-                // 편집 모드로 SurfRecordViewController 구성
                 let editorVC = SurfRecordViewController(editing: record)
                 editorVC.title = "기록 수정"
                 editorVC.hidesBottomBarWhenPushed = true
@@ -518,7 +523,8 @@ final class RecordHistoryViewController: BaseViewController {
     }
     
     private func updateLocationButtonTitle(for beachID: Int) {
-        if let beach = SurfBeach(rawValue: beachID) {
+        let beach = allBeaches.first { Int($0.id) == beachID }
+        if let beach = beach {
             locationButton.setTitle(beach.displayName, for: .normal)
         } else {
             locationButton.setTitle("전체 해변", for: .normal)
@@ -546,7 +552,6 @@ final class RecordHistoryViewController: BaseViewController {
         guard let idStr = note.userInfo?["beachID"] as? String, let id = Int(idStr) else { return }
         selectedBeachIDRelay.accept(id)
         updateLocationButtonTitle(for: id)
-        // Scroll to top when beach changes (external change)
         scrollTableViewToTop(animated: true)
     }
     
@@ -557,7 +562,6 @@ final class RecordHistoryViewController: BaseViewController {
             preferredStyle: .actionSheet
         )
         
-        // '전체' 옵션 추가
         let allAction = UIAlertAction(title: "전체", style: .default) { [weak self] _ in
             guard let self = self else { return }
             self.locationButton.setTitle("전체 해변", for: .normal)
@@ -566,18 +570,17 @@ final class RecordHistoryViewController: BaseViewController {
         }
         alertController.addAction(allAction)
         
-        SurfBeach.allCases.forEach { beach in
-            let action = UIAlertAction(title: beach.name, style: .default) { [weak self] _ in
-                guard let self = self else { return }
+        allBeaches.forEach { beach in
+            let action = UIAlertAction(title: beach.displayName, style: .default) { [weak self] _ in
+                guard let self = self, let beachID = Int(beach.id) else { return }
                 self.locationButton.setTitle(beach.displayName, for: .normal)
-                self.selectedBeachIDRelay.accept(beach.rawValue)
+                self.selectedBeachIDRelay.accept(beachID)
                 self.scrollTableViewToTop(animated: true)
             }
             alertController.addAction(action)
         }
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         
-        // iPad 팝오버 앵커 지정
         if let pop = alertController.popoverPresentationController {
             pop.sourceView = locationButton
             pop.sourceRect = locationButton.bounds
@@ -604,7 +607,6 @@ final class RecordHistoryViewController: BaseViewController {
             let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
                 guard let self = self else { return }
                 self.sortButton.setTitle(title, for: .normal)
-                // Scroll to top when sort changes
                 self.scrollTableViewToTop(animated: true)
             }
             alertController.addAction(action)
@@ -661,7 +663,6 @@ final class RecordHistoryViewController: BaseViewController {
             alertController.addAction(action)
         }
         
-        // 사용자 지정 항목 (Popover로 표시)
         let customAction = UIAlertAction(title: "사용자 지정…", style: .default) { [weak self, weak alertController] _ in
             guard let self = self else { return }
             let pickerVC = DateRangePickerViewController()
@@ -688,7 +689,6 @@ final class RecordHistoryViewController: BaseViewController {
                 pop.delegate = self
             }
             
-            // 먼저 액션시트를 닫고, 다음 런루프에서 팝오버 표시
             alertController?.dismiss(animated: true)
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
@@ -702,7 +702,6 @@ final class RecordHistoryViewController: BaseViewController {
         
         alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
         
-        // iPad 팝오버 앵커 지정 (액션시트)
         if let pop = alertController.popoverPresentationController {
             pop.sourceView = weatherFilterButton
             pop.sourceRect = weatherFilterButton.bounds
