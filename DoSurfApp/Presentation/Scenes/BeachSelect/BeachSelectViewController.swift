@@ -20,7 +20,6 @@ final class BeachSelectViewController: BaseViewController {
     private let viewModel: BeachSelectViewModel
     private let disposeBag = DisposeBag()
     private let storageService: SurfingRecordService = UserDefaultsManager()
-    var initialSelectedBeach: BeachDTO?
     private let lastRegionsIndexKey = "BeachSelectViewController.lastCategoryIndex"
     private var didEmitInitialCategorySelection = false
     

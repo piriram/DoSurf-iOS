@@ -245,7 +245,8 @@ class DashboardViewController: BaseViewController {
     private func pushBeachChoose() {
         let viewModel = BeachSelectViewModel(
             fetchBeachDataUseCase: DIContainer.shared.makeFetchBeachDataUseCase(),
-            fetchBeachListUseCase: DIContainer.shared.makeFetchBeachListUseCase()
+            fetchBeachListUseCase: DIContainer.shared.makeFetchBeachListUseCase(),
+            initialSelectedBeach: currentBeach
         )
         let vc = BeachSelectViewController(viewModel: viewModel)
         vc.hidesBottomBarWhenPushed = true
