@@ -4,12 +4,12 @@ import RxSwift
 import RxCocoa
 
 // MARK: - ViewController
-final class SurfRecordViewController: BaseViewController {
+final class NoteViewController: BaseViewController {
     // UI
     private let scrollView = UIScrollView()
     private let content = UIStackView()
-    private let topCard = SurfRecordTopCard()
-    private let bottomCard = RecordBottomCardView()
+    private let topCard = NoteTopCardView()
+    private let bottomCard = NoteBottomCardView()
     private let saveButton = UIButton(type: .system)
     
     private var charts: [Chart] = []
@@ -462,7 +462,7 @@ final class SurfRecordViewController: BaseViewController {
 }
 
 // MARK: - Initial Time Setup & Filtering
-private extension SurfRecordViewController {
+private extension NoteViewController {
     func setupPickersWithInitialTimes(start: Date?, end: Date?) {
         let now = Date()
         var baseDate = start ?? now
@@ -608,7 +608,7 @@ private extension SurfRecordViewController {
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate
-extension SurfRecordViewController: UITableViewDataSource, UITableViewDelegate {
+extension NoteViewController: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int { 1 }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int { charts.count }
     

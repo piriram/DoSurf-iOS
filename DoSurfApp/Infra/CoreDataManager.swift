@@ -1,8 +1,8 @@
 import Foundation
 import CoreData
 
-final class CoreDataStack {
-    static let shared = CoreDataStack()
+final class CoreDataManager {
+    static let shared = CoreDataManager()
     let persistentContainer: NSPersistentContainer
     var viewContext: NSManagedObjectContext { persistentContainer.viewContext }
     

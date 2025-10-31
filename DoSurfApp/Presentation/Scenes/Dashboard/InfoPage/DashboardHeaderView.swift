@@ -88,8 +88,8 @@ final class DashboardHeaderView: UIView {
         return view
     }()
     
-    private lazy var dashboardPageView: DashboardPageView = {
-        let pageView = DashboardPageView()
+    private lazy var dashboardPageView: PagenationView = {
+        let pageView = PagenationView()
         return pageView
     }()
     
@@ -266,7 +266,7 @@ final class DashboardHeaderView: UIView {
     
     @objc private func handleInfoTapped() {
         guard let vc = findViewController() else { return }
-        let viewController = InfoSheetViewController()
+        let viewController = DashboardGuideViewController()
         viewController.modalPresentationStyle = .pageSheet
         if let sheet = viewController.sheetPresentationController {
             sheet.detents = [.medium()]
