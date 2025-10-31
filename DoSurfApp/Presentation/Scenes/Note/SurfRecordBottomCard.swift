@@ -135,7 +135,7 @@ final class SurfRecordBottomCard: UIView {
         addMemoButton.rx.tap
             .bind(to: memoButtonTapped)
             .disposed(by: disposeBag)
-
+        
         // When memo text view begins editing, request parent to scroll to it
         memoTextView.rx.didBeginEditing
             .map { }

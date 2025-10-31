@@ -187,28 +187,28 @@ final class MemoDetailViewController: UIViewController {
         let symbolConfig = UIImage.SymbolConfiguration(pointSize: ratingLabel.font.pointSize, weight: .medium)
         let starImage = UIImage(systemName: "star.fill", withConfiguration: symbolConfig)?
             .withTintColor(.surfBlue, renderingMode: .alwaysOriginal)
-
+        
         let attachment = NSTextAttachment()
         attachment.image = starImage
-
+        
         // Optional: Add a tiny vertical offset if needed for better baseline alignment
         // attachment.bounds = CGRect(x: 0, y: -1, width: starImage?.size.width ?? 0, height: starImage?.size.height ?? 0)
-
+        
         let attachmentString = NSMutableAttributedString(attachment: attachment)
         let space = NSAttributedString(string: " ")
-
+        
         let text = "\(viewModel.rating)점, \(viewModel.ratingText)"
         let textAttributes: [NSAttributedString.Key: Any] = [
             .font: ratingLabel.font as Any,
             .foregroundColor: ratingLabel.textColor as Any
         ]
         let textString = NSAttributedString(string: text, attributes: textAttributes)
-
+        
         let finalString = NSMutableAttributedString()
         finalString.append(attachmentString)
         finalString.append(space)
         finalString.append(textString)
-
+        
         ratingLabel.attributedText = finalString
         
         // Configure memo

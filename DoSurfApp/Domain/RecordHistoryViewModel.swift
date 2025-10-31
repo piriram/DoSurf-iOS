@@ -214,78 +214,78 @@ final class RecordHistoryViewModel {
             filterRelay.asObservable(),
             sortTypeRelay.asObservable()
         )
-        .map { records, filter, sortType -> [SurfRecordData] in
-            var filteredRecords = records
-            
-            // Apply filter
-            switch filter {
-            case .all:
-                break
-            case .pinned:
-                filteredRecords = records.filter { $0.isPin }
-            case .datePreset(let preset):
-                let cal = Calendar.current
-                let now = Date()
-                let start: Date
-                let endBound: Date
-
-                func startOfMonth(for date: Date) -> Date {
-                    let comps = cal.dateComponents([.year, .month], from: date)
-                    return cal.date(from: comps).map { cal.startOfDay(for: $0) } ?? cal.startOfDay(for: date)
+            .map { records, filter, sortType -> [SurfRecordData] in
+                var filteredRecords = records
+                
+                // Apply filter
+                switch filter {
+                case .all:
+                    break
+                case .pinned:
+                    filteredRecords = records.filter { $0.isPin }
+                case .datePreset(let preset):
+                    let cal = Calendar.current
+                    let now = Date()
+                    let start: Date
+                    let endBound: Date
+                    
+                    func startOfMonth(for date: Date) -> Date {
+                        let comps = cal.dateComponents([.year, .month], from: date)
+                        return cal.date(from: comps).map { cal.startOfDay(for: $0) } ?? cal.startOfDay(for: date)
+                    }
+                    func startOfNextMonth(after date: Date) -> Date {
+                        let comps = cal.dateComponents([.year, .month], from: date)
+                        let next = cal.date(from: DateComponents(year: comps.year, month: (comps.month ?? 1) + 1)) ?? date
+                        return cal.startOfDay(for: next)
+                    }
+                    
+                    switch preset {
+                    case .today:
+                        start = cal.startOfDay(for: now)
+                        endBound = cal.date(byAdding: .day, value: 1, to: start) ?? now
+                    case .last7Days:
+                        let todayStart = cal.startOfDay(for: now)
+                        start = cal.date(byAdding: .day, value: -6, to: todayStart) ?? todayStart
+                        endBound = cal.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart
+                    case .thisMonth:
+                        start = startOfMonth(for: now)
+                        endBound = startOfNextMonth(after: now)
+                    case .lastMonth:
+                        let thisMonthStart = startOfMonth(for: now)
+                        start = cal.date(byAdding: .month, value: -1, to: thisMonthStart) ?? thisMonthStart
+                        endBound = thisMonthStart
+                    }
+                    
+                    filteredRecords = records.filter { d in
+                        let date = d.surfDate
+                        return date >= start && date < endBound
+                    }
+                case .dateRange(let startRaw, let endRaw):
+                    let cal = Calendar.current
+                    let start = cal.startOfDay(for: startRaw)
+                    let endBound = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: endRaw)) ?? endRaw
+                    filteredRecords = records.filter { d in
+                        let date = d.surfDate
+                        return date >= start && date < endBound
+                    }
+                case .rating(let exactRating):
+                    filteredRecords = records.filter { Int($0.rating) == exactRating }
                 }
-                func startOfNextMonth(after date: Date) -> Date {
-                    let comps = cal.dateComponents([.year, .month], from: date)
-                    let next = cal.date(from: DateComponents(year: comps.year, month: (comps.month ?? 1) + 1)) ?? date
-                    return cal.startOfDay(for: next)
+                
+                // Apply sort
+                switch sortType {
+                case .latest:
+                    filteredRecords.sort { $0.surfDate > $1.surfDate }
+                case .oldest:
+                    filteredRecords.sort { $0.surfDate < $1.surfDate }
+                case .highRating:
+                    filteredRecords.sort { $0.rating > $1.rating }
+                case .lowRating:
+                    filteredRecords.sort { $0.rating < $1.rating }
                 }
-
-                switch preset {
-                case .today:
-                    start = cal.startOfDay(for: now)
-                    endBound = cal.date(byAdding: .day, value: 1, to: start) ?? now
-                case .last7Days:
-                    let todayStart = cal.startOfDay(for: now)
-                    start = cal.date(byAdding: .day, value: -6, to: todayStart) ?? todayStart
-                    endBound = cal.date(byAdding: .day, value: 1, to: todayStart) ?? todayStart
-                case .thisMonth:
-                    start = startOfMonth(for: now)
-                    endBound = startOfNextMonth(after: now)
-                case .lastMonth:
-                    let thisMonthStart = startOfMonth(for: now)
-                    start = cal.date(byAdding: .month, value: -1, to: thisMonthStart) ?? thisMonthStart
-                    endBound = thisMonthStart
-                }
-
-                filteredRecords = records.filter { d in
-                    let date = d.surfDate
-                    return date >= start && date < endBound
-                }
-            case .dateRange(let startRaw, let endRaw):
-                let cal = Calendar.current
-                let start = cal.startOfDay(for: startRaw)
-                let endBound = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: endRaw)) ?? endRaw
-                filteredRecords = records.filter { d in
-                    let date = d.surfDate
-                    return date >= start && date < endBound
-                }
-            case .rating(let exactRating):
-                filteredRecords = records.filter { Int($0.rating) == exactRating }
+                
+                return filteredRecords
             }
-            
-            // Apply sort
-            switch sortType {
-            case .latest:
-                filteredRecords.sort { $0.surfDate > $1.surfDate }
-            case .oldest:
-                filteredRecords.sort { $0.surfDate < $1.surfDate }
-            case .highRating:
-                filteredRecords.sort { $0.rating > $1.rating }
-            case .lowRating:
-                filteredRecords.sort { $0.rating < $1.rating }
-            }
-            
-            return filteredRecords
-        }
         
         // Map to view models
         let recordViewModels = filteredAndSortedRecords

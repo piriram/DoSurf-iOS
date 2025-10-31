@@ -92,7 +92,7 @@ final class UserDefaultsManager: SurfingRecordService {
     func createSelectedBeachID(_ id: String) {
         userDefaults.set(id, forKey: Keys.selectedBeachID)
     }
-
+    
     func readSelectedBeachID() -> String? {
         let id = userDefaults.string(forKey: Keys.selectedBeachID)
         return id
