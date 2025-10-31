@@ -9,18 +9,18 @@ import RxSwift
 import RxCocoa
 
 final class DashboardViewModel {
-    
+
     // MARK: - Dependencies
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
     private let surfRecordUseCase: SurfRecordUseCaseProtocol
-    
+
     // MARK: - Input
     struct Input {
         let viewDidLoad: Observable<Void>
         let beachSelected: Observable<BeachDTO>
         let refreshTriggered: Observable<Void>
     }
-    
+
     // MARK: - Output
     struct Output {
         let beachData: Observable<BeachData>
@@ -28,18 +28,20 @@ final class DashboardViewModel {
         let groupedCharts: Observable<[(date: Date, charts: [Chart])]>
         let recentRecordCharts: Observable<[Chart]>
         let pinnedCharts: Observable<[Chart]>
+        let allCharts: Observable<[Chart]>                 // ✅ 추가: 뷰가 스냅샷이 필요할 때 구독
         let isLoading: Observable<Bool>
         let error: Observable<Error>
     }
-    
-    // MARK: - Properties
+
+    // MARK: - State
     private let currentBeach = BehaviorRelay<BeachDTO?>(value: nil)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
-    
+    private let allChartsRelay = BehaviorRelay<[Chart]>(value: []) // ✅ 뷰 대신 보관
+
     private let disposeBag = DisposeBag()
-    
-    // 모든 비치 평균 계산 시 사용될 고정된 지역-해변 매핑
+
+    // 고정 매핑
     private let knownBeaches: [(beachId: String, region: String)] = [
         ("1001", "gangreung"),
         ("1002", "gangreung"),
@@ -52,245 +54,180 @@ final class DashboardViewModel {
         ("3003", "jeju"),
         ("4001", "busan")
     ]
-    
-    // MARK: - Initialize
-    init(fetchBeachDataUseCase: FetchBeachDataUseCase, surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
+
+    // MARK: - Init
+    init(fetchBeachDataUseCase: FetchBeachDataUseCase,
+         surfRecordUseCase: SurfRecordUseCaseProtocol = SurfRecordUseCase()) {
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
         self.surfRecordUseCase = surfRecordUseCase
     }
-    
+
     // MARK: - Transform
     func transform(input: Input) -> Output {
-        
-        // 새로운 해변이 선택될 때마다 currentBeach 업데이트
-        input.beachSelected
-            .bind(to: currentBeach)
-            .disposed(by: disposeBag)
-        
-        // 데이터를 불러오는 트리거들:
-        // 1. 뷰 로드 시 - currentBeach가 설정될 때까지 대기
-        // 2. 해변 선택 시
-        // 3. 새로고침 시
+        // 선택/로드/새로고침 트리거
         let loadTrigger = Observable.merge(
             input.viewDidLoad.withLatestFrom(currentBeach.asObservable()).compactMap { $0 },
-            input.beachSelected,
+            input.beachSelected.do(onNext: { [weak self] in self?.currentBeach.accept($0) }),
             input.refreshTriggered.withLatestFrom(currentBeach.asObservable()).compactMap { $0 }
         )
-        
-        // 단일 해변(현재 선택) 데이터 로드
+
+        // 단일 비치 데이터
         let beachData = loadTrigger
-            .do(onNext: { [weak self] _ in
-                self?.isLoadingRelay.accept(true)
-            })
+            .do(onNext: { [weak self] _ in self?.isLoadingRelay.accept(true) })
             .flatMapLatest { [weak self] beach -> Observable<BeachData> in
                 guard let self = self else { return .empty() }
-                
                 return self.fetchBeachDataUseCase.execute(beachId: beach.id, region: beach.region.slug)
                     .asObservable()
-                    .do(
-                        onNext: { [weak self] _ in
+                    .do(onNext: { [weak self] _ in self?.isLoadingRelay.accept(false) },
+                        onError: { [weak self] e in
                             self?.isLoadingRelay.accept(false)
-                        },
-                        onError: { [weak self] error in
-                            self?.isLoadingRelay.accept(false)
-                            self?.errorRelay.accept(error)
-                        }
-                    )
-                    .catch { [weak self] error in
-                        self?.errorRelay.accept(error)
+                            self?.errorRelay.accept(e)
+                        })
+                    .catch { [weak self] e in
+                        self?.errorRelay.accept(e)
                         return .empty()
                     }
             }
             .do(onNext: { [weak self] data in
-                self?.debugLogCharts("[BeachData]", charts: data.charts)
+                // ✅ VC에서 하던 flatten/정렬을 VM이 수행하고 보관
+                let flattened = data.charts.sorted { $0.time < $1.time }
+                self?.allChartsRelay.accept(flattened)
+                self?.debugLogCharts("[BeachData]", charts: flattened)
             })
             .share(replay: 1)
-        
-        // 모든 비치의 최신 데이터를 기준으로 평균값 계산
+
+        // 평균 카드
         let dashboardCards = loadTrigger
             .flatMapLatest { [weak self] _ -> Observable<[DashboardCardData]> in
                 guard let self = self else { return .just([]) }
-                
-                // 각 (beachId, region)를 이용해 직접 Fetch
                 let requests: [Single<BeachData?>] = self.knownBeaches.map { pair in
                     self.fetchBeachDataDirectly(beachId: pair.beachId, region: pair.region)
                         .map { $0 as BeachData? }
                         .catch { _ in .just(nil) }
                 }
-                
-                return Single.zip(requests)
-                    .asObservable()
+
+                return Single.zip(requests).asObservable()
                     .map { beachDatas -> [DashboardCardData] in
-                        let latestCharts: [Chart] = beachDatas
-                            .compactMap { $0 }
-                            .compactMap { $0.charts.last }
-                        
+                        let latestCharts = beachDatas.compactMap { $0?.charts.last }
                         guard !latestCharts.isEmpty else {
                             return [
-                                DashboardCardData(
-                                    type: .wind,
-                                    title: "바람",
-                                    value: String(format: "%.1fm/s", 0.0),
-                                    icon: "windFillIcon",
-                                    color: .surfBlue
-                                ),
-                                DashboardCardData(
-                                    type: .wave,
-                                    title: "파도",
-                                    value: String(format: "%.1fm", 0.0),
-                                    subtitle: String(format: "%.1fs", 0.0),
-                                    icon: "waveFillIcon",
-                                    color: .surfBlue
-                                )
+                                DashboardCardData(type: .wind, title: "바람",
+                                                  value: String(format: "%.1fm/s", 0.0),
+                                                  icon: "windFillIcon", color: .surfBlue),
+                                DashboardCardData(type: .wave, title: "파도",
+                                                  value: String(format: "%.1fm", 0.0),
+                                                  subtitle: String(format: "%.1fs", 0.0),
+                                                  icon: "waveFillIcon", color: .surfBlue)
                             ]
                         }
-                        
                         let count = Double(latestCharts.count)
-                        let avgWind = latestCharts.map { $0.windSpeed }.reduce(0, +) / count
-                        let avgWaveH = latestCharts.map { $0.waveHeight }.reduce(0, +) / count
-                        let avgWaveP = latestCharts.map { $0.wavePeriod }.reduce(0, +) / count
-                        let avgWindDir = self.averageDirectionDegrees(latestCharts.map { $0.windDirection })
-                        let avgWaveDir = self.averageDirectionDegrees(latestCharts.map { $0.waveDirection })
-                        
+                        let avgWind = latestCharts.map(\.windSpeed).reduce(0, +) / count
+                        let avgWaveH = latestCharts.map(\.waveHeight).reduce(0, +) / count
+                        let avgWaveP = latestCharts.map(\.wavePeriod).reduce(0, +) / count
+                        let avgWindDir = self.averageDirectionDegrees(latestCharts.map(\.windDirection))
+                        let avgWaveDir = self.averageDirectionDegrees(latestCharts.map(\.waveDirection))
                         return [
-                            DashboardCardData(
-                                type: .wind,
-                                title: "바람",
-                                value: String(format: "%.1fm/s", avgWind),
-                                subtitle: nil,
-                                directionDegrees: avgWindDir,
-                                icon: "windFillIcon",
-                                color: .surfBlue
-                            ),
-                            DashboardCardData(
-                                type: .wave,
-                                title: "파도",
-                                value: String(format: "%.1fm", avgWaveH),
-                                subtitle: String(format: "%.1fs", avgWaveP),
-                                directionDegrees: avgWaveDir,
-                                icon: "waveFillIcon",
-                                color: .surfBlue
-                            )
+                            DashboardCardData(type: .wind, title: "바람",
+                                              value: String(format: "%.1fm/s", avgWind),
+                                              subtitle: nil, directionDegrees: avgWindDir,
+                                              icon: "windFillIcon", color: .surfBlue),
+                            DashboardCardData(type: .wave, title: "파도",
+                                              value: String(format: "%.1fm", avgWaveH),
+                                              subtitle: String(format: "%.1fs", avgWaveP),
+                                              directionDegrees: avgWaveDir,
+                                              icon: "waveFillIcon", color: .surfBlue)
                         ]
                     }
-                    .catch { error in
-                        print("Failed to fetch known beaches for averages: \(error)")
-                        let zeroCards: [DashboardCardData] = [
-                            DashboardCardData(
-                                type: .wind,
-                                title: "바람",
-                                value: String(format: "%.1fm/s", 0.0),
-                                icon: "windFillIcon",
-                                color: .surfBlue
-                            ),
-                            DashboardCardData(
-                                type: .wave,
-                                title: "파도",
-                                value: String(format: "%.1fm", 0.0),
-                                subtitle: String(format: "%.1fs", 0.0),
-                                icon: "waveFillIcon",
-                                color: .surfBlue
-                            )
+                    .catch { _ in
+                        let zero = [
+                            DashboardCardData(type: .wind, title: "바람",
+                                              value: String(format: "%.1fm/s", 0.0),
+                                              icon: "windFillIcon", color: .surfBlue),
+                            DashboardCardData(type: .wave, title: "파도",
+                                              value: String(format: "%.1fm", 0.0),
+                                              subtitle: String(format: "%.1fs", 0.0),
+                                              icon: "waveFillIcon", color: .surfBlue)
                         ]
-                        return .just(zeroCards)
+                        return .just(zero)
                     }
             }
             .share(replay: 1)
-        
+
         let groupedCharts = beachData
-            .map { beachData -> [(date: Date, charts: [Chart])] in
-                return self.groupChartsByDate(beachData.charts)
-            }
-        
-        // CoreData에서 모든 비치의 최근 기록 차트 가져오기
+            .map { [weak self] in self?.groupChartsByDate($0.charts) ?? [] }
+
         let recentRecordCharts = loadTrigger
             .flatMapLatest { [weak self] _ -> Observable<[Chart]> in
                 guard let self = self else { return .just([]) }
                 return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
-                    .map { records -> [Chart] in
-                        let recentRecords = records.sorted { $0.surfDate > $1.surfDate }.prefix(10)
-                        return recentRecords.flatMap { record in
-                            record.charts.map { chartData in
-                                Chart(
-                                    beachID: record.beachID,
-                                    time: chartData.time,
-                                    windDirection: chartData.windDirection,
-                                    windSpeed: chartData.windSpeed,
-                                    waveDirection: chartData.waveDirection,
-                                    waveHeight: chartData.waveHeight,
-                                    wavePeriod: chartData.wavePeriod,
-                                    waterTemperature: chartData.waterTemperature,
-                                    weather: self.convertWeatherIconNameToWeatherType(chartData.weatherIconName),
-                                    airTemperature: chartData.airTemperature
-                                )
+                    .map { records in
+                        let recent = records.sorted { $0.surfDate > $1.surfDate }.prefix(10)
+                        return recent.flatMap { record in
+                            record.charts.map {
+                                Chart(beachID: record.beachID, time: $0.time,
+                                      windDirection: $0.windDirection, windSpeed: $0.windSpeed,
+                                      waveDirection: $0.waveDirection, waveHeight: $0.waveHeight,
+                                      wavePeriod: $0.wavePeriod, waterTemperature: $0.waterTemperature,
+                                      weather: self.convertWeatherIconNameToWeatherType($0.weatherIconName),
+                                      airTemperature: $0.airTemperature)
                             }
-                        }
-                        .sorted { $0.time > $1.time }
+                        }.sorted { $0.time > $1.time }
                     }
-                    .catch { error in
-                        print("Failed to fetch recent record charts (all beaches): \(error)")
-                        return .just([])
-                    }
+                    .catch { _ in .just([]) }
             }
-            .do(onNext: { [weak self] charts in
-                self?.debugLogCharts("[RecentRecords]", charts: charts)
-            })
+            .do(onNext: { [weak self] in self?.debugLogCharts("[RecentRecords]", charts: $0) })
             .share(replay: 1)
-        
-        // CoreData에서 전체 비치의 고정 차트 가져오기
+
         let pinnedCharts = loadTrigger
             .flatMapLatest { [weak self] _ -> Observable<[Chart]> in
                 guard let self = self else { return .just([]) }
                 return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
-                    .map { records -> [Chart] in
-                        let pinnedRecords = records.filter { $0.isPin }
-                        return pinnedRecords.flatMap { record in
-                            record.charts.map { chartData in
-                                Chart(
-                                    beachID: record.beachID,
-                                    time: chartData.time,
-                                    windDirection: chartData.windDirection,
-                                    windSpeed: chartData.windSpeed,
-                                    waveDirection: chartData.waveDirection,
-                                    waveHeight: chartData.waveHeight,
-                                    wavePeriod: chartData.wavePeriod,
-                                    waterTemperature: chartData.waterTemperature,
-                                    weather: self.convertWeatherIconNameToWeatherType(chartData.weatherIconName),
-                                    airTemperature: chartData.airTemperature
-                                )
+                    .map { records in
+                        let pinned = records.filter { $0.isPin }
+                        return pinned.flatMap { record in
+                            record.charts.map {
+                                Chart(beachID: record.beachID, time: $0.time,
+                                      windDirection: $0.windDirection, windSpeed: $0.windSpeed,
+                                      waveDirection: $0.waveDirection, waveHeight: $0.waveHeight,
+                                      wavePeriod: $0.wavePeriod, waterTemperature: $0.waterTemperature,
+                                      weather: self.convertWeatherIconNameToWeatherType($0.weatherIconName),
+                                      airTemperature: $0.airTemperature)
                             }
-                        }
-                        .sorted { $0.time > $1.time }
+                        }.sorted { $0.time > $1.time }
                     }
-                    .catch { error in
-                        print("Failed to fetch pinned charts (all beaches): \(error)")
-                        return .just([])
-                    }
+                    .catch { _ in .just([]) }
             }
-            .do(onNext: { [weak self] charts in
-                self?.debugLogCharts("[PinnedRecords]", charts: charts)
-            })
+            .do(onNext: { [weak self] in self?.debugLogCharts("[PinnedRecords]", charts: $0) })
             .share(replay: 1)
-        
+
         return Output(
             beachData: beachData,
             dashboardCards: dashboardCards,
             groupedCharts: groupedCharts,
             recentRecordCharts: recentRecordCharts,
             pinnedCharts: pinnedCharts,
+            allCharts: allChartsRelay.asObservable(),   // ✅ 추가
             isLoading: isLoadingRelay.asObservable(),
             error: errorRelay.asObservable()
         )
     }
-    
-    // MARK: - Private Helpers
-    
-    private func fetchBeachDataDirectly(beachId: String, region: String) -> Single<BeachData> {
-        return fetchBeachDataUseCase.execute(beachId: beachId, region: region)
+
+    // MARK: - Public (이관된 비즈니스 로직)
+    /// VC가 필요 시 직접 호출해 기간 필터링된 차트를 가져갑니다.
+    func charts(from start: Date?, to end: Date?) -> [Chart] {
+        let charts = allChartsRelay.value
+        guard !charts.isEmpty else { return [] }
+        guard let s = start, let e = end else { return charts }
+        return charts.filter { $0.time >= s && $0.time <= e }
     }
-    
+
+    // MARK: - Private Helpers
+    private func fetchBeachDataDirectly(beachId: String, region: String) -> Single<BeachData> {
+        fetchBeachDataUseCase.execute(beachId: beachId, region: region)
+    }
+
     private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {
         guard !degrees.isEmpty else { return nil }
         let radians = degrees.map { $0 * .pi / 180.0 }
@@ -301,41 +238,27 @@ final class DashboardViewModel {
         if angle < 0 { angle += 360.0 }
         return angle
     }
-    
+
     private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
-        let type: WeatherType
         switch iconName {
-        case "sun":
-            type = .clear
-        case "cloudLittleSun":
-            type = .cloudLittleSun
-        case "cloudMuchSun":
-            type = .cloudMuchSun
-        case "cloud":
-            type = .cloudy
-        case "rain":
-            type = .rain
-        case "fog", "forg":
-            type = .fog
-        case "snow":
-            type = .snow
-        default:
-            type = .unknown
+        case "sun": return .clear
+        case "cloudLittleSun": return .cloudLittleSun
+        case "cloudMuchSun": return .cloudMuchSun
+        case "cloud": return .cloudy
+        case "rain": return .rain
+        case "fog", "forg": return .fog
+        case "snow": return .snow
+        default: return .unknown
         }
-        print("[WeatherIconMap] iconName=\(iconName) -> type=\(type) asset=\(type.iconName)")
-        return type
     }
-    
+
     private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: charts) { chart in
-            calendar.startOfDay(for: chart.time)
-        }
-        
+        let grouped = Dictionary(grouping: charts) { calendar.startOfDay(for: $0.time) }
         return grouped.sorted { $0.key < $1.key }
             .map { (date: $0.key, charts: $0.value.sorted { $0.time < $1.time }) }
     }
-    
+
     private func debugLogCharts(_ tag: String, charts: [Chart]) {
         let counts = Dictionary(grouping: charts, by: { $0.weather.iconName }).mapValues { $0.count }
         let iconSet = Set(charts.map { $0.weather.iconName })
@@ -343,5 +266,3 @@ final class DashboardViewModel {
         print("[WeatherDebug] \(tag) total=\(charts.count) counts=\(counts) icons=\(iconSet) samples=\(samples)")
     }
 }
-
-
