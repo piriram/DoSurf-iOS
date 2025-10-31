@@ -140,7 +140,7 @@ final class SurfRecordViewController: BaseViewController {
         appearance.shadowColor = .clear
         appearance.titleTextAttributes = [.foregroundColor: UIColor.surfBlue]
         appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.surfBlue]
-
+        
         guard let navBar = navigationController?.navigationBar else { return }
         navBar.standardAppearance = appearance
         navBar.compactAppearance = appearance
@@ -263,7 +263,7 @@ final class SurfRecordViewController: BaseViewController {
                 guard let self = self else { return }
                 // Ensure layout reflects keyboard guide before scrolling
                 self.view.layoutIfNeeded()
-
+                
                 let targetView = self.bottomCard.memoTextView
                 let rectInScroll = targetView.convert(targetView.bounds, to: self.scrollView)
                 let visibleRect = rectInScroll.insetBy(dx: 0, dy: -20)
@@ -327,7 +327,7 @@ final class SurfRecordViewController: BaseViewController {
         if !bottomCard.isMemoOpened {
             bottomCard.showMemoTextView()
             scrollView.isScrollEnabled = true
-
+            
             UIView.animate(withDuration: 0.25) {
                 self.view.layoutIfNeeded()
             } completion: { _ in
@@ -604,7 +604,7 @@ private extension SurfRecordViewController {
         // (선택) 간격 검증
         debugCheckThreeHourSpacing(filtered)
     }
-   
+    
 }
 
 // MARK: - UITableViewDataSource & UITableViewDelegate

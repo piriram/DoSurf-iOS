@@ -6,7 +6,7 @@ final class ColumnHeaderView: UIView {
     var titles: [String] {
         didSet { reloadLabels() }
     }
-
+    
     // MARK: - UI
     private let stackView: UIStackView = {
         let sv = UIStackView()
@@ -16,7 +16,7 @@ final class ColumnHeaderView: UIView {
         sv.spacing = 8
         return sv
     }()
-
+    
     // MARK: - Init
     init(titles: [String] = ["시간", "바람", "파도", "수온", "날씨"]) {
         self.titles = titles
@@ -24,14 +24,14 @@ final class ColumnHeaderView: UIView {
         setupUI()
         reloadLabels()
     }
-
+    
     required init?(coder: NSCoder) {
         self.titles = ["시간", "바람", "파도", "수온", "날씨"]
         super.init(coder: coder)
         setupUI()
         reloadLabels()
     }
-
+    
     // MARK: - Private
     private func setupUI() {
         backgroundColor = .backgroundHeader.withAlphaComponent(0.5)
@@ -41,14 +41,14 @@ final class ColumnHeaderView: UIView {
             make.centerY.equalToSuperview()
         }
     }
-
+    
     private func reloadLabels() {
         // Remove existing arranged subviews
         for view in stackView.arrangedSubviews {
             stackView.removeArrangedSubview(view)
             view.removeFromSuperview()
         }
-
+        
         // Add labels for current titles
         for text in titles {
             let label = UILabel()

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+
 protocol BaseViewModel{
     associatedtype Input
     associatedtype Output

@@ -9,7 +9,7 @@ final class InfoSheetViewController: UIViewController {
         label.textColor = .label
         return label
     }()
-
+    
     private let closeButton: UIButton = {
         let button = UIButton(type: .system)
         let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .semibold)
@@ -25,11 +25,11 @@ final class InfoSheetViewController: UIViewController {
         iv.clipsToBounds = true
         return iv
     }()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-
+        
         view.addSubview(titleLabel)
         view.addSubview(closeButton)
         view.addSubview(sheetImageView)
@@ -45,7 +45,7 @@ final class InfoSheetViewController: UIViewController {
             make.trailing.equalToSuperview().inset(16)
             make.width.height.equalTo(32)
         }
-
+        
         titleLabel.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).offset(16)
             make.leading.equalToSuperview().offset(20)
@@ -58,7 +58,7 @@ final class InfoSheetViewController: UIViewController {
             make.height.equalTo(sheetImageView.snp.width).multipliedBy(572.0/593.0)  // 실제 이미지 비율 사용
         }
     }
-
+    
     @objc private func closeTapped() {
         dismiss(animated: true)
     }
