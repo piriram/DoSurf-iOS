@@ -95,8 +95,8 @@ final class RecordHistoryCell: UITableViewCell {
         return tableView
     }()
     
-    private let columnHeaderView: ColumnHeaderView = {
-        let view = ColumnHeaderView()
+    private let columnHeaderView: ChartHeaderView = {
+        let view = ChartHeaderView()
         return view
     }()
     

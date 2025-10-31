@@ -1,7 +1,7 @@
 import UIKit
 import SnapKit
 
-final class InfoSheetViewController: UIViewController {
+final class DashboardGuideViewController: UIViewController {
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "내가 선호하는 차트 통계"

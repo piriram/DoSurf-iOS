@@ -305,7 +305,7 @@ final class ButtonTabBarController: UIViewController {
         let endTime = storageService.readSurfingEndTime()
         
         let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
-        let recordVC = SurfRecordViewController(
+        let recordVC = NoteViewController(
             startTime: startTime,
             endTime: endTime,
             charts: chartsToPass
@@ -323,3 +323,18 @@ final class ButtonTabBarController: UIViewController {
     }
 }
 
+// MARK: - UINavigationControllerDelegate
+extension ButtonTabBarController: UINavigationControllerDelegate {
+    func navigationController(_ navigationController: UINavigationController, willShow viewController: UIViewController, animated: Bool) {
+        let shouldHideBottomBar = viewController.hidesBottomBarWhenPushed
+        
+        UIView.animate(withDuration: animated ? 0.3 : 0.0, delay: 0, options: [.curveEaseInOut]) {
+            self.bottomBar.alpha = shouldHideBottomBar ? 0 : 1
+            self.centerButton.alpha = shouldHideBottomBar ? 0 : 1
+            
+            // 완전히 숨길 때는 터치도 차단
+            self.bottomBar.isUserInteractionEnabled = !shouldHideBottomBar
+            self.centerButton.isUserInteractionEnabled = !shouldHideBottomBar
+        }
+    }
+}
