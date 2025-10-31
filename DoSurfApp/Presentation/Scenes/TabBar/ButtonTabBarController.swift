@@ -303,9 +303,9 @@ final class ButtonTabBarController: UIViewController {
     private func pushToRecordWrite() {
         let startTime = storageService.readSurfingStartTime()
         let endTime = storageService.readSurfingEndTime()
-        
         let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
-        let recordVC = NoteViewController(
+        
+        let recordVC = DIContainer.shared.makeSurfRecordViewController(
             startTime: startTime,
             endTime: endTime,
             charts: chartsToPass
@@ -315,6 +315,7 @@ final class ButtonTabBarController: UIViewController {
         
         currentNavigationController?.pushViewController(recordVC, animated: true)
     }
+    
     
     private func animateBottomBarVisibility(hidden: Bool) {
         UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {

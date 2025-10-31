@@ -31,8 +31,16 @@ final class NoteBottomCardView: UIView {
     
     // MARK: - Rx
     let memoButtonTapped = PublishRelay<Void>()
-    // Emits when the memo text view should be scrolled into view (e.g., when editing begins or memo opens)
     let requestScrollToMemo = PublishRelay<Void>()
+    
+    var ratingChanged: Observable<Int> {
+        return ratingCardView.selectedRating.asObservable()
+    }
+    
+    var memoChanged: Observable<String?> {
+        return memoTextView.rx.text.asObservable()
+    }
+    
     private let disposeBag = DisposeBag()
     
     // MARK: - Initialization
