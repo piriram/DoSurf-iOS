@@ -9,15 +9,18 @@ import Foundation
 
 final class DIContainer {
     static let shared = DIContainer()
-    
     private init() {}
     
-    // Repository
+    // MARK: - Repository Factories
     func makeBeachRepository() -> FirestoreProtocol {
         return FirestoreRepository()
     }
     
-    // UseCase
+    func makeSurfRecordRepository() -> SurfRecordRepositoryProtocol {
+        return SurfRecordRepository()
+    }
+    
+    // MARK: - UseCase Factories
     func makeFetchBeachDataUseCase() -> FetchBeachDataUseCase {
         return DefaultFetchBeachDataUseCase(
             repository: makeBeachRepository()
@@ -30,17 +33,80 @@ final class DIContainer {
         )
     }
     
-    // ViewModel
+    func makeSurfRecordUseCase() -> SurfRecordUseCaseProtocol {
+        return SurfRecordUseCase(repository: makeSurfRecordRepository())
+    }
+    
+    // MARK: - Service
+    func makeStorageService() -> SurfingRecordService {
+        return UserDefaultsManager()
+    }
+    
+    // MARK: - ViewModel Factories
+    func makeDashboardViewModel() -> DashboardViewModel {
+        return DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
+    }
+    
+    func makeSurfRecordViewModel(mode: SurfRecordMode) -> NoteViewModel {
+        return NoteViewModel(
+            mode: mode,
+            surfRecordUseCase: makeSurfRecordUseCase()
+        )
+    }
+    
     func makeBeachSelectViewModel() -> BeachSelectViewModel {
         return BeachSelectViewModel(
             fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
-            fetchBeachListUseCase: makeFetchBeachListUseCase()
+            fetchBeachListUseCase: makeFetchBeachListUseCase(),
+            storageService: makeStorageService()
         )
     }
-}
-
-extension DIContainer {
-    func makeDashboardViewModel() -> DashboardViewModel {
-        DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
+    
+    func makeBeachSelectViewModel(initialSelectedBeach: BeachDTO?) -> BeachSelectViewModel {
+        return BeachSelectViewModel(
+            fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
+            fetchBeachListUseCase: makeFetchBeachListUseCase(),
+            storageService: makeStorageService(),
+            initialSelectedBeach: initialSelectedBeach
+        )
+    }
+    
+    // MARK: - ViewController Factories
+    
+    /// 새 기록 생성용 ViewController
+    func makeSurfRecordViewController(
+        startTime: Date?,
+        endTime: Date?,
+        charts: [Chart]?
+    ) -> NoteViewController {
+        let mode = SurfRecordMode.new(
+            startTime: startTime,
+            endTime: endTime,
+            charts: charts
+        )
+        let viewModel = makeSurfRecordViewModel(mode: mode)
+        return NoteViewController(
+            viewModel: viewModel,
+            mode: mode
+        )
+    }
+    
+    /// 기존 기록 편집용 ViewController
+    func makeSurfRecordViewController(editing record: SurfRecordData) -> NoteViewController {
+        let mode = SurfRecordMode.edit(record: record)
+        let viewModel = makeSurfRecordViewModel(mode: mode)
+        return NoteViewController(
+            viewModel: viewModel,
+            mode: mode
+        )
+    }
+    
+    /// 일반 생성용 ViewController (mode로 생성)
+    func makeSurfRecordViewController(mode: SurfRecordMode) -> NoteViewController {
+        let viewModel = makeSurfRecordViewModel(mode: mode)
+        return NoteViewController(
+            viewModel: viewModel,
+            mode: mode
+        )
     }
 }
