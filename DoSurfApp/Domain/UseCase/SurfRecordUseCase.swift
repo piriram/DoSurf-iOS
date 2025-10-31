@@ -24,9 +24,9 @@ protocol SurfRecordUseCaseProtocol {
 
 // MARK: - Use Case Implementation
 final class SurfRecordUseCase: SurfRecordUseCaseProtocol {
-    private let repository: SurfRecordRepositoryProtocol
+    private let repository: NoteRepositoryProtocol
     
-    init(repository: SurfRecordRepositoryProtocol = SurfRecordRepository()) {
+    init(repository: NoteRepositoryProtocol = SurfRecordRepository()) {
         self.repository = repository
     }
     
