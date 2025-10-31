@@ -4,7 +4,6 @@
 //
 //  Created by 잠만보김쥬디 on 9/30/25.
 //
-
 import Foundation
 
 final class DIContainer {
@@ -37,7 +36,7 @@ final class DIContainer {
         return SurfRecordUseCase(repository: makeSurfRecordRepository())
     }
     
-    // MARK: - Service
+    // MARK: - Service Factories
     func makeStorageService() -> SurfingRecordService {
         return UserDefaultsManager()
     }
@@ -68,6 +67,14 @@ final class DIContainer {
             fetchBeachListUseCase: makeFetchBeachListUseCase(),
             storageService: makeStorageService(),
             initialSelectedBeach: initialSelectedBeach
+        )
+    }
+    
+    func makeRecordHistoryViewModel() -> RecordHistoryViewModel {
+        return RecordHistoryViewModel(
+            surfRecordUseCase: makeSurfRecordUseCase(),
+            fetchBeachListUseCase: makeFetchBeachListUseCase(),
+            storageService: makeStorageService()
         )
     }
     
@@ -109,4 +116,14 @@ final class DIContainer {
             mode: mode
         )
     }
+    
+    /// RecordHistory ViewController 생성
+    func makeRecordHistoryViewController() -> RecordHistoryViewController {
+        let viewModel = makeRecordHistoryViewModel()
+        return RecordHistoryViewController(
+            viewModel: viewModel
+        )
+    }
+    
+    
 }
