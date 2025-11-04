@@ -67,6 +67,7 @@ extension UIColor {
     static var pinBlue: UIColor { UIColor(hex: 0x007AF7) }
     static var grayText = UIColor.black.withAlphaComponent(0.5)
     static var blackText: UIColor { UIColor(hex: 0x151619) }
+    static var textRed: UIColor { UIColor(hex: 0xFF0000) }
     
     // MARK: Background / Neutrals
     static var brightGray: UIColor { UIColor(hex: 0xF6F7F9) }      // #F6F7F9
