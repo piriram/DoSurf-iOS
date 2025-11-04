@@ -11,9 +11,9 @@ import Foundation
 protocol SurfingRecordService {
     func createSurfingState(_ isActive: Bool)
     func readSurfingState() -> Bool
-    func createSurfingStartTime(_ date: Date)
+    func createSurfingStartTime(_ date: Date?)
     func readSurfingStartTime() -> Date?
-    func createSurfingEndTime(_ date: Date)
+    func createSurfingEndTime(_ date: Date?)
     func readSurfingEndTime() -> Date?
     func calculateSurfingDuration() -> TimeInterval?
     func deleteSurfingData()
@@ -53,9 +53,13 @@ final class UserDefaultsManager: SurfingRecordService {
         return isActive
     }
     
-    /// 서핑 시작 시간 저장
-    func createSurfingStartTime(_ date: Date) {
-        userDefaults.set(date, forKey: Keys.surfingStartTime)
+    /// 서핑 시작 시간 저장 (nil이면 삭제)
+    func createSurfingStartTime(_ date: Date?) {
+        if let date = date {
+            userDefaults.set(date, forKey: Keys.surfingStartTime)
+        } else {
+            userDefaults.removeObject(forKey: Keys.surfingStartTime)
+        }
     }
     
     /// 저장된 서핑 시작 시간 가져오기
@@ -63,9 +67,13 @@ final class UserDefaultsManager: SurfingRecordService {
         return userDefaults.object(forKey: Keys.surfingStartTime) as? Date
     }
     
-    /// 서핑 종료 시간 저장
-    func createSurfingEndTime(_ date: Date) {
-        userDefaults.set(date, forKey: Keys.surfingEndTime)
+    /// 서핑 종료 시간 저장 (nil이면 삭제)
+    func createSurfingEndTime(_ date: Date?) {
+        if let date = date {
+            userDefaults.set(date, forKey: Keys.surfingEndTime)
+        } else {
+            userDefaults.removeObject(forKey: Keys.surfingEndTime)
+        }
     }
     
     /// 저장된 서핑 종료 시간 가져오기
@@ -98,4 +106,3 @@ final class UserDefaultsManager: SurfingRecordService {
         return id
     }
 }
-
