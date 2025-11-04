@@ -270,6 +270,9 @@ final class ButtonTabBarController: UIViewController {
         overlay.onSurfEnd = { [weak self] in
             self?.endSurfing()
         }
+        overlay.onCancelSurfing = { [weak self] in
+            self?.cancelSurfing()
+        }
         overlay.onCancel = { [weak self] in
             self?.hideSurfEndOverlay()
         }
@@ -304,6 +307,16 @@ final class ButtonTabBarController: UIViewController {
         hideSurfEndOverlay { [weak self] in
             self?.pushToRecordWrite()
         }
+    }
+    
+    private func cancelSurfing() {
+        storageService.createSurfingState(false)
+        storageService.createSurfingStartTime(nil)
+        storageService.createSurfingEndTime(nil)
+        isRecordingScreenPresented.accept(false)
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        
+        hideSurfEndOverlay()
     }
     
     private func pushToRecordWrite() {

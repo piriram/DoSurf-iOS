@@ -19,8 +19,9 @@ class SurfEndOverlayView: UIView {
         gradientEndLocation: 1.0
     )
     private let containerView = UIView()
-    private let surfEndButton = UIButton()
-    private let cancelButton = UIButton()
+    private let surfEndButton: CustomButton
+    private let cancelSurfingButton: CustomButton
+    private let cancelButton: CustomButton
     private let disposeBag = DisposeBag()
     
     // 블러 높이 설정 (bottom부터 이 높이만큼 블러 처리)
@@ -28,15 +29,22 @@ class SurfEndOverlayView: UIView {
     
     // 콜백
     var onSurfEnd: (() -> Void)?
+    var onCancelSurfing: (() -> Void)?
     var onCancel: (() -> Void)?
     
     override init(frame: CGRect) {
+        self.surfEndButton = CustomButton(style: .primary(title: "서핑 종료"))
+        self.cancelSurfingButton = CustomButton(style: .outlined(title: "서핑 취소하기", tintColor: .systemRed))
+        self.cancelButton = CustomButton(style: .icon(image: UIImage(systemName: "xmark"), tintColor: .surfBlue))
         super.init(frame: frame)
         setupUI()
         bindActions()
     }
     
     required init?(coder: NSCoder) {
+        self.surfEndButton = CustomButton(style: .primary(title: "서핑 종료"))
+        self.cancelSurfingButton = CustomButton(style: .outlined(title: "서핑 취소하기", tintColor: .systemRed))
+        self.cancelButton = CustomButton(style: .icon(image: UIImage(systemName: "xmark"), tintColor: .surfBlue))
         super.init(coder: coder)
         setupUI()
         bindActions()
@@ -59,34 +67,19 @@ class SurfEndOverlayView: UIView {
         containerView.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
             make.bottom.equalToSuperview()
-            make.width.height.equalTo(300)
+            make.width.height.equalTo(400)
         }
         
         setupSurfEndButton()
+        setupCancelSurfingButton()
         setupCancelButton()
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        surfEndButton.makeCircular()
-        cancelButton.makeCircular()
     }
     
     private func setupSurfEndButton() {
-        //TODO: 기록하기 버튼 추가
-        // 서핑 종료 버튼 (큰 파란색 원형)
-        surfEndButton.backgroundColor = .surfBlue
-        surfEndButton.setTitle("서핑 종료", for: .normal)
-        surfEndButton.setTitleColor(.white, for: .normal)
-        surfEndButton.titleLabel?.font = .systemFont(ofSize: 32, weight: .bold)
-        surfEndButton.layer.cornerRadius = 77
-        
-        // 그림자 효과
-        surfEndButton.layer.shadowColor = UIColor.surfBlue.cgColor
-        surfEndButton.layer.shadowOffset = CGSize(width: 0, height: 8)
-        surfEndButton.layer.shadowRadius = 16
-        surfEndButton.layer.shadowOpacity = 0.3
-        
         containerView.addSubview(surfEndButton)
         
         surfEndButton.snp.makeConstraints { make in
@@ -96,21 +89,18 @@ class SurfEndOverlayView: UIView {
         }
     }
     
+    private func setupCancelSurfingButton() {
+        containerView.addSubview(cancelSurfingButton)
+        
+        cancelSurfingButton.snp.makeConstraints { make in
+            make.centerX.equalToSuperview()
+            make.top.equalTo(surfEndButton.snp.bottom).offset(24)
+            make.height.equalTo(48)
+            make.width.equalTo(160)
+        }
+    }
+    
     private func setupCancelButton() {
-        // 취소 버튼 (작은 X 버튼)
-        cancelButton.backgroundColor = .systemBackground
-        cancelButton.setImage(UIImage(systemName: "xmark"), for: .normal)
-        cancelButton.tintColor = .surfBlue
-        cancelButton.layer.cornerRadius = 34
-        cancelButton.layer.borderWidth = 1
-        cancelButton.layer.borderColor = UIColor.surfBlue.cgColor
-        
-        // 그림자 효과
-        cancelButton.layer.shadowColor = UIColor.black.cgColor
-        cancelButton.layer.shadowOffset = CGSize(width: 0, height: 2)
-        cancelButton.layer.shadowRadius = 4
-        cancelButton.layer.shadowOpacity = 0.1
-        
         containerView.addSubview(cancelButton)
         
         cancelButton.snp.makeConstraints { make in
@@ -121,33 +111,7 @@ class SurfEndOverlayView: UIView {
     }
     
     private func bindActions() {
-        // 서핑 종료 버튼 터치 효과
-        surfEndButton.rx.controlEvent(.touchDown)
-            .subscribe(onNext: { [weak self] in
-                self?.animateButtonPress(button: self?.surfEndButton, pressed: true)
-            })
-            .disposed(by: disposeBag)
-        
-        surfEndButton.rx.controlEvent([.touchUpInside, .touchUpOutside, .touchCancel])
-            .subscribe(onNext: { [weak self] in
-                self?.animateButtonPress(button: self?.surfEndButton, pressed: false)
-            })
-            .disposed(by: disposeBag)
-        
-        // 취소 버튼 터치 효과
-        cancelButton.rx.controlEvent(.touchDown)
-            .subscribe(onNext: { [weak self] in
-                self?.animateButtonPress(button: self?.cancelButton, pressed: true)
-            })
-            .disposed(by: disposeBag)
-        
-        cancelButton.rx.controlEvent([.touchUpInside, .touchUpOutside, .touchCancel])
-            .subscribe(onNext: { [weak self] in
-                self?.animateButtonPress(button: self?.cancelButton, pressed: false)
-            })
-            .disposed(by: disposeBag)
-        
-        // 버튼 액션
+        // 서핑 종료 버튼 액션
         surfEndButton.rx.tap
             .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
             .subscribe(onNext: { [weak self] in
@@ -155,20 +119,21 @@ class SurfEndOverlayView: UIView {
             })
             .disposed(by: disposeBag)
         
+        // 서핑 취소하기 버튼 액션
+        cancelSurfingButton.rx.tap
+            .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] in
+                self?.onCancelSurfing?()
+            })
+            .disposed(by: disposeBag)
+        
+        // 취소 버튼 액션
         cancelButton.rx.tap
             .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
             .subscribe(onNext: { [weak self] in
                 self?.onCancel?()
             })
             .disposed(by: disposeBag)
-    }
-    
-    private func animateButtonPress(button: UIButton?, pressed: Bool) {
-        guard let button = button else { return }
-        
-        UIView.animate(withDuration: 0.1, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
-            button.transform = pressed ? CGAffineTransform(scaleX: 0.95, y: 0.95) : .identity
-        }
     }
     
     /// 오버레이 표시
