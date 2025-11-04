@@ -75,5 +75,6 @@ extension UIColor {
     static var backgroundSkyblue: UIColor { UIColor(hex: 0xCCDBF4) } // #CCDBF4
     static var backgroundWhite: UIColor { UIColor(hex:0xEEF1F6)}
     static var backgroundHeader: UIColor { UIColor(hex:0xE5EDF9)}
+    static var radialSkyBlue: UIColor { UIColor(hex:0x91BAFF)}
     
 }
