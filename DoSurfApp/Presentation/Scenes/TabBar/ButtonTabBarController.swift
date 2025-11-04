@@ -14,6 +14,7 @@ import SnapKit
 final class ButtonTabBarController: UIViewController {
     
     // MARK: - Properties
+    private let viewModel: ButtonTabBarViewModel
     private let storageService: SurfingRecordService
     private let disposeBag = DisposeBag()
     
@@ -51,21 +52,22 @@ final class ButtonTabBarController: UIViewController {
     
     private var currentNavigationController: UINavigationController?
     
-    // State
-    private let currentTab = BehaviorRelay<TabType>(value: .chart)
-    private let isRecordingScreenPresented = BehaviorRelay<Bool>(value: false)
-    
     // Overlay
     private var surfEndOverlay: SurfEndOverlayView?
     private var surfStartOverlay: SurfStartOverlayView?
     
     // MARK: - Initialization
-    init(storageService: SurfingRecordService = UserDefaultsManager()) {
+    init(
+        viewModel: ButtonTabBarViewModel,
+        storageService: SurfingRecordService = UserDefaultsManager()
+    ) {
+        self.viewModel = viewModel
         self.storageService = storageService
         super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder: NSCoder) {
+        self.viewModel = ButtonTabBarViewModel(storageService: UserDefaultsManager())
         self.storageService = UserDefaultsManager()
         super.init(coder: coder)
     }
@@ -75,8 +77,7 @@ final class ButtonTabBarController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupInitialViewController()
-        bindActions()
-        loadSurfingState()
+        bindViewModel()
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -150,60 +151,54 @@ final class ButtonTabBarController: UIViewController {
     }
     
     // MARK: - Binding
-    private func bindActions() {
-        // Chart Button
-        chartButton.rx.controlEvent(.touchUpInside)
-            .subscribe(onNext: { [weak self] in
-                self?.switchToTab(.chart)
-            })
-            .disposed(by: disposeBag)
+    private func bindViewModel() {
+        let input = ButtonTabBarViewModel.Input(
+            centerButtonTapped: centerButton.rx.controlEvent(.touchUpInside)
+                .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
+                .asObservable(),
+            chartButtonTapped: chartButton.rx.controlEvent(.touchUpInside)
+                .asObservable(),
+            recordButtonTapped: recordButton.rx.controlEvent(.touchUpInside)
+                .asObservable()
+        )
         
-        // Center Button
-        centerButton.rx.controlEvent(.touchUpInside)
-            .throttle(.milliseconds(300), scheduler: MainScheduler.instance)
-            .subscribe(onNext: { [weak self] in
-                self?.handleCenterButtonTap()
-            })
-            .disposed(by: disposeBag)
-        
-        // Record Button
-        recordButton.rx.controlEvent(.touchUpInside)
-            .subscribe(onNext: { [weak self] in
-                self?.switchToTab(.record)
-            })
-            .disposed(by: disposeBag)
+        let output = viewModel.transform(input: input)
         
         // Tab State
-        currentTab
-            .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] tab in
-                self?.updateButtonStates(selectedTab: tab)
+        output.currentTab
+            .drive(onNext: { [weak self] tab in
+                self?.handleTabChange(tab)
             })
             .disposed(by: disposeBag)
         
-        // Recording State
-        isRecordingScreenPresented
-            .distinctUntilChanged()
-            .subscribe(onNext: { [weak self] isRecording in
-                self?.centerButton.updateState(isRecording: isRecording)
-                let backgroundColor: UIColor = isRecording ? .systemYellow : .systemBackground
+        // Surfing State
+        output.isSurfing
+            .drive(onNext: { [weak self] isSurfing in
+                self?.centerButton.updateState(isRecording: isSurfing)
+                let backgroundColor: UIColor = isSurfing ? .systemYellow : .systemBackground
                 self?.view.backgroundColor = backgroundColor
                 self?.containerView.backgroundColor = backgroundColor
             })
             .disposed(by: disposeBag)
-    }
-    
-    private func loadSurfingState() {
-        let isRecording = storageService.readSurfingState()
-        isRecordingScreenPresented.accept(isRecording)
+        
+        // Show Start Overlay
+        output.shouldShowStartOverlay
+            .drive(onNext: { [weak self] _ in
+                self?.showSurfStartOverlay()
+            })
+            .disposed(by: disposeBag)
+        
+        // Show End Overlay
+        output.shouldShowEndOverlay
+            .drive(onNext: { [weak self] _ in
+                self?.showSurfEndOverlay()
+            })
+            .disposed(by: disposeBag)
     }
     
     // MARK: - Tab Switching
-    private func switchToTab(_ tab: TabType) {
-        guard currentTab.value != tab else { return }
-        
+    private func handleTabChange(_ tab: TabType) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        currentTab.accept(tab)
         
         let viewController: UIViewController
         switch tab {
@@ -220,6 +215,7 @@ final class ButtonTabBarController: UIViewController {
         }
         
         showViewController(viewController)
+        updateButtonStates(selectedTab: tab)
     }
     
     private func showViewController(_ viewController: UIViewController) {
@@ -246,20 +242,6 @@ final class ButtonTabBarController: UIViewController {
     }
     
     // MARK: - Center Button Actions
-    private func handleCenterButtonTap() {
-        if storageService.readSurfingState() {
-            showSurfEndOverlay()
-        } else {
-            showSurfStartOverlay()
-        }
-    }
-    
-    private func startSurfing() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        storageService.createSurfingStartTime(Date())
-        storageService.createSurfingState(true)
-        isRecordingScreenPresented.accept(true)
-    }
     
     private func showSurfEndOverlay() {
         guard surfEndOverlay == nil else { return }
@@ -300,9 +282,7 @@ final class ButtonTabBarController: UIViewController {
     }
     
     private func endSurfing() {
-        storageService.createSurfingEndTime(Date())
-        storageService.createSurfingState(false)
-        isRecordingScreenPresented.accept(false)
+        viewModel.endSurfing()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         
         hideSurfEndOverlay { [weak self] in
@@ -311,23 +291,19 @@ final class ButtonTabBarController: UIViewController {
     }
     
     private func cancelSurfing() {
-        storageService.createSurfingState(false)
-        storageService.createSurfingStartTime(nil)
-        storageService.createSurfingEndTime(nil)
-        isRecordingScreenPresented.accept(false)
+        viewModel.cancelSurfing()
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
         
         hideSurfEndOverlay()
     }
     
     private func pushToRecordWrite() {
-        let startTime = storageService.readSurfingStartTime()
-        let endTime = storageService.readSurfingEndTime()
+        let recordData = viewModel.getRecordData()
         let chartsToPass: [Chart] = chartViewController.chartsSnapshot()
         
         let recordVC = DIContainer.shared.makeSurfRecordViewController(
-            startTime: startTime,
-            endTime: endTime,
+            startTime: recordData.startTime,
+            endTime: recordData.endTime,
             charts: chartsToPass
         )
         recordVC.title = "파도 기록"
@@ -386,10 +362,13 @@ final class ButtonTabBarController: UIViewController {
         hideSurfStartOverlay { [weak self] in
             guard let self = self else { return }
             
+            // 서핑 상태를 먼저 업데이트 (InteractionImage 전에)
+            self.viewModel.startSurfing()
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            
             // InteractionImage 애니메이션 표시
             FullScreenImageAnimator.show(named: "InteractionImage", on: self.view, duration: 2.0) {
-                // 애니메이션 완료 후 서핑 시작
-                self.startSurfing()
+                // 애니메이션 완료 (추가 작업 없음)
             }
         }
     }
