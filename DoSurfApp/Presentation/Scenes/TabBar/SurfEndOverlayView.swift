@@ -34,7 +34,7 @@ final class SurfEndOverlayView: BaseOverlayView {
     private func setupUI() {
         setupButtons(
             main: .primary(title: "서핑 종료"),
-            secondary: .outlined(title: "서핑 취소하기", tintColor: .systemRed),
+            secondary: .capsuled(title: "서핑 취소하기", tintColor: .textRed),
             cancel: .icon(image: UIImage(systemName: "xmark"), tintColor: .surfBlue)
         )
     }
