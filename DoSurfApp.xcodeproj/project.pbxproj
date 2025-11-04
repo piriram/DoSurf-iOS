@@ -193,11 +193,11 @@
 				};
 			};
 			buildConfigurationList = 21E7A4772E842FED008EFDDA /* Build configuration list for PBXProject "DoSurfApp" */;
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
+				ko,
 			);
 			mainGroup = 21E7A4732E842FED008EFDDA;
 			minimizedProjectReferenceProxies = 1;
