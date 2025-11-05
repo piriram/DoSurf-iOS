@@ -104,33 +104,6 @@ final class DIContainer {
             mode: mode
         )
     }
-//
-//    /// 기존 기록 편집용 ViewController
-//    func makeSurfRecordViewController(editing record: SurfRecordData) -> NoteViewController {
-//        let mode = SurfRecordMode.edit(record: record)
-//        let viewModel = makeSurfRecordViewModel(mode: mode)
-//        return NoteViewController(
-//            viewModel: viewModel,
-//            mode: mode
-//        )
-//    }
-    
-//    /// 일반 생성용 ViewController (mode로 생성)
-//    func makeSurfRecordViewController(mode: SurfRecordMode) -> NoteViewController {
-//        let viewModel = makeSurfRecordViewModel(mode: mode)
-//        return NoteViewController(
-//            viewModel: viewModel,
-//            mode: mode
-//        )
-//    }
-//    
-//    /// RecordHistory ViewController 생성
-//    func makeRecordHistoryViewController() -> RecordHistoryViewController {
-//        let viewModel = makeRecordHistoryViewModel()
-//        return RecordHistoryViewController(
-//            viewModel: viewModel
-//        )
-//    }
     
     func makeTabBarViewController() -> ButtonTabBarController{
         let viewModel = makeButtonTabBarViewModel()
