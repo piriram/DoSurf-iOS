@@ -41,5 +41,6 @@ final class BeachSelectCell: UITableViewCell {
         titleLabel.text = location.displayText
         titleLabel.textColor = isSelected ? .surfBlue : .grayText
         titleLabel.font = isSelected ? .systemFont(ofSize: FontSize.body1, weight: FontSize.semibold) : .systemFont(ofSize: FontSize.body1, weight: FontSize.medium)
+        
     }
 }

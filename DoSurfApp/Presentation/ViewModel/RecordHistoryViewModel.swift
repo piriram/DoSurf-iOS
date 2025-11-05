@@ -36,12 +36,12 @@ final class RecordHistoryViewModel {
     private let disposeBag = DisposeBag()
     
     private let recordsRelay = BehaviorRelay<[SurfRecordData]>(value: [])
-    private let beachesRelay = BehaviorRelay<[BeachDTO]>(value: [])
+    let beachesRelay = BehaviorRelay<[BeachDTO]>(value: [])
     private let filterRelay = BehaviorRelay<RecordFilter>(value: .all)
     private let sortTypeRelay = BehaviorRelay<SortType>(value: .latest)
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
-    private let selectedBeachIDRelay = BehaviorRelay<Int?>(value: nil)
+    let selectedBeachIDRelay = BehaviorRelay<Int?>(value: nil)
     
     // MARK: - Initializer
     init(

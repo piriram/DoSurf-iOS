@@ -66,6 +66,9 @@ final class CenterButton: UIControl {
         }
         button.setNeedsUpdateConfiguration()
         
+        // iOS 16-25를 위한 cornerRadius 직접 설정
+        button.layer.cornerRadius = 33.5
+        
         // Shadow
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 12
@@ -100,21 +103,19 @@ final class CenterButton: UIControl {
     private func addRadialGradient() {
         removeRadialGradient()
         
-        // 배경을 투명하게 설정
         button.backgroundColor = .clear
         
-        // Radial Gradient 레이어 생성
         let gradient = CAGradientLayer()
         gradient.type = .radial
         gradient.colors = [
-            UIColor.radialSkyBlue.cgColor,   // #91BAFF (중심)
-            UIColor.white.cgColor        // #FFFFFF (외곽)
+            UIColor.radialSkyBlue.cgColor,
+            UIColor.white.cgColor
         ]
         gradient.startPoint = CGPoint(x: 0.5, y: 0.5)
         let const = 1.5
         gradient.endPoint = CGPoint(x: const, y: const)
         gradient.frame = button.bounds
-        gradient.cornerRadius = button.layer.cornerRadius
+        gradient.cornerRadius = 33.5
         
         button.layer.insertSublayer(gradient, at: 0)
         self.gradientLayer = gradient
@@ -140,7 +141,6 @@ final class CenterButton: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         gradientLayer?.frame = button.bounds
-        gradientLayer?.cornerRadius = button.layer.cornerRadius
-        
+        gradientLayer?.cornerRadius = 33.5
     }
 }
