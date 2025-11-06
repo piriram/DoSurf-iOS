@@ -94,6 +94,7 @@ class ChartTableViewCell: UITableViewCell {
         airTemperatureLabel.applyTypography(.body2Medium, color: .lableBlack)
         airTemperatureLabel.adjustsFontSizeToFitWidth = true
         airTemperatureLabel.minimumScaleFactor = 0.8
+        airTemperatureLabel.textAlignment = .right
         
         // Water Temperature Label - Typography 적용
         waterTemperatureLabel.applyTypography(.body2Medium, color: .lableBlack)
@@ -144,12 +145,13 @@ class ChartTableViewCell: UITableViewCell {
         weatherInfoStack.axis = .vertical
         weatherInfoStack.alignment = .center
         weatherInfoStack.spacing = 2
-        
+
         weatherStackView.addArrangedSubview(weatherIconImageView)
         weatherStackView.addArrangedSubview(weatherInfoStack)
         weatherStackView.axis = .horizontal
         weatherStackView.alignment = .center
         weatherStackView.spacing = 4
+        weatherStackView.distribution = .fill  // 추가
         
         // Water Temperature Stack
         let waterTempInfoStack = UIStackView(arrangedSubviews: [waterTemperatureLabel])
@@ -209,9 +211,13 @@ class ChartTableViewCell: UITableViewCell {
         }
         
         weatherStackView.snp.makeConstraints { make in
-            make.width.greaterThanOrEqualTo(40)
+            make.width.equalTo(60)  // greaterThanOrEqualTo 대신 equalTo 사용
         }
-        
+
+        // airTemperatureLabel에 고정 너비 추가
+        airTemperatureLabel.snp.makeConstraints { make in
+            make.width.equalTo(36)  // 텍스트가 들어갈 충분한 고정 너비
+        }
         waterTemperatureStackView.snp.makeConstraints { make in
             make.width.greaterThanOrEqualTo(60)
         }
