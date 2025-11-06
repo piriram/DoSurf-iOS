@@ -8,7 +8,9 @@ import Foundation
 
 final class DIContainer {
     static let shared = DIContainer()
-    private init() {}
+    private init() {
+        print("DIContainer 생성")
+    }
     
     // MARK: - Repository Factories
     func makeBeachRepository() -> FirestoreProtocol {
@@ -41,12 +43,13 @@ final class DIContainer {
         return UserDefaultsManager()
     }
     
-  
-    
-    
     // MARK: - ViewModel Factories
     func makeDashboardViewModel() -> DashboardViewModel {
-        return DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
+        return DashboardViewModel(
+            fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
+            surfRecordUseCase: makeSurfRecordUseCase(),
+            fetchBeachListUseCase: makeFetchBeachListUseCase()
+        )
     }
     
     func makeSurfRecordViewModel(mode: SurfRecordMode) -> NoteViewModel {
