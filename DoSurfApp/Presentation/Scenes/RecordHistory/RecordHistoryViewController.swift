@@ -21,23 +21,21 @@ final class RecordHistoryViewController: BaseViewController {
     private let emptyStateView = EmptyStateView()
     
     // MARK: - Dependencies
-    private let viewModel: RecordHistoryViewModel
-    //    private let surfRecordUseCase: SurfRecordUseCaseProtocol
+    let viewModel: RecordHistoryViewModel
     
     // MARK: - Rx
     private let disposeBag = DisposeBag()
-    private let deleteRecordSubject = PublishSubject<NSManagedObjectID>()
-    private let pinRecordSubject = PublishSubject<NSManagedObjectID>()
-    private let editRecordSubject = PublishSubject<NSManagedObjectID>()
-    private let sortSelectionSubject = PublishSubject<SortType>()
-    private let locationSelectionSubject = PublishSubject<Int?>()
+    let deleteRecordSubject = PublishSubject<NSManagedObjectID>()
+    let pinRecordSubject = PublishSubject<NSManagedObjectID>()
+    let editRecordSubject = PublishSubject<NSManagedObjectID>()
+    let sortSelectionSubject = PublishSubject<SortType>()
+    let locationSelectionSubject = PublishSubject<Int?>()
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-    
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
@@ -123,71 +121,11 @@ final class RecordHistoryViewController: BaseViewController {
         
         let output = viewModel.transform(input: input)
         
-        // Bind records to table view
-        output.records
-            .drive(tableView.rx.items(
-                cellIdentifier: RecordHistoryCell.identifier,
-                cellType: RecordHistoryCell.self
-            )) { [weak self] _, viewModel, cell in
-                guard let self = self else { return }
-                cell.configure(with: viewModel)
-                
-                cell.onMoreButtonTap = { [weak self] in
-                    self?.presentActionSheet(for: viewModel)
-                }
-                
-                cell.onMemoButtonTap = { [weak self] in
-                    self?.handleMemoTap(for: viewModel)
-                }
-                
-                cell.onAddMemoButtonTap = { [weak self] in
-                    self?.handleMemoTap(for: viewModel)
-                }
-            }
-            .disposed(by: disposeBag)
-        
-        // Bind empty state
-        output.isEmpty
-            .drive(onNext: { [weak self] isEmpty in
-                self?.emptyStateView.isHidden = !isEmpty
-                self?.tableView.isHidden = isEmpty
-            })
-            .disposed(by: disposeBag)
-        
-        // Bind loading state (if needed)
-        output.isLoading
-            .drive()
-            .disposed(by: disposeBag)
-        
-        // Handle errors
-        output.error
-            .emit(onNext: { [weak self] error in
-                self?.presentErrorAlert(message: error.localizedDescription)
-            })
-            .disposed(by: disposeBag)
-        
-        // Update filter view
-        output.selectedFilter
-            .drive(onNext: { [weak self] filter in
-                self?.filterView.update(selectedFilter: filter)
-                self?.scrollToTop()
-            })
-            .disposed(by: disposeBag)
-        
-        // Update location title
-        output.selectedBeach
-            .drive(onNext: { [weak self] beach in
-                let title = beach?.displayName ?? "전체 해변"
-                self?.filterView.setLocationTitle(title)
-            })
-            .disposed(by: disposeBag)
-        
-        // Update sort title
-        output.selectedSort
-            .drive(onNext: { [weak self] sortType in
-                self?.filterView.setSortTitle(sortType.title)
-            })
-            .disposed(by: disposeBag)
+        bindRecords(output: output)
+        bindEmptyState(output: output)
+        bindLoadingState(output: output)
+        bindErrors(output: output)
+        bindFilterUpdates(output: output)
     }
     
     // MARK: - Private Methods
@@ -212,290 +150,89 @@ final class RecordHistoryViewController: BaseViewController {
         )
     }
     
-    private func scrollToTop(_ animated: Bool = true) {
+    func scrollToTop(_ animated: Bool = true) {
         let yOffset = -tableView.adjustedContentInset.top
         tableView.setContentOffset(CGPoint(x: 0, y: yOffset), animated: animated)
     }
     
-    // MARK: - Presentation Methods
-    private func presentLocationSelector() {
-        let selectedBeachID = viewModel.selectedBeachIDRelay.value
-        let beaches = viewModel.beachesRelay.value
-        let selectedBeach = beaches.first { Int($0.id) == selectedBeachID }
-        
-        let beachSelectViewModel = DIContainer.shared.makeBeachSelectViewModel(
-            initialSelectedBeach: selectedBeach
-        )
-        let beachSelectViewController = BeachSelectViewController(viewModel: beachSelectViewModel)
-        beachSelectViewController.hidesBottomBarWhenPushed = true
-        beachSelectViewController.showAllButton = true
-        
-        beachSelectViewController.onBeachSelected = { [weak self] beach in
-            guard let beachID = Int(beach.id) else { return }
-            self?.locationSelectionSubject.onNext(beachID)
-            self?.scrollToTop()
-        }
-        
-        beachSelectViewController.onAllBeachesSelected = { [weak self] in
-            self?.locationSelectionSubject.onNext(nil)
-            self?.scrollToTop()
-        }
-        
-        navigationController?.pushViewController(beachSelectViewController, animated: true)
-    }
-    
-    private func presentSortMenu() {
-        let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        
-        let sortOptions: [SortType] = [.latest, .oldest, .highRating, .lowRating]
-        sortOptions.forEach { sortType in
-            alertController.addAction(UIAlertAction(title: sortType.title, style: .default) { [weak self] _ in
-                self?.sortSelectionSubject.onNext(sortType)
-                self?.scrollToTop()
-            })
-        }
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentRatingFilter() {
-        let alertController = UIAlertController(title: "별점 필터", message: nil, preferredStyle: .actionSheet)
-        
-        for rating in (1...5).reversed() {
-            alertController.addAction(UIAlertAction(title: "\(rating)점", style: .default) { [weak self] _ in
-                // TODO: ratingFilterSubject 연결
-            })
-        }
-        
-        alertController.addAction(UIAlertAction(title: "전체", style: .default) { [weak self] _ in
-            // TODO: all filter 연결
-        })
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentDatePresetMenu() {
-        let alertController = UIAlertController(title: "날짜 프리셋", message: nil, preferredStyle: .actionSheet)
-        
-        let presets: [(String, DatePreset)] = [
-            ("오늘", .today),
-            ("최근 7일", .last7Days),
-            ("이번 달", .thisMonth),
-            ("지난 달", .lastMonth)
-        ]
-        
-        presets.forEach { title, preset in
-            alertController.addAction(UIAlertAction(title: title, style: .default) { [weak self] _ in
-                // TODO: datePresetSubject 연결
-            })
-        }
-        
-        alertController.addAction(UIAlertAction(title: "사용자 지정…", style: .default) { [weak self] _ in
-            self?.presentDateRangePicker()
-        })
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentDateRangePicker() {
-        let pickerViewController = DateRangePickerViewController()
-        pickerViewController.initialStart = Date()
-        pickerViewController.initialEnd = Date()
-        
-        pickerViewController.onApply = { [weak self] start, end in
-            // TODO: dateRangeSubject 연결
-        }
-        
-        let navigationController = UINavigationController(rootViewController: pickerViewController)
-        navigationController.modalPresentationStyle = .popover
-        navigationController.preferredContentSize = CGSize(width: 360, height: 420)
-        
-        if let popoverController = navigationController.popoverPresentationController {
-            popoverController.sourceView = view
-            popoverController.sourceRect = CGRect(x: view.bounds.midX, y: 88, width: 1, height: 1)
-            popoverController.permittedArrowDirections = [.up, .down]
-            popoverController.delegate = self
-        }
-        
-        present(navigationController, animated: true)
-    }
-    
-    private func presentActionSheet(for viewModel: RecordCardViewModel) {
-        guard let objectID = viewModel.objectID else { return }
-        
-        let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-        
-        let pinTitle = viewModel.isPin ? "핀 해제" : "핀 고정"
-        alertController.addAction(UIAlertAction(title: pinTitle, style: .default) { [weak self] _ in
-            self?.pinRecordSubject.onNext(objectID)
-        })
-        
-        alertController.addAction(UIAlertAction(title: "수정", style: .default) { [weak self] _ in
-            self?.presentEditRecord(for: objectID)
-        })
-        
-        alertController.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
-            self?.presentDeleteConfirmation(for: objectID)
-        })
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentDeleteConfirmation(for objectID: NSManagedObjectID) {
-        let alertController = UIAlertController(
-            title: "기록 삭제",
-            message: "이 기록을 삭제하시겠습니까?",
-            preferredStyle: .alert
-        )
-        
-        alertController.addAction(UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
-            self?.deleteRecordSubject.onNext(objectID)
-        })
-        
-        alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-        present(alertController, animated: true)
-    }
-    
-    private func presentEditRecord(for objectID: NSManagedObjectID) {
-        //        surfRecordUseCase.fetchSurfRecord(by: objectID)
-        //            .observe(on: MainScheduler.instance)
-        //            .subscribe(
-        //                onSuccess: { [weak self] recordOption in
-        //                    guard let self = self, let record = recordOption else {
-        //                        self?.presentErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
-        //                        return
-        //                    }
-        //
-        //                    let editorViewController = DIContainer.shared.makeSurfRecordViewController(editing: record)
-        //                    editorViewController.hidesBottomBarWhenPushed = true
-        //
-        //                    if let navigationController = self.navigationController {
-        //                        navigationController.pushViewController(editorViewController, animated: true)
-        //                    } else {
-        //                        let navigationController = UINavigationController(rootViewController: editorViewController)
-        //                        navigationController.modalPresentationStyle = .fullScreen
-        //                        self.present(navigationController, animated: true)
-        //                    }
-        //                },
-        //                onFailure: { [weak self] error in
-        //                    self?.presentErrorAlert(message: error.localizedDescription)
-        //                }
-        //            )
-        //            .disposed(by: disposeBag)
-    }
-    
-    private func handleMemoTap(for viewModel: RecordCardViewModel) {
-        let currentMemo = viewModel.memo
-        
-        if currentMemo?.isEmpty ?? true {
-            presentMemoEditor(for: viewModel, initialText: nil)
-        } else {
-            let alertController = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-            
-            alertController.addAction(UIAlertAction(title: "메모 보기", style: .default) { [weak self] _ in
-                self?.showMemoDetail(for: viewModel)
-            })
-            
-            alertController.addAction(UIAlertAction(title: "메모 편집", style: .default) { [weak self] _ in
-                self?.presentMemoEditor(for: viewModel, initialText: currentMemo)
-            })
-            
-            alertController.addAction(UIAlertAction(title: "취소", style: .cancel))
-            present(alertController, animated: true)
-        }
-    }
-    
-    private func presentMemoEditor(for viewModel: RecordCardViewModel, initialText: String?) {
-        let editorViewController = CreateMemoViewController()
-        editorViewController.initialText = initialText
-        
-        editorViewController.onSave = { [weak self] text in
-            guard let self = self, let objectID = viewModel.objectID else {
-                self?.presentErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
-                return
-            }
-            self.updateMemoOnly(objectID: objectID, newMemo: text)
-        }
-        
-        let navigationController = UINavigationController(rootViewController: editorViewController)
-        navigationController.modalPresentationStyle = .pageSheet
-        
-        if let sheetController = navigationController.sheetPresentationController {
-            sheetController.detents = [.medium(), .large()]
-            sheetController.prefersGrabberVisible = true
-        }
-        
-        present(navigationController, animated: true)
-    }
-    
-    private func updateMemoOnly(objectID: NSManagedObjectID, newMemo: String) {
-        //        surfRecordUseCase.fetchSurfRecord(by: objectID)
-        //            .flatMap { [weak self] recordOption -> Single<Void> in
-        //                guard let self = self, let record = recordOption else {
-        //                    return Single.error(RepositoryError.invalidObjectID)
-        //                }
-        //
-        //                let updatedRecord = SurfRecordData(
-        //                    beachID: record.beachID,
-        //                    id: record.id,
-        //                    surfDate: record.surfDate,
-        //                    startTime: record.startTime,
-        //                    endTime: record.endTime,
-        //                    rating: record.rating,
-        //                    memo: newMemo,
-        //                    isPin: record.isPin,
-        //                    charts: record.charts
-        //                )
-        //
-        //                return self.surfRecordUseCase.updateSurfRecord(updatedRecord)
-        //            }
-        //            .observe(on: MainScheduler.instance)
-        //            .subscribe(
-        //                onSuccess: { [weak self] in
-        //                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
-        //
-        //                    let alertController = UIAlertController(
-        //                        title: "메모 저장",
-        //                        message: "메모가 저장되었습니다.",
-        //                        preferredStyle: .alert
-        //                    )
-        //                    alertController.addAction(UIAlertAction(title: "확인", style: .default))
-        //                    self?.present(alertController, animated: true)
-        //                },
-        //                onFailure: { [weak self] error in
-        //                    self?.presentErrorAlert(message: error.localizedDescription)
-        //                }
-        //            )
-        //            .disposed(by: disposeBag)
-    }
-    
-    private func showMemoDetail(for viewModel: RecordCardViewModel) {
-        let memoViewController = MemoDetailViewController(viewModel: viewModel)
-        memoViewController.modalPresentationStyle = .pageSheet
-        
-        if let sheetController = memoViewController.sheetPresentationController {
-            sheetController.detents = [.medium(), .large()]
-            sheetController.prefersGrabberVisible = true
-        }
-        
-        present(memoViewController, animated: true)
-    }
-    
-    private func presentErrorAlert(message: String) {
-        let alertController = UIAlertController(
-            title: "오류",
-            message: message,
-            preferredStyle: .alert
-        )
-        alertController.addAction(UIAlertAction(title: "확인", style: .default))
-        present(alertController, animated: true)
-    }
     public func resetAllFilters() {
         viewModel.resetToDefaults()
+    }
+}
+
+// MARK: - Binding Methods
+private extension RecordHistoryViewController {
+    
+    func bindRecords(output: RecordHistoryViewModel.Output) {
+        output.records
+            .drive(tableView.rx.items(
+                cellIdentifier: RecordHistoryCell.identifier,
+                cellType: RecordHistoryCell.self
+            )) { [weak self] _, viewModel, cell in
+                self?.configureCell(cell, with: viewModel)
+            }
+            .disposed(by: disposeBag)
+    }
+    
+    func configureCell(_ cell: RecordHistoryCell, with viewModel: RecordCardViewModel) {
+        cell.configure(with: viewModel)
+        
+        cell.onMoreButtonTap = { [weak self] in
+            self?.presentActionSheet(for: viewModel)
+        }
+        
+        cell.onMemoButtonTap = { [weak self] in
+            self?.handleMemoTap(for: viewModel)
+        }
+        
+        cell.onAddMemoButtonTap = { [weak self] in
+            self?.handleMemoTap(for: viewModel)
+        }
+    }
+    
+    func bindEmptyState(output: RecordHistoryViewModel.Output) {
+        output.isEmpty
+            .drive(onNext: { [weak self] isEmpty in
+                self?.emptyStateView.isHidden = !isEmpty
+                self?.tableView.isHidden = isEmpty
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bindLoadingState(output: RecordHistoryViewModel.Output) {
+        output.isLoading
+            .drive()
+            .disposed(by: disposeBag)
+    }
+    
+    func bindErrors(output: RecordHistoryViewModel.Output) {
+        output.error
+            .emit(onNext: { [weak self] error in
+                self?.showErrorAlert(message: error.localizedDescription)
+            })
+            .disposed(by: disposeBag)
+    }
+    
+    func bindFilterUpdates(output: RecordHistoryViewModel.Output) {
+        output.selectedFilter
+            .drive(onNext: { [weak self] filter in
+                self?.filterView.update(selectedFilter: filter)
+                self?.scrollToTop()
+            })
+            .disposed(by: disposeBag)
+        
+        output.selectedBeach
+            .drive(onNext: { [weak self] beach in
+                let title = beach?.displayName ?? "전체 해변"
+                self?.filterView.setLocationTitle(title)
+            })
+            .disposed(by: disposeBag)
+        
+        output.selectedSort
+            .drive(onNext: { [weak self] sortType in
+                self?.filterView.setSortTitle(sortType.title)
+            })
+            .disposed(by: disposeBag)
     }
 }
 
