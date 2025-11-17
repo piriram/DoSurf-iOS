@@ -157,7 +157,27 @@ extension RecordHistoryViewController {
     }
     
     func presentEditRecord(for objectID: NSManagedObjectID) {
-        // TODO: Implement edit record navigation
+        let surfRecordUseCase = DIContainer.shared.makeSurfRecordUseCase()
+
+        surfRecordUseCase.fetchSurfRecord(by: objectID)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { [weak self] recordOption in
+                    guard let self = self, let record = recordOption else {
+                        self?.showErrorAlert(message: "선택된 기록을 찾을 수 없습니다.")
+                        return
+                    }
+
+                    let editorViewController = DIContainer.shared.makeSurfRecordViewController(editing: record)
+                    editorViewController.hidesBottomBarWhenPushed = true
+
+                    self.navigationController?.pushViewController(editorViewController, animated: true)
+                },
+                onFailure: { [weak self] error in
+                    self?.showErrorAlert(message: error.localizedDescription)
+                }
+            )
+            .disposed(by: disposeBag)
     }
     
     func handleMemoTap(for viewModel: RecordCardViewModel) {
