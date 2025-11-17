@@ -93,8 +93,10 @@ final class ButtonTabBarViewModel {
         storageService.createSurfingState(true)
         isSurfing.accept(true)
 
-        // 라이브 액티비티 시작
-        SurfingActivityManager.shared.startActivity(startTime: startTime)
+        // 라이브 액티비티 시작 (iOS 16.2+)
+        if #available(iOS 16.2, *) {
+            SurfingActivityManager.shared.startActivity(startTime: startTime)
+        }
     }
 
     /// 서핑 종료
@@ -104,7 +106,9 @@ final class ButtonTabBarViewModel {
         isSurfing.accept(false)
 
         // 라이브 액티비티 종료 (4시간 후 자동 해제)
-        SurfingActivityManager.shared.endActivity(dismissalPolicy: .after(.now + 14400))
+        if #available(iOS 16.2, *) {
+            SurfingActivityManager.shared.endActivity(dismissalPolicy: .after(.now + 14400))
+        }
     }
 
     /// 서핑 취소
@@ -115,7 +119,9 @@ final class ButtonTabBarViewModel {
         isSurfing.accept(false)
 
         // 라이브 액티비티 즉시 종료
-        SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
+        if #available(iOS 16.2, *) {
+            SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
+        }
     }
     
     /// 기록 화면에 전달할 데이터 가져오기
@@ -137,9 +143,11 @@ final class ButtonTabBarViewModel {
         let isRecording = storageService.readSurfingState()
         isSurfing.accept(isRecording)
 
-        // 서핑 중이면 라이브 액티비티 재시작
-        if isRecording, let startTime = storageService.readSurfingStartTime() {
-            SurfingActivityManager.shared.startActivity(startTime: startTime)
+        // 서핑 중이면 라이브 액티비티 재시작 (iOS 16.2+)
+        if #available(iOS 16.2, *) {
+            if isRecording, let startTime = storageService.readSurfingStartTime() {
+                SurfingActivityManager.shared.startActivity(startTime: startTime)
+            }
         }
     }
 }
