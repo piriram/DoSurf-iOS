@@ -8,6 +8,7 @@
 import Foundation
 import RxSwift
 import RxCocoa
+import ActivityKit
 
 // MARK: - ButtonTabBar ViewModel
 final class ButtonTabBarViewModel {
