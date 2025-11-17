@@ -6,6 +6,10 @@ final class BeachChartListView: UIView {
     private var groupedCharts: [(date: Date, charts: [Chart])] = []
     private var currentDateIndex: Int = 0
     
+    // 스크롤 중 헤더 업데이트 쓰로틀링
+    private var lastHeaderUpdateTime: CFTimeInterval = 0
+    private let headerUpdateInterval: CFTimeInterval = 0.1
+    
     // MARK: - UI Components
     private lazy var dateHeaderView: UIView = {
         let view = UIView()
@@ -25,7 +29,7 @@ final class BeachChartListView: UIView {
     
     private let dateLabel: UILabel = {
         let label = UILabel()
-        label.font = UIFont.systemFont(ofSize: 18, weight: .semibold)
+        label.font = .systemFont(ofSize: 18, weight: .semibold)
         label.textColor = .surfBlue
         label.textAlignment = .center
         return label
@@ -43,6 +47,7 @@ final class BeachChartListView: UIView {
         tableView.showsVerticalScrollIndicator = true
         tableView.isScrollEnabled = true
         tableView.alwaysBounceVertical = true
+        tableView.estimatedRowHeight = 56 // 고정 높이 사용
         return tableView
     }()
     
@@ -94,6 +99,7 @@ final class BeachChartListView: UIView {
         self.currentDateIndex = 0
         updateDateLabel(index: currentDateIndex)
         tableView.reloadData()
+        
         DispatchQueue.main.async { [weak self] in
             self?.scrollToUpcomingChart()
         }
@@ -115,45 +121,26 @@ final class BeachChartListView: UIView {
         dateLabel.text = date.koreanMonthDayWeekday
     }
     
-    private func updateDateForVisibleSectionByCount() {
-        guard !groupedCharts.isEmpty else { return }
-        guard let visible = tableView.indexPathsForVisibleRows, !visible.isEmpty else { return }
+    // 가벼운 방식: 화면 상단 첫 번째 보이는 인덱스로 섹션 판정 + 쓰로틀링
+    private func updateDateForVisibleSectionLightweight() {
+        let now = CACurrentMediaTime()
+        guard now - lastHeaderUpdateTime >= headerUpdateInterval else { return }
+        lastHeaderUpdateTime = now
         
-        // Count visible rows per section
-        var counts: [Int: Int] = [:]
-        for indexPath in visible {
-            counts[indexPath.section, default: 0] += 1
-        }
+        guard let first = tableView.indexPathsForVisibleRows?.min(),
+              first.section < groupedCharts.count else { return }
         
-        // Choose the section with the highest visible row count.
-        // In case of tie, prefer the one that appears earlier in the visible rows order (closer to top).
-        var bestSection = currentDateIndex
-        var bestCount = -1
-        for (section, count) in counts {
-            if count > bestCount {
-                bestCount = count
-                bestSection = section
-            } else if count == bestCount {
-                let firstIdxBest = visible.firstIndex(where: { $0.section == bestSection }) ?? Int.max
-                let firstIdxCandidate = visible.firstIndex(where: { $0.section == section }) ?? Int.max
-                if firstIdxCandidate < firstIdxBest {
-                    bestSection = section
-                }
-            }
-        }
-        
-        if bestSection != currentDateIndex && bestSection < groupedCharts.count {
-            currentDateIndex = bestSection
-            updateDateLabel(index: bestSection)
+        if currentDateIndex != first.section {
+            currentDateIndex = first.section
+            updateDateLabel(index: first.section)
         }
     }
     
     private func scrollToUpcomingChart() {
         guard !groupedCharts.isEmpty else { return }
-        let now = Date() // 현재 시간 기준으로 복구
+        let now = Date()
         var targetIndexPath: IndexPath?
         
-        // Find the first chart whose time is now or in the future
         outerLoop: for (sectionIndex, group) in groupedCharts.enumerated() {
             for (rowIndex, chart) in group.charts.enumerated() {
                 if chart.time >= now {
@@ -163,7 +150,6 @@ final class BeachChartListView: UIView {
             }
         }
         
-        // If everything is in the past, focus the last row of the last section
         if targetIndexPath == nil {
             if let lastSection = groupedCharts.indices.last, !groupedCharts[lastSection].charts.isEmpty {
                 let lastRow = groupedCharts[lastSection].charts.count - 1
@@ -181,15 +167,18 @@ final class BeachChartListView: UIView {
 // MARK: - UITableViewDataSource & UITableViewDelegate
 extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return groupedCharts.count
+        groupedCharts.count
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return groupedCharts[section].charts.count
+        groupedCharts[section].charts.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: ChartTableViewCell.identifier, for: indexPath) as? ChartTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(
+            withIdentifier: ChartTableViewCell.identifier,
+            for: indexPath
+        ) as? ChartTableViewCell else {
             return UITableViewCell()
         }
         let chart = groupedCharts[indexPath.section].charts[indexPath.row]
@@ -201,31 +190,22 @@ extension BeachChartListView: UITableViewDataSource, UITableViewDelegate {
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
-    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        return nil
-    }
+    // 섹션 헤더/푸터는 사용하지 않음
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? { nil }
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { 0 }
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat { 0.001 }
     
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        return 0
-    }
-    
-    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
-        return 0.001
-    }
-    
-    // Keep the date header in sync with the section that has more visible rows
+    // 스크롤 중 헤더 날짜 갱신(가벼운 방식 + 쓰로틀링)
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === tableView else { return }
-        updateDateForVisibleSectionByCount()
+        updateDateForVisibleSectionLightweight()
     }
-    
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
         guard scrollView === tableView else { return }
-        updateDateForVisibleSectionByCount()
+        updateDateForVisibleSectionLightweight()
     }
-    
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         guard scrollView === tableView else { return }
-        if !decelerate { updateDateForVisibleSectionByCount() }
+        if !decelerate { updateDateForVisibleSectionLightweight() }
     }
 }

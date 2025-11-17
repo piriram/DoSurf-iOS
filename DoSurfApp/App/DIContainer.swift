@@ -8,7 +8,9 @@ import Foundation
 
 final class DIContainer {
     static let shared = DIContainer()
-    private init() {}
+    private init() {
+        print("DIContainer 생성")
+    }
     
     // MARK: - Repository Factories
     func makeBeachRepository() -> FirestoreProtocol {
@@ -43,7 +45,11 @@ final class DIContainer {
     
     // MARK: - ViewModel Factories
     func makeDashboardViewModel() -> DashboardViewModel {
-        return DashboardViewModel(fetchBeachDataUseCase: makeFetchBeachDataUseCase())
+        return DashboardViewModel(
+            fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
+            surfRecordUseCase: makeSurfRecordUseCase(),
+            fetchBeachListUseCase: makeFetchBeachListUseCase()
+        )
     }
     
     func makeSurfRecordViewModel(mode: SurfRecordMode) -> NoteViewModel {
@@ -78,6 +84,10 @@ final class DIContainer {
         )
     }
     
+    func makeButtonTabBarViewModel() -> ButtonTabBarViewModel {
+        return ButtonTabBarViewModel(storageService: makeStorageService())
+    }
+    
     // MARK: - ViewController Factories
     
     /// 새 기록 생성용 ViewController
@@ -97,7 +107,7 @@ final class DIContainer {
             mode: mode
         )
     }
-    
+
     /// 기존 기록 편집용 ViewController
     func makeSurfRecordViewController(editing record: SurfRecordData) -> NoteViewController {
         let mode = SurfRecordMode.edit(record: record)
@@ -107,23 +117,9 @@ final class DIContainer {
             mode: mode
         )
     }
-    
-    /// 일반 생성용 ViewController (mode로 생성)
-    func makeSurfRecordViewController(mode: SurfRecordMode) -> NoteViewController {
-        let viewModel = makeSurfRecordViewModel(mode: mode)
-        return NoteViewController(
-            viewModel: viewModel,
-            mode: mode
-        )
+
+    func makeTabBarViewController() -> ButtonTabBarController{
+        let viewModel = makeButtonTabBarViewModel()
+        return ButtonTabBarController(viewModel: viewModel)
     }
-    
-    /// RecordHistory ViewController 생성
-    func makeRecordHistoryViewController() -> RecordHistoryViewController {
-        let viewModel = makeRecordHistoryViewModel()
-        return RecordHistoryViewController(
-            viewModel: viewModel
-        )
-    }
-    
-    
 }
