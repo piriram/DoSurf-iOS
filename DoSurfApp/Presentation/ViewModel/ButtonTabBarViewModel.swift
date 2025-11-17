@@ -88,24 +88,34 @@ final class ButtonTabBarViewModel {
     
     /// 서핑 시작
     func startSurfing() {
-        storageService.createSurfingStartTime(Date())
+        let startTime = Date()
+        storageService.createSurfingStartTime(startTime)
         storageService.createSurfingState(true)
         isSurfing.accept(true)
+
+        // 라이브 액티비티 시작
+        SurfingActivityManager.shared.startActivity(startTime: startTime)
     }
-    
+
     /// 서핑 종료
     func endSurfing() {
         storageService.createSurfingEndTime(Date())
         storageService.createSurfingState(false)
         isSurfing.accept(false)
+
+        // 라이브 액티비티 종료 (4시간 후 자동 해제)
+        SurfingActivityManager.shared.endActivity(dismissalPolicy: .after(.now + 14400))
     }
-    
+
     /// 서핑 취소
     func cancelSurfing() {
         storageService.createSurfingState(false)
         storageService.createSurfingStartTime(nil)
         storageService.createSurfingEndTime(nil)
         isSurfing.accept(false)
+
+        // 라이브 액티비티 즉시 종료
+        SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
     }
     
     /// 기록 화면에 전달할 데이터 가져오기
@@ -126,5 +136,10 @@ final class ButtonTabBarViewModel {
     private func loadSurfingState() {
         let isRecording = storageService.readSurfingState()
         isSurfing.accept(isRecording)
+
+        // 서핑 중이면 라이브 액티비티 재시작
+        if isRecording, let startTime = storageService.readSurfingStartTime() {
+            SurfingActivityManager.shared.startActivity(startTime: startTime)
+        }
     }
 }
