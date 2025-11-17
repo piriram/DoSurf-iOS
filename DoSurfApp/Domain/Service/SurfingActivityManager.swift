@@ -10,6 +10,7 @@ import ActivityKit
 import UIKit
 
 /// 서핑 라이브 액티비티 관리자
+@available(iOS 16.2, *)
 final class SurfingActivityManager {
     static let shared = SurfingActivityManager()
 
