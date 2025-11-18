@@ -9,6 +9,9 @@
 /* Begin PBXBuildFile section */
 		2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39B2E8CDF8C00682B29 /* Differentiator */; };
 		2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39D2E8CDF8C00682B29 /* RxDataSources */; };
+		21BD77B22ECC195E00E15B12 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21BD77B12ECC195E00E15B12 /* WidgetKit.framework */; };
+		21BD77B42ECC195E00E15B12 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21BD77B32ECC195E00E15B12 /* SwiftUI.framework */; };
+		21BD77C12ECC195F00E15B12 /* DoSurfWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 21BD77AF2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		21E7A4952E843062008EFDDA /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 21E7A4942E843062008EFDDA /* .gitignore */; };
 		21E7A4AA2E8435EA008EFDDA /* SnapKit in Frameworks */ = {isa = PBXBuildFile; productRef = 21E7A4A92E8435EA008EFDDA /* SnapKit */; };
 		21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE04D22E8503E8004EFEE3 /* FirebaseAnalytics */; };
@@ -17,13 +20,61 @@
 		21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 21FE052E2E85358E004EFEE3 /* RxSwift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		21BD77BF2ECC195F00E15B12 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 21E7A4742E842FED008EFDDA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 21BD77AE2ECC195E00E15B12;
+			remoteInfo = DoSurfWidgetExtensionExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		21BD77C22ECC195F00E15B12 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				21BD77C12ECC195F00E15B12 /* DoSurfWidgetExtensionExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "DoSurfWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		21BD77AF2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DoSurfWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		21BD77B12ECC195E00E15B12 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		21BD77B32ECC195E00E15B12 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		21E7A47C2E842FED008EFDDA /* DoSurfApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DoSurfApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		21E7A4942E843062008EFDDA /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		21BD77C62ECC195F00E15B12 /* Exceptions for "DoSurfWidgetExtension" folder in "DoSurfWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 21BD77AE2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension */;
+		};
+		21BD77CD2ECC1A9C00E15B12 /* Exceptions for "DoSurfWidgetExtension" folder in "DoSurfApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				SurfingLiveActivity.swift,
+			);
+			target = 21E7A47B2E842FED008EFDDA /* DoSurfApp */;
+		};
+		21BD77D12ECC1BEB00E15B12 /* Exceptions for "DoSurfApp" folder in "DoSurfWidgetExtensionExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Domain/Model/SurfingActivityAttributes.swift,
+			);
+			target = 21BD77AE2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension */;
+		};
 		21FE051A2E851725004EFEE3 /* Exceptions for "DoSurfApp" folder in "DoSurfApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -39,10 +90,20 @@
 			path = "DoSurfWatch Watch App";
 			sourceTree = "<group>";
 		};
+		21BD77B52ECC195E00E15B12 /* DoSurfWidgetExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				21BD77CD2ECC1A9C00E15B12 /* Exceptions for "DoSurfWidgetExtension" folder in "DoSurfApp" target */,
+				21BD77C62ECC195F00E15B12 /* Exceptions for "DoSurfWidgetExtension" folder in "DoSurfWidgetExtensionExtension" target */,
+			);
+			path = DoSurfWidgetExtension;
+			sourceTree = "<group>";
+		};
 		21E7A47E2E842FED008EFDDA /* DoSurfApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				21FE051A2E851725004EFEE3 /* Exceptions for "DoSurfApp" folder in "DoSurfApp" target */,
+				21BD77D12ECC1BEB00E15B12 /* Exceptions for "DoSurfApp" folder in "DoSurfWidgetExtensionExtension" target */,
 			);
 			path = DoSurfApp;
 			sourceTree = "<group>";
@@ -54,6 +115,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		21BD77AC2ECC195E00E15B12 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				21BD77B42ECC195E00E15B12 /* SwiftUI.framework in Frameworks */,
+				21BD77B22ECC195E00E15B12 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -74,12 +144,23 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		21BD77B02ECC195E00E15B12 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				21BD77B12ECC195E00E15B12 /* WidgetKit.framework */,
+				21BD77B32ECC195E00E15B12 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		21E7A4732E842FED008EFDDA = {
 			isa = PBXGroup;
 			children = (
 				21E7A4942E843062008EFDDA /* .gitignore */,
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
 				21356D832E9572B4003C84FA /* DoSurfWatch Watch App */,
+				21BD77B52ECC195E00E15B12 /* DoSurfWidgetExtension */,
+				21BD77B02ECC195E00E15B12 /* Frameworks */,
 				21E7A47D2E842FED008EFDDA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -89,6 +170,7 @@
 			children = (
 				21E7A47C2E842FED008EFDDA /* DoSurfApp.app */,
 				21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */,
+				21BD77AF2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +200,28 @@
 			productReference = 21356D822E9572B4003C84FA /* DoSurfWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
+		21BD77AE2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21BD77C52ECC195F00E15B12 /* Build configuration list for PBXNativeTarget "DoSurfWidgetExtensionExtension" */;
+			buildPhases = (
+				21BD77AB2ECC195E00E15B12 /* Sources */,
+				21BD77AC2ECC195E00E15B12 /* Frameworks */,
+				21BD77AD2ECC195E00E15B12 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				21BD77B52ECC195E00E15B12 /* DoSurfWidgetExtension */,
+			);
+			name = DoSurfWidgetExtensionExtension;
+			packageProductDependencies = (
+			);
+			productName = DoSurfWidgetExtensionExtension;
+			productReference = 21BD77AF2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		21E7A47B2E842FED008EFDDA /* DoSurfApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 21E7A48F2E842FEF008EFDDA /* Build configuration list for PBXNativeTarget "DoSurfApp" */;
@@ -125,10 +229,12 @@
 				21E7A4782E842FED008EFDDA /* Sources */,
 				21E7A4792E842FED008EFDDA /* Frameworks */,
 				21E7A47A2E842FED008EFDDA /* Resources */,
+				21BD77C22ECC195F00E15B12 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				21BD77C02ECC195F00E15B12 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				21E7A47E2E842FED008EFDDA /* DoSurfApp */,
@@ -160,6 +266,9 @@
 					21356D812E9572B4003C84FA = {
 						CreatedOnToolsVersion = 26.0;
 					};
+					21BD77AE2ECC195E00E15B12 = {
+						CreatedOnToolsVersion = 26.0;
+					};
 					21E7A47B2E842FED008EFDDA = {
 						CreatedOnToolsVersion = 26.0;
 					};
@@ -187,12 +296,20 @@
 			targets = (
 				21E7A47B2E842FED008EFDDA /* DoSurfApp */,
 				21356D812E9572B4003C84FA /* DoSurfWatch Watch App */,
+				21BD77AE2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		21356D802E9572B4003C84FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		21BD77AD2ECC195E00E15B12 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -217,6 +334,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		21BD77AB2ECC195E00E15B12 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		21E7A4782E842FED008EFDDA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -225,6 +349,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		21BD77C02ECC195F00E15B12 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 21BD77AE2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension */;
+			targetProxy = 21BD77BF2ECC195F00E15B12 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		21356D8E2E9572B6003C84FA /* Debug */ = {
@@ -301,6 +433,68 @@
 			};
 			name = Release;
 		};
+		21BD77C32ECC195F00E15B12 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 557346W8SC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DoSurfWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DoSurfWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf.DoSurfWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		21BD77C42ECC195F00E15B12 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 557346W8SC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DoSurfWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DoSurfWidgetExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf.DoSurfWidgetExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		21E7A4902E842FEF008EFDDA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -322,12 +516,12 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -365,12 +559,12 @@
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UIUserInterfaceStyle = Light;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0.3;
+				MARKETING_VERSION = 1.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = app.NewT.DoSurf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -514,6 +708,15 @@
 			buildConfigurations = (
 				21356D8E2E9572B6003C84FA /* Debug */,
 				21356D8F2E9572B6003C84FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		21BD77C52ECC195F00E15B12 /* Build configuration list for PBXNativeTarget "DoSurfWidgetExtensionExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				21BD77C32ECC195F00E15B12 /* Debug */,
+				21BD77C42ECC195F00E15B12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

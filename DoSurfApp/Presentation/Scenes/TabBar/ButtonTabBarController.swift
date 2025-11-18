@@ -2,7 +2,7 @@
 //  CustomTabBarController.swift
 //  DoSurfApp
 //
-//  Created by Assistant on 10/16/25.
+//  Created by 잠만보김쥬디 on 10/16/25.
 //
 
 import UIKit
