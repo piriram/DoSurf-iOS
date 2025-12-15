@@ -327,10 +327,14 @@ final class ButtonTabBarController: UIViewController {
     private func showSurfStartOverlay() {
         guard surfStartOverlay == nil else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        
+
         let overlay = SurfStartOverlayView()
         surfStartOverlay = overlay
-        
+
+        // chartContainerView를 overlay의 그라디언트 참조로 설정
+        let chartContainerView = chartViewController.getChartContainerView()
+        overlay.configureGradientReference(chartContainerView)
+
         overlay.onSurfStart = { [weak self] in
             self?.handleSurfStart()
         }
@@ -340,7 +344,7 @@ final class ButtonTabBarController: UIViewController {
         overlay.onCancel = { [weak self] in
             self?.hideSurfStartOverlay()
         }
-        
+
         view.addSubview(overlay)
         overlay.snp.makeConstraints { $0.edges.equalToSuperview() }
         animateBottomBarVisibility(hidden: true)

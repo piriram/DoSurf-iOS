@@ -260,5 +260,15 @@ extension DashboardViewController {
     func getCurrentBeach() -> BeachDTO? {
         return currentBeach
     }
+
+    /// 차트 컨테이너 뷰 반환
+    func getChartContainerView() -> UIView {
+        return chartContainerView
+    }
+
+    /// 차트 리스트 뷰 반환
+    func getChartListView() -> UIView {
+        return chartListView
+    }
 }
 

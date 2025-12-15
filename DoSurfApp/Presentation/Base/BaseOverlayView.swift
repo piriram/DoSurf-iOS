@@ -7,16 +7,16 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
     
     // MARK: - Properties
     private let gradientBlurView = GradientBlurView(
-        blurStyle: .systemThickMaterial,
-        dimAlpha: 0.2,
+        blurStyle: .systemUltraThinMaterial,
+        dimAlpha: 0.0,
         gradientStartLocation: 0.0,
         gradientEndLocation: 1.0
     )
-    
+
     let containerView = UIView()
     let disposeBag = DisposeBag()
-    
-    private let blurHeight: CGFloat = 800
+
+    private let blurHeight: CGFloat = 497
     private let containerSize: CGFloat
     
     // MARK: - Buttons
@@ -42,10 +42,9 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
         // 그라데이션 블러 배경
         gradientBlurView.alpha = 0
         addSubview(gradientBlurView)
-        
+
         gradientBlurView.snp.makeConstraints { make in
-            make.leading.trailing.bottom.equalToSuperview()
-            make.height.equalTo(blurHeight)
+            make.edges.equalToSuperview()
         }
         
         // 컨테이너 뷰
@@ -59,6 +58,11 @@ class BaseOverlayView: UIView, OverlayViewProtocol {
         }
     }
     
+    // MARK: - Gradient Configuration
+    func configureGradientReference(_ view: UIView) {
+        gradientBlurView.setReferenceView(view)
+    }
+
     // MARK: - Button Setup
     func setupButtons(
         main: OverlayButtonConfiguration,

@@ -260,10 +260,36 @@ final class DashboardHeaderView: UIView {
     
     @objc private func handleInfoTapped() {
         guard let vc = findViewController() else { return }
+
+        // DashboardViewController의 chartContainerView 영역 기반으로 detent 계산
+        let detents: [UISheetPresentationController.Detent]
+        if let dashboardVC = vc as? DashboardViewController {
+            let chartContainerView = dashboardVC.getChartContainerView()
+
+            // chartContainerView의 화면 내 위치 계산
+            if let window = chartContainerView.window {
+                let frameInWindow = chartContainerView.convert(chartContainerView.bounds, to: window)
+                let sheetHeight = window.bounds.height - frameInWindow.minY
+
+                if sheetHeight > 0 {
+                    let customDetent = UISheetPresentationController.Detent.custom { context in
+                        return sheetHeight
+                    }
+                    detents = [customDetent]
+                } else {
+                    detents = [.medium()]
+                }
+            } else {
+                detents = [.medium()]
+            }
+        } else {
+            detents = [.medium()]
+        }
+
         let viewController = DashboardGuideViewController()
         viewController.modalPresentationStyle = .pageSheet
         if let sheet = viewController.sheetPresentationController {
-            sheet.detents = [.medium()]
+            sheet.detents = detents
             sheet.preferredCornerRadius = 20
         }
         vc.present(viewController, animated: true)
