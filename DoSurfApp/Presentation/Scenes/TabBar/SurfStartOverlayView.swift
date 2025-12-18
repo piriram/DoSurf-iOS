@@ -27,7 +27,7 @@ final class SurfStartOverlayView: BaseOverlayView {
     private func setupUI() {
         setupButtons(
             main: .primary(title: "서핑 시작"),
-            secondary: .capsuled(title: "기록 바로하기", tintColor: .surfBlue),
+            secondary: .capsuled(title: "기록 바로하기", tintColor: .surfBlue, fontWeight: .semibold),
             cancel: .icon(image: UIImage(systemName: "xmark"), tintColor: .surfBlue)
         )
     }

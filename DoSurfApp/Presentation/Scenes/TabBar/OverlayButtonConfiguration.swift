@@ -14,9 +14,15 @@ struct OverlayButtonConfiguration {
         )
     }
     
-    static func capsuled(title: String, tintColor: UIColor, width: CGFloat = 130, height: CGFloat = 44) -> OverlayButtonConfiguration {
+    static func capsuled(
+        title: String,
+        tintColor: UIColor,
+        width: CGFloat = 130,
+        height: CGFloat = 44,
+        fontWeight: UIFont.Weight = .medium
+    ) -> OverlayButtonConfiguration {
         return OverlayButtonConfiguration(
-            style: .capsule(title: title, tintColor: tintColor),
+            style: .capsule(title: title, tintColor: tintColor, fontWeight: fontWeight),
             width: width,
             height: height
         )

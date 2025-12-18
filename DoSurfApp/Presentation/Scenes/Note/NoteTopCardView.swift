@@ -196,7 +196,8 @@ final class NoteTopCardView: UIView {
         let row = UIView()
         let left = UILabel()
         left.text = title
-        left.font = .systemFont(ofSize: 14, weight: .regular)
+        left.font = .systemFont(ofSize: 17, weight: .regular)
+        left.textColor = .surfBlue
 
         row.addSubview(left)
         row.addSubview(button)

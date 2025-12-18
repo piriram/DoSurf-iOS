@@ -12,8 +12,8 @@ final class RecordHistoryCell: UITableViewCell {
         view.backgroundColor = .clear
         view.layer.cornerRadius = 24
         view.layer.shadowColor = UIColor.black.cgColor
-        view.layer.shadowOpacity = 0.1
-        view.layer.shadowOffset = CGSize(width: 5, height: 5)
+        view.layer.shadowOpacity = 0.05
+        view.layer.shadowOffset = CGSize(width: 0, height: 4)
         view.layer.shadowRadius = 8
         view.layer.masksToBounds = false
         return view
@@ -133,10 +133,10 @@ final class RecordHistoryCell: UITableViewCell {
         chartTableView.estimatedRowHeight = 56
         
         containerView.snp.makeConstraints {
-            $0.top.equalToSuperview().offset(4)
+            $0.top.equalToSuperview().offset(6)
             $0.leading.equalToSuperview().offset(16)
             $0.trailing.equalToSuperview().offset(-16)
-            $0.bottom.equalToSuperview().offset(-4)
+            $0.bottom.equalToSuperview().offset(-6)
         }
         
         roundedContentView.snp.makeConstraints {

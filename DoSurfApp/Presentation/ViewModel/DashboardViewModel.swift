@@ -174,10 +174,10 @@ final class DashboardViewModel {
                         let avgWaveDir = self.averageDirectionDegrees(perBeachStats.compactMap(\.wvDir))
 
                         return [
-                            .init(type: .wind, title: "지역 평균 바람",
+                            .init(type: .wind, title: "바람",
                                   value: String(format: "%.1fm/s", avgWind),
                                   directionDegrees: avgWindDir, icon: "windFillIcon", color: .surfBlue),
-                            .init(type: .wave, title: "지역 평균 파도",
+                            .init(type: .wave, title: "파도",
                                   value: String(format: "%.1fm", avgWaveH),
                                   subtitle: String(format: "%.1fs", avgWaveP),
                                   directionDegrees: avgWaveDir, icon: "waveFillIcon", color: .surfBlue),

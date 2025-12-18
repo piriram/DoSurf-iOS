@@ -90,7 +90,7 @@ extension SurfRecordMode {
     var navigationTitle: String {
         switch self {
         case .new:
-            return "서핑 기록"
+            return "파도 기록"
         case .edit:
             return "기록 수정"
         }

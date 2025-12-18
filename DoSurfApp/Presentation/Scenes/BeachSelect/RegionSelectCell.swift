@@ -8,10 +8,9 @@ final class RegionSelectCell: UITableViewCell {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: FontSize.subheading, weight: FontSize.semibold)
+        label.font = .systemFont(ofSize: FontSize.fifteen, weight: FontSize.semibold)
         label.textColor = .grayText
-        label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.7
+        label.adjustsFontSizeToFitWidth = false // keep consistent size across all rows
         return label
     }()
     

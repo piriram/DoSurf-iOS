@@ -11,7 +11,7 @@ final class PreferredCardView: UIView {
     
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 16, weight: .bold)
+        label.font = .systemFont(ofSize: 18, weight: .bold)
         label.textColor = .surfBlue
         return label
     }()
@@ -25,7 +25,7 @@ final class PreferredCardView: UIView {
     
     private let subValueLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.font = .systemFont(ofSize: 18, weight: .semibold)
         label.textColor = .white.withAlphaComponent(0.8)
         return label
     }()
@@ -60,17 +60,18 @@ final class PreferredCardView: UIView {
     
     private func configureLayout() {
         iconImageView.snp.makeConstraints { make in
-            make.top.leading.equalToSuperview().inset(12)
+            make.top.equalToSuperview().inset(12)
+            make.leading.equalToSuperview().inset(12)
             make.width.height.equalTo(30)
         }
         
         titleLabel.snp.makeConstraints { make in
-            make.leading.equalTo(iconImageView.snp.trailing).offset(8)
+            make.leading.equalTo(iconImageView.snp.trailing).offset(12)
             make.centerY.equalTo(iconImageView)
         }
         
         valueLabel.snp.makeConstraints { make in
-            make.leading.equalToSuperview().inset(12)
+            make.leading.equalToSuperview().inset(16)
             make.bottom.equalToSuperview().inset(16)
         }
         
@@ -81,8 +82,7 @@ final class PreferredCardView: UIView {
         
         arrowImageView.snp.makeConstraints { make in
             make.trailing.bottom.equalToSuperview().inset(16)
-            make.width.equalTo(28)
-            make.height.equalTo(28)
+            make.size.equalTo(36)
         }
     }
     
@@ -100,7 +100,7 @@ final class PreferredCardView: UIView {
 
             // Wave: place period below height
             valueLabel.snp.remakeConstraints { make in
-                make.leading.equalToSuperview().inset(12)
+                make.leading.equalToSuperview().inset(16)
                 make.bottom.equalTo(subValueLabel.snp.top).offset(-2)
             }
             subValueLabel.snp.remakeConstraints { make in
@@ -112,7 +112,7 @@ final class PreferredCardView: UIView {
             subValueLabel.isHidden = true
 
             valueLabel.snp.remakeConstraints { make in
-                make.leading.equalToSuperview().inset(12)
+                make.leading.equalToSuperview().inset(16)
                 make.bottom.equalToSuperview().inset(16)
             }
             // Neutralize subValue constraints to avoid conflicts

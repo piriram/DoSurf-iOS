@@ -18,7 +18,7 @@ final class DashboardHeaderView: UIView {
         button.setTitle("해변 선택", for: .normal)
         button.setImage(UIImage(systemName: "chevron.down"), for: .normal)
         button.tintColor = .white.withAlphaComponent(0.7)
-        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
         button.semanticContentAttribute = .forceRightToLeft
         button.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 0)
         return button

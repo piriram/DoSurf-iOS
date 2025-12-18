@@ -21,18 +21,18 @@ final class CustomPickerButton: UIButton {
     private func configureUI() {
         backgroundColor = .surfBlue
         
-        label.font = .systemFont(ofSize: 16, weight: .medium)
+        label.font = .systemFont(ofSize: 17, weight: .regular)
         label.textColor = .white
         label.textAlignment = .center
         
         addSubview(label)
         label.snp.makeConstraints { make in
-            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16))
+            make.edges.equalToSuperview().inset(UIEdgeInsets(top: 6, left: 11, bottom: 6, right: 11))
         }
         
         // 높이가 설정되면 코너 반경 자동 업데이트
         snp.makeConstraints { make in
-            make.height.equalTo(44)
+            make.height.equalTo(34)
         }
     }
     

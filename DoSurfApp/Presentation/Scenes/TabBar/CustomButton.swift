@@ -6,7 +6,7 @@ import RxCocoa
 enum CustomButtonStyle {
     case primary(title: String)
     case secondary(title: String)
-    case capsule(title: String, tintColor: UIColor)
+    case capsule(title: String, tintColor: UIColor, fontWeight: UIFont.Weight)
     case icon(image: UIImage?, tintColor: UIColor)
     
     var isCircular: Bool {
@@ -54,8 +54,8 @@ final class CustomButton: UIButton {
         case .secondary(let title):
             setupSecondaryStyle(title: title)
             
-        case .capsule(let title, let tintColor):
-            setupCapsuleStyle(title: title, tintColor: tintColor)
+        case .capsule(let title, let tintColor, let fontWeight):
+            setupCapsuleStyle(title: title, tintColor: tintColor, fontWeight: fontWeight)
             
         case .icon(let image, let tintColor):
             setupIconStyle(image: image, tintColor: tintColor)
@@ -105,11 +105,11 @@ final class CustomButton: UIButton {
         layer.shadowOpacity = 0.1
     }
     
-    private func setupCapsuleStyle(title: String, tintColor: UIColor) {
+    private func setupCapsuleStyle(title: String, tintColor: UIColor, fontWeight: UIFont.Weight) {
         backgroundColor = .backgroundGray
         setTitle(title, for: .normal)
         setTitleColor(tintColor, for: .normal)
-        titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        titleLabel?.font = .systemFont(ofSize: 16, weight: fontWeight)
         layer.cornerRadius = 24
     }
     
