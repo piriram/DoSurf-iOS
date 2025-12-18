@@ -52,7 +52,7 @@ final class NoteBottomCardView: UIView {
     // MARK: - UI Configuration
     private func configureUI() {
         // Container style
-        layer.cornerRadius = 12
+        layer.cornerRadius = 24
         layer.masksToBounds = true
         backgroundColor = .white
         
@@ -149,6 +149,7 @@ final class NoteBottomCardView: UIView {
         guard !isMemoOpened else { return }
         isMemoOpened = true
         memoTextView.isHidden = false
+        addMemoButton.isHidden = true
         // Ask parent to scroll to the memo area
         requestScrollToMemo.accept(())
     }
@@ -162,6 +163,7 @@ final class NoteBottomCardView: UIView {
         guard let memo = memo, !memo.isEmpty else { return }
         memoTextView.text = memo
         memoTextView.isHidden = false
+        addMemoButton.isHidden = true
         isMemoOpened = true
         // Ensure visibility when a memo is preset
         requestScrollToMemo.accept(())

@@ -76,7 +76,7 @@ final class DashboardHeaderView: UIView {
         infoButton.snp.makeConstraints { make in
             make.trailing.equalToSuperview().inset(16)
             make.centerY.equalToSuperview()
-            make.width.height.equalTo(24)
+            make.size.equalTo(28)
         }
         
         return view

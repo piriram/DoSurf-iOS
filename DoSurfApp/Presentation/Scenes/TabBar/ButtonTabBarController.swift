@@ -331,10 +331,6 @@ final class ButtonTabBarController: UIViewController {
         let overlay = SurfStartOverlayView()
         surfStartOverlay = overlay
 
-        // chartContainerView를 overlay의 그라디언트 참조로 설정
-        let chartContainerView = chartViewController.getChartContainerView()
-        overlay.configureGradientReference(chartContainerView)
-
         overlay.onSurfStart = { [weak self] in
             self?.handleSurfStart()
         }

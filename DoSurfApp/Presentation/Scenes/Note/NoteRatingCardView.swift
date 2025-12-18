@@ -161,7 +161,7 @@ final class NoteRatingCardView: UIView {
             
             let descLabel = UILabel()
             descLabel.text = description
-            descLabel.font = .systemFont(ofSize: FontSize.body2Size,weight: FontSize.medium)
+            descLabel.font = .systemFont(ofSize: FontSize.twelve,weight: FontSize.medium)
             descLabel.textColor = .surfBlue
             descLabel.textAlignment = .center
             

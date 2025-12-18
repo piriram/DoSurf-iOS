@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39B2E8CDF8C00682B29 /* Differentiator */; };
 		2193B39E2E8CDF8C00682B29 /* RxDataSources in Frameworks */ = {isa = PBXBuildFile; productRef = 2193B39D2E8CDF8C00682B29 /* RxDataSources */; };
+		219F188A2EF3D51F00991BFC /* IQKeyboardManagerSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 219F18892EF3D51F00991BFC /* IQKeyboardManagerSwift */; };
 		21BD77B22ECC195E00E15B12 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21BD77B12ECC195E00E15B12 /* WidgetKit.framework */; };
 		21BD77B42ECC195E00E15B12 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21BD77B32ECC195E00E15B12 /* SwiftUI.framework */; };
 		21BD77C12ECC195F00E15B12 /* DoSurfWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 21BD77AF2ECC195E00E15B12 /* DoSurfWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -132,6 +133,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				2193B39C2E8CDF8C00682B29 /* Differentiator in Frameworks */,
+				219F188A2EF3D51F00991BFC /* IQKeyboardManagerSwift in Frameworks */,
 				21FE052F2E85358E004EFEE3 /* RxSwift in Frameworks */,
 				21FE04D32E8503E8004EFEE3 /* FirebaseAnalytics in Frameworks */,
 				21FE052D2E85358E004EFEE3 /* RxCocoa in Frameworks */,
@@ -248,6 +250,7 @@
 				21FE052E2E85358E004EFEE3 /* RxSwift */,
 				2193B39B2E8CDF8C00682B29 /* Differentiator */,
 				2193B39D2E8CDF8C00682B29 /* RxDataSources */,
+				219F18892EF3D51F00991BFC /* IQKeyboardManagerSwift */,
 			);
 			productName = DoSurfApp;
 			productReference = 21E7A47C2E842FED008EFDDA /* DoSurfApp.app */;
@@ -288,6 +291,7 @@
 				21FE04D12E8503E8004EFEE3 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				21FE052B2E85358E004EFEE3 /* XCRemoteSwiftPackageReference "RxSwift" */,
 				2193B39A2E8CDF8C00682B29 /* XCRemoteSwiftPackageReference "RxDataSources" */,
+				219F18882EF3D51F00991BFC /* XCRemoteSwiftPackageReference "IQKeyboardManager" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 21E7A47D2E842FED008EFDDA /* Products */;
@@ -750,6 +754,14 @@
 				minimumVersion = 5.0.2;
 			};
 		};
+		219F18882EF3D51F00991BFC /* XCRemoteSwiftPackageReference "IQKeyboardManager" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hackiftekhar/IQKeyboardManager.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.1;
+			};
+		};
 		21E7A4A82E8435EA008EFDDA /* XCRemoteSwiftPackageReference "SnapKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/SnapKit/SnapKit.git";
@@ -786,6 +798,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 2193B39A2E8CDF8C00682B29 /* XCRemoteSwiftPackageReference "RxDataSources" */;
 			productName = RxDataSources;
+		};
+		219F18892EF3D51F00991BFC /* IQKeyboardManagerSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 219F18882EF3D51F00991BFC /* XCRemoteSwiftPackageReference "IQKeyboardManager" */;
+			productName = IQKeyboardManagerSwift;
 		};
 		21E7A4A92E8435EA008EFDDA /* SnapKit */ = {
 			isa = XCSwiftPackageProductDependency;

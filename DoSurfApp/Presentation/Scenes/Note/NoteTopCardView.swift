@@ -70,7 +70,7 @@ final class NoteTopCardView: UIView {
     // MARK: - UI Configuration
     private func configureUI() {
         // Container style
-        layer.cornerRadius = 12
+        layer.cornerRadius = 24
         layer.masksToBounds = true
         backgroundColor = .white
         
@@ -174,7 +174,7 @@ final class NoteTopCardView: UIView {
     private func makeColumnHeader() -> UIView {
         let header = ChartHeaderView()
         header.snp.makeConstraints { make in
-            make.height.equalTo(36)
+            make.height.equalTo(20)
         }
         return header
     }
@@ -196,7 +196,7 @@ final class NoteTopCardView: UIView {
         let row = UIView()
         let left = UILabel()
         left.text = title
-        left.font = .systemFont(ofSize: 17, weight: .regular)
+        left.font = .systemFont(ofSize: 17, weight: .semibold)
         left.textColor = .surfBlue
 
         row.addSubview(left)
