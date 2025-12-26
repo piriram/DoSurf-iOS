@@ -139,8 +139,8 @@ final class RecordFilterView: UIView {
         scrollView.snp.makeConstraints { make in
             make.top.equalTo(container.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview()
-            make.height.equalTo(28)
-            make.bottom.equalToSuperview() // intrinsic height = header + 12 + 28
+            make.height.equalTo(35)
+            make.bottom.equalToSuperview() // intrinsic height = header + 12 + 35
         }
         stack.snp.makeConstraints { make in
             make.horizontalEdges.equalToSuperview()

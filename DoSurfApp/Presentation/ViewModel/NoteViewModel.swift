@@ -46,6 +46,16 @@ final class NoteViewModel {
     private let currentRatingRelay = BehaviorRelay<Int>(value: 3)
     private let currentMemoRelay = BehaviorRelay<String?>(value: nil)
 
+    // MARK: - Auto Save
+    private var tempMemoKey: String {
+        switch mode {
+        case .new:
+            return "temp_memo_new"
+        case .edit(let record):
+            return "temp_memo_edit_\(record.id)"
+        }
+    }
+
     // MARK: - Initialization
     init(
         mode: SurfRecordMode,
@@ -133,13 +143,16 @@ final class NoteViewModel {
                         startTime = self.date(bySettingHour: 13, minute: 0, on: now)
                         endTime = self.date(bySettingHour: 15, minute: 0, on: now)
                     }
+                    // 임시 저장된 메모가 있으면 불러오기
+                    memo = UserDefaults.standard.string(forKey: self.tempMemoKey)
 
                 case .edit(let record):
                     date = record.surfDate
                     startTime = record.startTime
                     endTime = record.endTime
                     rating = Int(record.rating)
-                    memo = record.memo
+                    // 임시 저장된 메모가 있으면 우선 사용, 없으면 기존 메모 사용
+                    memo = UserDefaults.standard.string(forKey: self.tempMemoKey) ?? record.memo
                 }
 
                 // 상태 업데이트
@@ -193,10 +206,17 @@ final class NoteViewModel {
             })
             .disposed(by: disposeBag)
         
-        // 메모 변경 처리
+        // 메모 변경 처리 및 자동 저장
         input.memoChanged
             .subscribe(onNext: { [weak self] memo in
-                self?.currentMemoRelay.accept(memo)
+                guard let self = self else { return }
+                self.currentMemoRelay.accept(memo)
+                // 자동 저장
+                if let memo = memo, !memo.isEmpty {
+                    UserDefaults.standard.set(memo, forKey: self.tempMemoKey)
+                } else {
+                    UserDefaults.standard.removeObject(forKey: self.tempMemoKey)
+                }
             })
             .disposed(by: disposeBag)
         
@@ -251,8 +271,11 @@ final class NoteViewModel {
             }
             .do(onNext: { _ in loadingRelay.accept(false) })
             .subscribe(
-                onNext: {
+                onNext: { [weak self] in
+                    guard let self = self else { return }
                     NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                    // 저장 성공 시 임시 메모 삭제
+                    UserDefaults.standard.removeObject(forKey: self.tempMemoKey)
                     saveSuccessRelay.accept(())
                 },
                 onError: { error in
