@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct MainWatchView: View {
     @ObservedObject var manager: SurfWorkoutManager
@@ -107,8 +108,10 @@ struct MainWatchView: View {
         let maxHR = manager.heartRateHistory.max() ?? manager.heartRate
         let avgHR = manager.heartRateHistory.isEmpty ? manager.heartRate :
         manager.heartRateHistory.reduce(0, +) / Double(manager.heartRateHistory.count)
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "watch-unknown"
         
         let surfData = WatchSurfSessionData(
+            recordId: manager.currentSessionRecordId,
             distance: manager.distance,
             duration: manager.elapsed,
             startTime: manager.startTime ?? Date(),
@@ -117,7 +120,8 @@ struct MainWatchView: View {
             maxHeartRate: maxHR,
             avgHeartRate: avgHR,
             activeCalories: manager.activeCalories,
-            strokeCount: manager.strokeCount
+            strokeCount: manager.strokeCount,
+            deviceId: deviceId
         )
         
         Task {

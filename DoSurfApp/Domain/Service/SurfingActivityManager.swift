@@ -9,12 +9,27 @@ final class SurfingActivityManager {
     
     private var currentActivity: Activity<SurfingActivityAttributes>?
     private var updateTimer: Timer?
+    private var currentStartTime: Date?
+    
+    private var beachName: String = "서핑"
+    private var rideCount: Int = 0
+    private var averageHeartRate: Double = 0
+    private var currentUpdateInterval: TimeInterval = 60
     
     private init() {}
     
     /// 라이브 액티비티를 시작합니다
-    /// - Parameter startTime: 서핑 시작 시간
-    func startActivity(startTime: Date) {
+    /// - Parameters:
+    ///   - startTime: 서핑 시작 시간
+    ///   - beachName: 표시할 해변 이름
+    ///   - rideCount: 초기 라이딩 횟수
+    ///   - averageHeartRate: 초기 평균 심박수
+    func startActivity(
+        startTime: Date,
+        beachName: String = "서핑 중",
+        rideCount: Int = 0,
+        averageHeartRate: Double = 0
+    ) {
         print("🔵 [LiveActivity] 시작 시도...")
         print("🔵 [LiveActivity] iOS 버전: \(ProcessInfo.processInfo.operatingSystemVersionString)")
         
@@ -31,14 +46,22 @@ final class SurfingActivityManager {
         print("🔵 [LiveActivity] 시뮬레이터에서 실행 중")
 #endif
         
-        // 기존 액티비티가 있다면 종료
         endActivity()
+        
+        self.currentStartTime = startTime
+        self.beachName = beachName
+        self.rideCount = max(0, rideCount)
+        self.averageHeartRate = averageHeartRate
+        self.currentUpdateInterval = intervalForElapsedMinutes(0)
         
         let attributes = SurfingActivityAttributes(activityId: UUID().uuidString)
         let initialContentState = SurfingActivityAttributes.ContentState(
             startTime: startTime,
             elapsedMinutes: 0,
-            statusMessage: "서핑 중! 🏄‍♂️"
+            statusMessage: statusMessage(elapsedMinutes: 0),
+            beachName: beachName,
+            rideCount: rideCount,
+            averageHeartRate: averageHeartRate
         )
         
         print("🔵 [LiveActivity] Activity.request 호출...")
@@ -56,11 +79,10 @@ final class SurfingActivityManager {
             print("💡 Dynamic Island 또는 잠금 화면을 확인하세요")
             
 #if targetEnvironment(simulator)
-            print("⚠️  시뮬레이터에서는 제한적으로 작동할 수 있습니다")
+            print("⚠️ 시뮬레이터에서는 제한적으로 작동할 수 있습니다")
             print("💡 실제 기기에서 테스트하는 것을 권장합니다")
 #endif
             
-            // 1분마다 경과 시간 업데이트
             startUpdateTimer(startTime: startTime)
             
         } catch {
@@ -76,25 +98,25 @@ final class SurfingActivityManager {
         }
     }
     
-    /// 라이브 액티비티를 업데이트합니다
-    /// - Parameters:
-    ///   - startTime: 서핑 시작 시간
-    ///   - elapsedMinutes: 경과 시간 (분)
-    private func updateActivity(startTime: Date, elapsedMinutes: Int) {
-        guard let activity = currentActivity else { return }
-        
-        let updatedContentState = SurfingActivityAttributes.ContentState(
-            startTime: startTime,
-            elapsedMinutes: elapsedMinutes,
-            statusMessage: "서핑 중! 🏄‍♂️"
-        )
-        
-        Task {
-            await activity.update(
-                .init(state: updatedContentState, staleDate: nil)
-            )
-            print("🔄 Live Activity 업데이트됨: \(elapsedMinutes)분 경과")
+    /// 라이브 액티비티 메트릭을 업데이트합니다
+    func updateSummary(
+        beachName: String? = nil,
+        rideCount: Int? = nil,
+        averageHeartRate: Double? = nil
+    ) {
+        if let beachName {
+            self.beachName = beachName
         }
+        if let rideCount {
+            self.rideCount = max(0, rideCount)
+        }
+        if let averageHeartRate {
+            self.averageHeartRate = max(0, averageHeartRate)
+        }
+        
+        guard let startTime = currentStartTime else { return }
+        let elapsed = Int(Date().timeIntervalSince(startTime) / 60)
+        updateActivity(startTime: startTime, elapsedMinutes: elapsed)
     }
     
     /// 라이브 액티비티를 종료합니다
@@ -116,32 +138,88 @@ final class SurfingActivityManager {
         }
         
         currentActivity = nil
+        currentStartTime = nil
     }
     
     // MARK: - Timer Management
     
     /// 경과 시간 업데이트 타이머 시작
     private func startUpdateTimer(startTime: Date) {
+        scheduleUpdateTimer(startTime: startTime, interval: currentUpdateInterval)
+    }
+    
+    private func scheduleUpdateTimer(startTime: Date, interval: TimeInterval) {
         stopUpdateTimer()
+        currentUpdateInterval = interval
         
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            
-            let elapsed = Int(Date().timeIntervalSince(startTime) / 60)
-            self.updateActivity(startTime: startTime, elapsedMinutes: elapsed)
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.handleTimerTick(startTime: startTime)
         }
         
-        // 즉시 한 번 실행
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
-            guard let self = self else { return }
-            let elapsed = Int(Date().timeIntervalSince(startTime) / 60)
-            self.updateActivity(startTime: startTime, elapsedMinutes: elapsed)
+            self?.handleTimerTick(startTime: startTime)
         }
     }
     
-    /// 경과 시간 업데이트 타이머 중지
+    private func handleTimerTick(startTime: Date) {
+        let elapsed = Int(Date().timeIntervalSince(startTime) / 60)
+        let updatedInterval = intervalForElapsedMinutes(elapsed)
+        
+        if updatedInterval != currentUpdateInterval {
+            scheduleUpdateTimer(startTime: startTime, interval: updatedInterval)
+            return
+        }
+        
+        updateActivity(startTime: startTime, elapsedMinutes: elapsed)
+    }
+    
+    /// 경과 시간과 메트릭을 반영해 액티비티를 갱신합니다
+    private func updateActivity(startTime: Date, elapsedMinutes: Int) {
+        guard let activity = currentActivity else { return }
+        
+        let updatedContentState = SurfingActivityAttributes.ContentState(
+            startTime: startTime,
+            elapsedMinutes: max(0, elapsedMinutes),
+            statusMessage: statusMessage(elapsedMinutes: elapsedMinutes),
+            beachName: beachName,
+            rideCount: rideCount,
+            averageHeartRate: averageHeartRate
+        )
+        
+        Task {
+            await activity.update(
+                .init(state: updatedContentState, staleDate: nil)
+            )
+            print("🔄 Live Activity 업데이트됨: \(elapsedMinutes)분 경과 / 라이딩 \(rideCount)회")
+        }
+    }
+    
     private func stopUpdateTimer() {
         updateTimer?.invalidate()
         updateTimer = nil
+    }
+    
+    private func intervalForElapsedMinutes(_ elapsedMinutes: Int) -> TimeInterval {
+        if elapsedMinutes < 10 {
+            return 60
+        }
+        
+        if elapsedMinutes < 30 {
+            return 5 * 60
+        }
+        
+        return 10 * 60
+    }
+    
+    private func statusMessage(elapsedMinutes: Int) -> String {
+        if elapsedMinutes < 5 {
+            return "서핑 준비 중"
+        }
+        
+        if elapsedMinutes < 20 {
+            return "서핑 중! 라이딩 \(rideCount)회"
+        }
+        
+        return "서핑 지속 중"
     }
 }

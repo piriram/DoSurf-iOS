@@ -13,6 +13,11 @@
         <relationship name="record" maxCount="1" deletionRule="Nullify" destinationEntity="SurfRecord" inverseName="charts" inverseEntity="SurfRecord"/>
     </entity>
     <entity name="SurfRecord" representedClassName="SurfRecord" syncable="YES" codeGenerationType="class">
+        <attribute name="deviceId" attributeType="String"/>
+        <attribute name="isRecordDeleted" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="lastModifiedAt" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="payloadVersion" optional="YES" attributeType="Integer 16" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="recordId" attributeType="String"/>
         <attribute name="beachId" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="endTime" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isPin" attributeType="Boolean" usesScalarValueType="YES"/>

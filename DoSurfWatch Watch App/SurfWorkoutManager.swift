@@ -4,6 +4,7 @@ import HealthKit
 import CoreLocation
 import CoreMotion
 import WatchConnectivity
+import UIKit
 
 final class SurfWorkoutManager: NSObject, ObservableObject {
     // MARK: - HK & Location & Motion
@@ -35,6 +36,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     private var timer: Timer?
     var startTime: Date?
     private var isSessionActive = false  // 세션 상태 추적
+    @Published private(set) var currentSessionRecordId = UUID().uuidString
     private var _heartRateHistory: [Double] = [] // 심박수 기록용
     
     // 속도 및 파도 감지용 데이터
@@ -250,6 +252,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         // 이전 세션 정리 및 메트릭 초기화
         cleanupSession()
         resetMetrics()
+        currentSessionRecordId = UUID().uuidString
         
         // Location
         locationManager.requestWhenInUseAuthorization()
@@ -426,25 +429,30 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     }
     
     private func sendSummaryToPhone() {
-        let summary: [String: Any] = [
-            "distance": distance,
-            "duration": elapsed,
-            "waveCount": waveCount,
-            "maxSpeed": maxSpeed,
-            "averageSpeed": averageSpeed,
-            "maxHeartRate": _heartRateHistory.max() ?? heartRate,
-            "avgHeartRate": _heartRateHistory.isEmpty ? heartRate : _heartRateHistory.reduce(0, +) / Double(_heartRateHistory.count),
-            "activeCalories": activeCalories,
-            "strokeCount": strokeCount,
-            "maxAltitude": altitudeHistory.max() ?? currentAltitude,
-            "minAltitude": altitudeHistory.min() ?? currentAltitude
-        ]
-        guard WCSession.default.isReachable else {
-            print("⚠️ iPhone not reachable")
-            return
-        }
-        WCSession.default.sendMessage(summary, replyHandler: nil) { error in
-            print("⚠️ send error:", error.localizedDescription)
+        let maxHR = _heartRateHistory.max() ?? heartRate
+        let avgHR = _heartRateHistory.isEmpty ? heartRate : _heartRateHistory.reduce(0, +) / Double(_heartRateHistory.count)
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "watch-unknown"
+        
+        let payload = WatchSurfSessionData(
+            recordId: currentSessionRecordId,
+            distance: distance,
+            duration: elapsed,
+            startTime: startTime ?? Date(),
+            endTime: Date(),
+            waveCount: waveCount,
+            maxHeartRate: maxHR,
+            avgHeartRate: avgHR,
+            activeCalories: activeCalories,
+            strokeCount: strokeCount,
+            deviceId: deviceId
+        )
+        
+        Task {
+            do {
+                try await WatchConnectivityManager.shared.sendSurfData(payload)
+            } catch {
+                print("⚠️ send summary error:", error.localizedDescription)
+            }
         }
     }
 }
@@ -539,8 +547,6 @@ extension SurfWorkoutManager: HKWorkoutSessionDelegate {
             case .ended:
                 self.isRunning = false
                 self.sessionEnded = true // SwiftUI에 세션 종료 알림
-                // 세션 정리
-                self.cleanupSession()
             default:
                 break
             }
@@ -553,6 +559,7 @@ extension SurfWorkoutManager: HKWorkoutSessionDelegate {
                     if let error { print("⚠️ endCollection error:", error) }
                     if let finishError { print("⚠️ finishWorkout error:", finishError) }
                     self?.sendSummaryToPhone()
+                    self?.cleanupSession()
                 }
             }
         }

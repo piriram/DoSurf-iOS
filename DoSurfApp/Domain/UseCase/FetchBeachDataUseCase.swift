@@ -2,14 +2,8 @@ import UIKit
 import RxSwift
 import FirebaseFirestore
 
-// MARK: - UseCase
 protocol FetchBeachDataUseCase {
-    /// beachId와 region을 알고 있을 때 사용하는 메서드
-    /// - Parameters:
-    ///   - beachId: 해변 ID
-    ///   - region: 지역 slug
-    ///   - daysBack: 몇 일 전 데이터까지 가져올지 (기본값: 7일)
-    func execute(beachId: String, region: String, daysBack: Int) -> Single<BeachData>
+    func execute(beachId: String, region: String, daysBack: Int) -> Observable<BeachData>
 }
 
 final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
@@ -19,9 +13,9 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
         self.repository = repository
     }
 
-    // MARK: - Execute
-    func execute(beachId: String, region: String, daysBack: Int = 7) -> Single<BeachData> {
+    func execute(beachId: String, region: String, daysBack: Int = 7) -> Observable<BeachData> {
         return fetch(beachId: beachId, region: region, daysBack: daysBack)
+            .asObservable()
             .catch { error in
                 if let apiError = error as? FirebaseAPIError {
                     return .error(apiError)
@@ -30,10 +24,9 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
             }
     }
 
-    // MARK: - Private
     private func fetch(beachId: String, region: String, daysBack: Int) -> Single<BeachData> {
         let since = Date().addingTimeInterval(-Double(daysBack) * 24 * 60 * 60)
-        
+
         return Single.zip(
             repository.fetchMetadata(beachId: beachId, region: region),
             repository.fetchForecasts(beachId: beachId, region: region, since: since, limit: 20)
@@ -46,7 +39,6 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
             let charts = forecastDTOs
                 .map { $0.toDomain() }
                 .filter { chart in
-                    // 바람, 파주기, 날씨가 모두 0이면 유효하지 않은 데이터로 간주하여 제외
                     let hasValidWind = chart.windSpeed > 0
                     let hasValidWave = chart.wavePeriod > 0
                     let hasValidWeather = chart.weather.rawValue != 0
@@ -62,7 +54,3 @@ final class DefaultFetchBeachDataUseCase: FetchBeachDataUseCase {
         }
     }
 }
-
-
-
-
