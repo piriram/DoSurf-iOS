@@ -6,6 +6,7 @@ protocol NoteRepositoryProtocol {
     func saveSurfRecord(_ record: SurfRecordData) -> Single<Void>
     func fetchAllSurfRecords() -> Single<[SurfRecordData]>
     func fetchSurfRecords(for beachID: Int) -> Single<[SurfRecordData]>
+    func fetchSurfRecord(byRecordId recordId: String) -> Single<SurfRecordData?>
     func fetchSurfRecord(by id: NSManagedObjectID) -> Single<SurfRecordData?>
     func deleteSurfRecord(by id: NSManagedObjectID) -> Single<Void>
     func updateSurfRecord(_ record: SurfRecordData) -> Single<Void>
@@ -39,6 +40,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     }
                     
                     let surfRecordMO = NSManagedObject(entity: surfRecordEntity, insertInto: backgroundContext)
+                    surfRecordMO.setValue(record.recordId, forKey: "recordId")
+                    surfRecordMO.setValue(record.payloadVersion, forKey: "payloadVersion")
+                    surfRecordMO.setValue(record.lastModifiedAt, forKey: "lastModifiedAt")
+                    surfRecordMO.setValue(record.deviceId, forKey: "deviceId")
+                    surfRecordMO.setValue(record.isDeleted, forKey: "isRecordDeleted")
                     surfRecordMO.setValue(record.surfDate, forKey: "surfDate")
                     surfRecordMO.setValue(record.startTime, forKey: "startTime")
                     surfRecordMO.setValue(record.endTime, forKey: "endTime")
@@ -101,6 +107,7 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
             backgroundContext.perform {
                 do {
                     let request: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "SurfRecord")
+                    request.predicate = self.makeNotDeletedPredicate(context: backgroundContext)
                     request.sortDescriptors = [NSSortDescriptor(key: "surfDate", ascending: false)]
                     
                     let results = try backgroundContext.fetch(request)
@@ -136,6 +143,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                         // If the attribute doesn't exist, fetch all records instead of crashing
                         request.predicate = nil
                     }
+        if let existingPredicate = request.predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [existingPredicate, self.makeNotDeletedPredicate()])
+        } else {
+            request.predicate = self.makeNotDeletedPredicate()
+        }
                     request.sortDescriptors = [NSSortDescriptor(key: "surfDate", ascending: false)]
                     let results = try backgroundContext.fetch(request)
                     let surfRecords = results.compactMap { self.mapToSurfRecordData($0) }
@@ -168,6 +180,38 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     
                     DispatchQueue.main.async {
                         observer(.success(surfRecord))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        observer(.failure(RepositoryError.fetchError(error)))
+                    }
+                }
+            }
+            
+            return Disposables.create()
+        }
+    }
+    
+    func fetchSurfRecord(byRecordId recordId: String) -> Single<SurfRecordData?> {
+        return Single.create { [weak self] observer in
+            guard let self = self else {
+                observer(.failure(RepositoryError.unknown))
+                return Disposables.create()
+            }
+            
+            let backgroundContext = self.coreDataStack.newBackgroundContext()
+            
+            backgroundContext.perform {
+                do {
+                    let request: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "SurfRecord")
+                    request.fetchLimit = 1
+                    request.predicate = NSPredicate(format: "recordId == %@", recordId)
+                    
+                    let results = try backgroundContext.fetch(request)
+                    let matched = results.compactMap { self.mapToSurfRecordData($0) }.first
+                    
+                    DispatchQueue.main.async {
+                        observer(.success(matched))
                     }
                 } catch {
                     DispatchQueue.main.async {
@@ -224,6 +268,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     let managedObject = try backgroundContext.existingObject(with: objectID)
                     
                     // Update properties
+                    managedObject.setValue(record.recordId, forKey: "recordId")
+                    managedObject.setValue(record.payloadVersion, forKey: "payloadVersion")
+                    managedObject.setValue(record.lastModifiedAt, forKey: "lastModifiedAt")
+                    managedObject.setValue(record.deviceId, forKey: "deviceId")
+                    managedObject.setValue(record.isDeleted, forKey: "isRecordDeleted")
                     managedObject.setValue(record.surfDate, forKey: "surfDate")
                     managedObject.setValue(record.startTime, forKey: "startTime")
                     managedObject.setValue(record.endTime, forKey: "endTime")
@@ -277,7 +326,20 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
         }
     }
     
-    // MARK: - Attribute Key Helpers
+        // MARK: - Attribute Key Helpers
+    private func makeNotDeletedPredicate(context: NSManagedObjectContext? = nil) -> NSPredicate {
+        guard
+            let entity = NSEntityDescription.entity(
+                forEntityName: "SurfRecord",
+                in: context ?? coreDataStack.newBackgroundContext()
+            ),
+            entity.attributesByName["isRecordDeleted"] != nil
+        else {
+            return NSPredicate(value: true)
+        }
+        return NSPredicate(format: "isRecordDeleted == NO OR isRecordDeleted == nil")
+    }
+    
     private func beachIDAttributeKeyIfExists(in context: NSManagedObjectContext) -> String? {
         if let entity = NSEntityDescription.entity(forEntityName: "SurfRecord", in: context) {
             let attrs = entity.attributesByName
@@ -307,6 +369,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
         } else {
             beachID = 0
         }
+        let recordId = managedObject.value(forKey: "recordId") as? String ?? UUID().uuidString
+        let payloadVersion = (managedObject.value(forKey: "payloadVersion") as? NSNumber)?.int16Value ?? 1
+        let lastModifiedAt = managedObject.value(forKey: "lastModifiedAt") as? Date ?? Date()
+        let deviceId = managedObject.value(forKey: "deviceId") as? String ?? "unknown-device"
+        let isRecordDeleted = managedObject.value(forKey: "isRecordDeleted") as? Bool ?? false
         let rating = managedObject.value(forKey: "rating") as? Int16 ?? 0
         let memo = managedObject.value(forKey: "memo") as? String
         let isPin = managedObject.value(forKey: "isPin") as? Bool ?? false
@@ -334,6 +401,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
         return SurfRecordData(
             beachID: beachID,
             id: managedObject.objectID,
+            recordId: recordId,
+            payloadVersion: payloadVersion,
+            lastModifiedAt: lastModifiedAt,
+            deviceId: deviceId,
+            isDeleted: isRecordDeleted,
             surfDate: surfDate,
             startTime: startTime,
             endTime: endTime,

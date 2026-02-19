@@ -271,7 +271,7 @@ final class DashboardViewModel {
     }
 
     // MARK: - Private Helpers
-    private func fetchBeachDataDirectly(beachId: String, region: String, daysBack: Int = 7) -> Single<BeachData> {
+    private func fetchBeachDataDirectly(beachId: String, region: String, daysBack: Int = 7) -> Observable<BeachData> {
         fetchBeachDataUseCase.execute(beachId: beachId, region: region, daysBack: daysBack)
     }
 

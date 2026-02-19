@@ -17,8 +17,11 @@ final class DIContainer {
     
     // MARK: - UseCase Factories
     func makeFetchBeachDataUseCase() -> FetchBeachDataUseCase {
-        return DefaultFetchBeachDataUseCase(
-            repository: makeBeachRepository()
+        return CachedFetchBeachDataUseCase(
+            remote: DefaultFetchBeachDataUseCase(
+                repository: makeBeachRepository()
+            ),
+            fallback: MockFetchBeachDataUseCase()
         )
     }
     
