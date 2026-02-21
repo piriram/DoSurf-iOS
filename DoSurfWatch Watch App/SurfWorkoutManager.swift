@@ -45,9 +45,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     
     // 자동 감지 관련
     private var motionBuffer: [CMDeviceMotion] = [] // 모션 데이터 버퍼
-    private var isInWater: Bool = false // 물 위에 있는지 여부
-    private var surfingStartThreshold: Double = 2.0 // 서핑 시작 임계값 (m/s)
-    private var surfingEndThreshold: TimeInterval = 60.0 // 서핑 종료 임계값 (초)
+    private let surfingStartThreshold: Double = 2.0 // 시작 가속도 임계값
     
     // 심박수 기록에 접근할 수 있는 공개 프로퍼티
     var heartRateHistory: [Double] {
@@ -66,17 +64,22 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         super.init()
         locationManager.delegate = self
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
-        
+
         // CoreMotion 설정
         setupMotionManager()
-        
+
         // 시뮬레이터에서는 위치 권한이 없어도 정상 작동하도록 설정
         if !isSimulator {
             locationManager.requestWhenInUseAuthorization()
         }
-        
+
         // 자동 감지 시작
         startAutoDetection()
+    }
+
+    deinit {
+        stopAutoDetection()
+        timer?.invalidate()
     }
     
     // MARK: - Motion & Auto Detection Setup
@@ -186,18 +189,12 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
             pow(motion.userAcceleration.z, 2)
         )
         
-        // 높은 가속도가 지속되면 서핑 중으로 판단
-        let highAccelerationThreshold = 2.0 // 2G
-        
-        if totalAcceleration > highAccelerationThreshold {
-            if !isInWater && !isRunning {
-                // 자동으로 세션 시작
-                print("🏄‍♂️ Auto-detected surfing activity!")
-                DispatchQueue.main.async {
-                    self.start()
-                }
+        // 높은 가속도가 감지되면 서핑 시작으로 판단
+        if totalAcceleration > surfingStartThreshold, !isRunning {
+            print("🏄‍♂️ Auto-detected surfing activity!")
+            DispatchQueue.main.async {
+                self.start()
             }
-            isInWater = true
         }
         
         // 낮은 활동량이 지속되면 세션 종료 고려
@@ -425,35 +422,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         }
     }
     
-    private func sendSummaryToPhone() {
-        let endedAt = Date()
-        let startedAt = startTime ?? startDate
-
-        let summary = SurfWorkoutSummaryBuilder.makePayload(
-            distance: distance,
-            duration: elapsed,
-            startedAt: startedAt,
-            endedAt: endedAt,
-            waveCount: waveCount,
-            maxSpeed: maxSpeed,
-            averageSpeed: averageSpeed,
-            maxHeartRate: _heartRateHistory.max() ?? heartRate,
-            avgHeartRate: _heartRateHistory.isEmpty
-                ? heartRate
-                : _heartRateHistory.reduce(0, +) / Double(_heartRateHistory.count),
-            activeCalories: activeCalories,
-            strokeCount: strokeCount,
-            maxAltitude: altitudeHistory.max() ?? currentAltitude,
-            minAltitude: altitudeHistory.min() ?? currentAltitude
-        )
-        guard WCSession.default.isReachable else {
-            print("⚠️ iPhone not reachable")
-            return
-        }
-        WCSession.default.sendMessage(summary, replyHandler: nil) { error in
-            print("⚠️ send error:", error.localizedDescription)
-        }
-    }
+    // summary send is handled in MainWatchView via WatchConnectivityManager
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -554,12 +523,11 @@ extension SurfWorkoutManager: HKWorkoutSessionDelegate {
         }
         
         if toState == .ended {
-            // 수집 종료 → 피니시 → 요약 전송
-            builder?.endCollection(withEnd: Date()) { [weak self] success, error in
+            // 수집 종료 → 피니시
+            builder?.endCollection(withEnd: Date()) { [weak self] _, error in
                 self?.builder?.finishWorkout { _, finishError in
                     if let error { print("⚠️ endCollection error:", error) }
                     if let finishError { print("⚠️ finishWorkout error:", finishError) }
-                    self?.sendSummaryToPhone()
                 }
             }
         }

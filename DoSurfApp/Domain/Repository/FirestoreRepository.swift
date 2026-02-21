@@ -17,9 +17,10 @@ final class FirestoreRepository: FirestoreProtocol {
             }
             
             let group = DispatchGroup()
+            let stateQueue = DispatchQueue(label: "FirestoreRepository.findRegion.state")
             var foundRegion: String?
             var firstError: FirebaseAPIError?
-            
+
             for region in regions {
                 group.enter()
                 self.db.collection("regions")
@@ -27,20 +28,23 @@ final class FirestoreRepository: FirestoreProtocol {
                     .collection(beachId)
                     .document("_metadata")
                     .getDocument { document, error in
-                        if let error = error, firstError == nil {
-                            firstError = FirebaseAPIError.map(error)
-                        }
-                        if document?.exists == true {
-                            foundRegion = region
+                        stateQueue.sync {
+                            if let error, firstError == nil {
+                                firstError = FirebaseAPIError.map(error)
+                            }
+                            if foundRegion == nil, document?.exists == true {
+                                foundRegion = region
+                            }
                         }
                         group.leave()
                     }
             }
-            
+
             group.notify(queue: .global()) {
-                if let region = foundRegion {
+                let result = stateQueue.sync { (foundRegion, firstError) }
+                if let region = result.0 {
                     single(.success(region))
-                } else if let error = firstError {
+                } else if let error = result.1 {
                     single(.failure(error))
                 } else {
                     single(.success(nil))
@@ -96,11 +100,17 @@ final class FirestoreRepository: FirestoreProtocol {
                 return Disposables.create()
             }
             
-            self.db.collection("regions")
+            var query: Query = self.db.collection("regions")
                 .document(region)
                 .collection(beachId)
+                .whereField("timestamp", isGreaterThanOrEqualTo: Timestamp(date: since))
                 .order(by: "timestamp", descending: false)
-                .getDocuments { snapshot, error in
+
+            if limit > 0 {
+                query = query.limit(to: limit)
+            }
+
+            query.getDocuments { snapshot, error in
                     if let error = error {
                         single(.failure(FirebaseAPIError.map(error)))
                         return

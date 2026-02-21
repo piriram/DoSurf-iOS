@@ -25,17 +25,22 @@ class SurfDataReceiverViewController: UIViewController {
     // MARK: - Properties
     private var watchConnectivity: iPhoneWatchConnectivity!
     private var receivedData: SurfSessionData?
+    private var connectionStatusTimer: Timer?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupWatchConnectivity()
         updateUI()
-        
+
         // 자동 새로고침 타이머 (5초마다)
-        Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-            self.updateConnectionStatus()
+        connectionStatusTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.updateConnectionStatus()
         }
+    }
+
+    deinit {
+        connectionStatusTimer?.invalidate()
     }
     
     // MARK: - UI Setup

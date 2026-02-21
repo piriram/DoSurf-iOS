@@ -30,6 +30,7 @@ final class RecordHistoryViewController: BaseViewController {
     let editRecordSubject = PublishSubject<NSManagedObjectID>()
     let sortSelectionSubject = PublishSubject<SortType>()
     let locationSelectionSubject = PublishSubject<Int?>()
+    let filterSelectionSubject = PublishSubject<RecordFilter>()
     
     // MARK: - Initializer
     init(viewModel: RecordHistoryViewModel) {
@@ -144,9 +145,10 @@ final class RecordHistoryViewController: BaseViewController {
     }
     
     private func createFilterSelectionObservable() -> Observable<RecordFilter> {
-        return Observable.merge(
+        Observable.merge(
             filterView.tapAll.map { RecordFilter.all },
-            filterView.tapPinned.map { RecordFilter.pinned }
+            filterView.tapPinned.map { RecordFilter.pinned },
+            filterSelectionSubject.asObservable()
         )
     }
     

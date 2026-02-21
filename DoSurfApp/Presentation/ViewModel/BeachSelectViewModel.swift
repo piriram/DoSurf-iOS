@@ -46,7 +46,6 @@ final class BeachSelectViewModel {
     private let disposeBag = DisposeBag()
     private var hasInitialLoadCompleted = false
     private var hasSetInitialSelection = false
-    private var didEmitInitialCategorySelection = false
     
     private let lastRegionsIndexKey = "BeachSelectViewController.lastCategoryIndex"
     
@@ -259,8 +258,6 @@ final class BeachSelectViewModel {
             let clampedIndex = max(0, min(savedIndex, uniqueRegions.count - 1))
             selectedCategoryIndex.accept(clampedIndex)
         }
-        
-        didEmitInitialCategorySelection = true
     }
     
     private func loadSavedCategoryIndex() -> Int {

@@ -47,25 +47,27 @@ extension RecordHistoryViewController {
     
     func presentRatingFilter() {
         var actions: [(title: String, style: UIAlertAction.Style, handler: (() -> Void)?)] = []
-        
+
         for rating in (1...5).reversed() {
             actions.append((
                 title: "\(rating)점",
                 style: .default,
-                handler: {
-                    // TODO: ratingFilterSubject 연결
+                handler: { [weak self] in
+                    self?.filterSelectionSubject.onNext(.rating(rating))
+                    self?.scrollToTop()
                 }
             ))
         }
-        
+
         actions.append((
             title: "전체",
             style: .default,
-            handler: {
-                // TODO: all filter 연결
+            handler: { [weak self] in
+                self?.filterSelectionSubject.onNext(.all)
+                self?.scrollToTop()
             }
         ))
-        
+
         showActionSheet(title: "별점 필터", actions: actions)
     }
     
@@ -79,7 +81,8 @@ extension RecordHistoryViewController {
         
         var actions = presets.map { title, preset in
             (title: title, style: UIAlertAction.Style.default, handler: { [weak self] in
-                // TODO: datePresetSubject 연결
+                self?.filterSelectionSubject.onNext(.datePreset(preset))
+                self?.scrollToTop()
             })
         }
         
@@ -100,7 +103,8 @@ extension RecordHistoryViewController {
         pickerViewController.initialEnd = Date()
         
         pickerViewController.onApply = { [weak self] start, end in
-            // TODO: dateRangeSubject 연결
+            self?.filterSelectionSubject.onNext(.dateRange(start: start, end: end))
+            self?.scrollToTop()
         }
         
         let navigationController = UINavigationController(rootViewController: pickerViewController)
@@ -216,7 +220,42 @@ extension RecordHistoryViewController {
     }
     
     func updateMemoOnly(objectID: NSManagedObjectID, newMemo: String) {
-        // TODO: Implement memo update logic
+        let surfRecordUseCase = DIContainer.shared.makeSurfRecordUseCase()
+        let normalizedMemo: String? = {
+            let trimmed = newMemo.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }()
+
+        surfRecordUseCase.fetchSurfRecord(by: objectID)
+            .flatMap { recordOption -> Single<Void> in
+                guard let record = recordOption else {
+                    return .error(RepositoryError.unknown)
+                }
+
+                let updatedRecord = SurfRecordData(
+                    beachID: record.beachID,
+                    id: record.id,
+                    surfDate: record.surfDate,
+                    startTime: record.startTime,
+                    endTime: record.endTime,
+                    rating: record.rating,
+                    memo: normalizedMemo,
+                    isPin: record.isPin,
+                    charts: record.charts
+                )
+
+                return surfRecordUseCase.updateSurfRecord(updatedRecord)
+            }
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { _ in
+                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                },
+                onFailure: { [weak self] error in
+                    self?.showErrorAlert(message: error.localizedDescription)
+                }
+            )
+            .disposed(by: disposeBag)
     }
     
     func showMemoDetail(for viewModel: RecordCardViewModel) {
