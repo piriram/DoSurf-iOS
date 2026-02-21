@@ -176,44 +176,44 @@ final class FirestoreRepository: FirestoreProtocol {
                 return Disposables.create()
             }
             
-            print("🔍 [BeachList] Fetching all beaches from _global_metadata/all_beaches")
+            self.debugLog("🔍 [BeachList] Fetching all beaches from _global_metadata/all_beaches")
             
             self.db.collection("_global_metadata")
                 .document("all_beaches")
                 .getDocument { document, error in
                     if let error = error {
-                        print("❌ [BeachList] Firestore error: \(error.localizedDescription)")
+                        self.debugLog("❌ [BeachList] Firestore error: \(error.localizedDescription)")
                         single(.failure(FirebaseAPIError.map(error)))
                         return
                     }
                     
                     guard let document = document else {
-                        print("❌ [BeachList] Document is nil")
+                        self.debugLog("❌ [BeachList] Document is nil")
                         single(.failure(FirebaseAPIError.notFound))
                         return
                     }
                     
                     guard document.exists else {
-                        print("⚠️ [BeachList] Document does not exist at: _global_metadata/all_beaches")
+                        self.debugLog("⚠️ [BeachList] Document does not exist at: _global_metadata/all_beaches")
                         single(.failure(FirebaseAPIError.notFound))
                         return
                     }
                     
                     guard let data = document.data() else {
-                        print("⚠️ [BeachList] Document exists but has no data")
+                        self.debugLog("⚠️ [BeachList] Document exists but has no data")
                         single(.failure(FirebaseAPIError.notFound))
                         return
                     }
                     
-                    print("✅ [BeachList] Document found with keys: \(data.keys)")
+                    self.debugLog("✅ [BeachList] Document found with keys: \(data.keys)")
                     
                     guard let beachesArray = data["beaches"] as? [[String: Any]] else {
-                        print("⚠️ [BeachList] beaches field missing or wrong type")
+                        self.debugLog("⚠️ [BeachList] beaches field missing or wrong type")
                         single(.failure(FirebaseAPIError.decodingFailed(message: "beaches field not found")))
                         return
                     }
                     
-                    print("✅ [BeachList] Found \(beachesArray.count) beaches")
+                    self.debugLog("✅ [BeachList] Found \(beachesArray.count) beaches")
                     
                     // BeachRegion 정보를 수집 (중복 제거)
                     var regionMap: [String: BeachRegion] = [:]
@@ -225,7 +225,7 @@ final class FirestoreRepository: FirestoreProtocol {
                               let regionName = beachData["region_name"] as? String,
                               let regionOrder = beachData["region_order"] as? Int,
                               let displayName = beachData["display_name"] as? String else {
-                            print("⚠️ [BeachList] Invalid beach data: \(beachData)")
+                            self.debugLog("⚠️ [BeachList] Invalid beach data: \(beachData)")
                             continue
                         }
                         
@@ -249,7 +249,7 @@ final class FirestoreRepository: FirestoreProtocol {
                         beaches.append(beach)
                     }
                     
-                    print("✅ [BeachList] Successfully created \(beaches.count) BeachDTOs with \(regionMap.count) regions")
+                    self.debugLog("✅ [BeachList] Successfully created \(beaches.count) BeachDTOs with \(regionMap.count) regions")
                     single(.success(beaches))
                 }
             
@@ -258,7 +258,13 @@ final class FirestoreRepository: FirestoreProtocol {
     }
     
     // MARK: - Helper Methods
-    
+
+    private func debugLog(_ message: String) {
+#if DEBUG
+        print(message)
+#endif
+    }
+
     private static func estimateWavePeriod(
         windSpeed: Double?,
         waveHeight: Double?,

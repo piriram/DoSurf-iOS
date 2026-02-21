@@ -49,6 +49,7 @@ final class ButtonTabBarViewModel {
         input.recordButtonTapped
             .map { TabType.record }
             .bind(to: currentTab)
+            .disposed(by: disposeBag)
         
         // Center 버튼 탭
         let centerButtonActionDriver = input.centerButtonTapped

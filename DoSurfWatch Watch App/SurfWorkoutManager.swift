@@ -426,19 +426,26 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
     }
     
     private func sendSummaryToPhone() {
-        let summary: [String: Any] = [
-            "distance": distance,
-            "duration": elapsed,
-            "waveCount": waveCount,
-            "maxSpeed": maxSpeed,
-            "averageSpeed": averageSpeed,
-            "maxHeartRate": _heartRateHistory.max() ?? heartRate,
-            "avgHeartRate": _heartRateHistory.isEmpty ? heartRate : _heartRateHistory.reduce(0, +) / Double(_heartRateHistory.count),
-            "activeCalories": activeCalories,
-            "strokeCount": strokeCount,
-            "maxAltitude": altitudeHistory.max() ?? currentAltitude,
-            "minAltitude": altitudeHistory.min() ?? currentAltitude
-        ]
+        let endedAt = Date()
+        let startedAt = startTime ?? startDate
+
+        let summary = SurfWorkoutSummaryBuilder.makePayload(
+            distance: distance,
+            duration: elapsed,
+            startedAt: startedAt,
+            endedAt: endedAt,
+            waveCount: waveCount,
+            maxSpeed: maxSpeed,
+            averageSpeed: averageSpeed,
+            maxHeartRate: _heartRateHistory.max() ?? heartRate,
+            avgHeartRate: _heartRateHistory.isEmpty
+                ? heartRate
+                : _heartRateHistory.reduce(0, +) / Double(_heartRateHistory.count),
+            activeCalories: activeCalories,
+            strokeCount: strokeCount,
+            maxAltitude: altitudeHistory.max() ?? currentAltitude,
+            minAltitude: altitudeHistory.min() ?? currentAltitude
+        )
         guard WCSession.default.isReachable else {
             print("⚠️ iPhone not reachable")
             return

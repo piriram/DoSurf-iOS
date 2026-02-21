@@ -34,26 +34,11 @@ final class DashboardViewModel {
     private let isLoadingRelay = BehaviorRelay<Bool>(value: false)
     private let errorRelay = PublishRelay<Error>()
     private let allChartsRelay = BehaviorRelay<[Chart]>(value: [])
-    private var avgCardsCacheByRegion: [String: [DashboardCardData]] = [:]
 
     private let disposeBag = DisposeBag()
 
     // 선택: nil이면 최신 한 포인트, 숫자면 최근 N시간 이동평균
     private let movingWindowHours: Int? = nil // 필요시 6 등으로 바꿔도 됨
-
-    // 고정 매핑
-    private let knownBeaches: [(beachId: String, region: String)] = [
-        ("1001", "gangreung"),
-        ("1002", "gangreung"),
-        ("1003", "gangreung"),
-        ("1004", "gangreung"),
-        ("2001", "pohang"),
-        ("2002", "pohang"),
-        ("3001", "jeju"),
-        ("3002", "jeju"),
-        ("3003", "jeju"),
-        ("4001", "busan")
-    ]
 
     // MARK: - Init
     init(
@@ -184,12 +169,6 @@ final class DashboardViewModel {
                         ]
                     }
                     .observe(on: MainScheduler.instance)
-                    .do(onNext: { [weak self] cards in
-                        // 선택: 캐시를 유지하려면 region slug를 키로 사용
-                        if let regionKey = current.region.slug as String? {
-                            self?.avgCardsCacheByRegion[regionKey] = cards
-                        }
-                    })
                     .catch { _ in .just([]) }
             }
             .share(replay: 1)
@@ -209,17 +188,8 @@ final class DashboardViewModel {
                 return self.surfRecordUseCase.fetchAllSurfRecords()
                     .asObservable()
                     .map { records in
-                        let recent = records.sorted { $0.surfDate > $1.surfDate }.prefix(10)
-                        return recent.flatMap { record in
-                            record.charts.map {
-                                Chart(beachID: record.beachID, time: $0.time,
-                                      windDirection: $0.windDirection, windSpeed: $0.windSpeed,
-                                      waveDirection: $0.waveDirection, waveHeight: $0.waveHeight,
-                                      wavePeriod: $0.wavePeriod, waterTemperature: $0.waterTemperature,
-                                      weather: self.convertWeatherIconNameToWeatherType($0.weatherIconName),
-                                      airTemperature: $0.airTemperature)
-                            }
-                        }.sorted { $0.time > $1.time }
+                        let recent = Array(records.sorted { $0.surfDate > $1.surfDate }.prefix(10))
+                        return self.charts(from: recent)
                     }
                     .catch { _ in .just([]) }
             }
@@ -233,16 +203,7 @@ final class DashboardViewModel {
                     .asObservable()
                     .map { records in
                         let pinned = records.filter { $0.isPin }
-                        return pinned.flatMap { record in
-                            record.charts.map {
-                                Chart(beachID: record.beachID, time: $0.time,
-                                      windDirection: $0.windDirection, windSpeed: $0.windSpeed,
-                                      waveDirection: $0.waveDirection, waveHeight: $0.waveHeight,
-                                      wavePeriod: $0.wavePeriod, waterTemperature: $0.waterTemperature,
-                                      weather: self.convertWeatherIconNameToWeatherType($0.weatherIconName),
-                                      airTemperature: $0.airTemperature)
-                            }
-                        }.sorted { $0.time > $1.time }
+                        return self.charts(from: pinned)
                     }
                     .catch { _ in .just([]) }
             }
@@ -271,10 +232,6 @@ final class DashboardViewModel {
     }
 
     // MARK: - Private Helpers
-    private func fetchBeachDataDirectly(beachId: String, region: String, daysBack: Int = 7) -> Single<BeachData> {
-        fetchBeachDataUseCase.execute(beachId: beachId, region: region, daysBack: daysBack)
-    }
-
     private func averageDirectionDegrees(_ degrees: [Double]) -> Double? {
         guard !degrees.isEmpty else { return nil }
         let radians = degrees.map { $0 * .pi / 180.0 }
@@ -287,7 +244,6 @@ final class DashboardViewModel {
     }
 
     private func convertWeatherIconNameToWeatherType(_ iconName: String) -> WeatherType {
-        print("iconName:\(iconName)")
         switch iconName {
         case "sun": return .clear
         case "cloudLittleSun": return .cloudLittleSun
@@ -300,6 +256,27 @@ final class DashboardViewModel {
         }
     }
 
+    private func charts(from records: [SurfRecordData]) -> [Chart] {
+        records
+            .flatMap { record in
+                record.charts.map {
+                    Chart(
+                        beachID: record.beachID,
+                        time: $0.time,
+                        windDirection: $0.windDirection,
+                        windSpeed: $0.windSpeed,
+                        waveDirection: $0.waveDirection,
+                        waveHeight: $0.waveHeight,
+                        wavePeriod: $0.wavePeriod,
+                        waterTemperature: $0.waterTemperature,
+                        weather: convertWeatherIconNameToWeatherType($0.weatherIconName),
+                        airTemperature: $0.airTemperature
+                    )
+                }
+            }
+            .sorted { $0.time > $1.time }
+    }
+
     private func groupChartsByDate(_ charts: [Chart]) -> [(date: Date, charts: [Chart])] {
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: charts) { calendar.startOfDay(for: $0.time) }
@@ -308,10 +285,12 @@ final class DashboardViewModel {
     }
 
     private func debugLogCharts(_ tag: String, charts: [Chart]) {
+#if DEBUG
         let counts = Dictionary(grouping: charts, by: { $0.weather.iconName }).mapValues { $0.count }
         let iconSet = Set(charts.map { $0.weather.iconName })
         let samples = charts.prefix(5).map { $0.weather.iconName }
         print("[WeatherDebug] \(tag) total=\(charts.count) counts=\(counts) icons=\(iconSet) samples=\(samples)")
+#endif
     }
 
     // 이동평균 계산 helper (필요 시)

@@ -2,6 +2,42 @@ import RxSwift
 import RxCocoa
 import Foundation
 
+protocol MemoDraftStore {
+    func loadMemo(forKey key: String) -> String?
+    func saveMemo(_ memo: String, forKey key: String)
+    func removeMemo(forKey key: String)
+}
+
+final class UserDefaultsMemoDraftStore: MemoDraftStore {
+    func loadMemo(forKey key: String) -> String? {
+        UserDefaults.standard.string(forKey: key)
+    }
+
+    func saveMemo(_ memo: String, forKey key: String) {
+        UserDefaults.standard.set(memo, forKey: key)
+    }
+
+    func removeMemo(forKey key: String) {
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+}
+
+protocol RecordChangeNotifying {
+    func notifySurfRecordsDidChange()
+}
+
+final class NotificationCenterRecordChangeNotifier: RecordChangeNotifying {
+    private let center: NotificationCenter
+
+    init(center: NotificationCenter = .default) {
+        self.center = center
+    }
+
+    func notifySurfRecordsDidChange() {
+        center.post(name: .surfRecordsDidChange, object: nil)
+    }
+}
+
 final class NoteViewModel {
     
     // MARK: - Input & Output
@@ -36,6 +72,8 @@ final class NoteViewModel {
     private let mode: SurfRecordMode
     private let surfRecordUseCase: SurfRecordUseCaseProtocol
     private let fetchBeachDataUseCase: FetchBeachDataUseCase
+    private let memoDraftStore: MemoDraftStore
+    private let recordChangeNotifier: RecordChangeNotifying
     private let disposeBag = DisposeBag()
 
     // MARK: - State
@@ -60,11 +98,15 @@ final class NoteViewModel {
     init(
         mode: SurfRecordMode,
         surfRecordUseCase: SurfRecordUseCaseProtocol,
-        fetchBeachDataUseCase: FetchBeachDataUseCase
+        fetchBeachDataUseCase: FetchBeachDataUseCase,
+        memoDraftStore: MemoDraftStore = UserDefaultsMemoDraftStore(),
+        recordChangeNotifier: RecordChangeNotifying = NotificationCenterRecordChangeNotifier()
     ) {
         self.mode = mode
         self.surfRecordUseCase = surfRecordUseCase
         self.fetchBeachDataUseCase = fetchBeachDataUseCase
+        self.memoDraftStore = memoDraftStore
+        self.recordChangeNotifier = recordChangeNotifier
 
         // 초기 차트 데이터 설정
         if let charts = mode.charts {
@@ -100,7 +142,9 @@ final class NoteViewModel {
                             loadingRelay.accept(false)
                         },
                         onError: { error in
+#if DEBUG
                             print("차트 로드 실패: \(error)")
+#endif
                             loadingRelay.accept(false)
                         }
                     )
@@ -144,7 +188,7 @@ final class NoteViewModel {
                         endTime = self.date(bySettingHour: 15, minute: 0, on: now)
                     }
                     // 임시 저장된 메모가 있으면 불러오기
-                    memo = UserDefaults.standard.string(forKey: self.tempMemoKey)
+                    memo = self.memoDraftStore.loadMemo(forKey: self.tempMemoKey)
 
                 case .edit(let record):
                     date = record.surfDate
@@ -152,7 +196,7 @@ final class NoteViewModel {
                     endTime = record.endTime
                     rating = Int(record.rating)
                     // 임시 저장된 메모가 있으면 우선 사용, 없으면 기존 메모 사용
-                    memo = UserDefaults.standard.string(forKey: self.tempMemoKey) ?? record.memo
+                    memo = self.memoDraftStore.loadMemo(forKey: self.tempMemoKey) ?? record.memo
                 }
 
                 // 상태 업데이트
@@ -213,9 +257,9 @@ final class NoteViewModel {
                 self.currentMemoRelay.accept(memo)
                 // 자동 저장
                 if let memo = memo, !memo.isEmpty {
-                    UserDefaults.standard.set(memo, forKey: self.tempMemoKey)
+                    self.memoDraftStore.saveMemo(memo, forKey: self.tempMemoKey)
                 } else {
-                    UserDefaults.standard.removeObject(forKey: self.tempMemoKey)
+                    self.memoDraftStore.removeMemo(forKey: self.tempMemoKey)
                 }
             })
             .disposed(by: disposeBag)
@@ -273,9 +317,9 @@ final class NoteViewModel {
             .subscribe(
                 onNext: { [weak self] in
                     guard let self = self else { return }
-                    NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
+                    self.recordChangeNotifier.notifySurfRecordsDidChange()
                     // 저장 성공 시 임시 메모 삭제
-                    UserDefaults.standard.removeObject(forKey: self.tempMemoKey)
+                    self.memoDraftStore.removeMemo(forKey: self.tempMemoKey)
                     saveSuccessRelay.accept(())
                 },
                 onError: { error in

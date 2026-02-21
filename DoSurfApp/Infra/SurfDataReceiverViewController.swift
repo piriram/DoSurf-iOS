@@ -1,3 +1,4 @@
+#if DEBUG
 import UIKit
 import WatchConnectivity
 
@@ -275,3 +276,4 @@ extension SurfDataReceiverViewController: iPhoneWatchConnectivityDelegate {
         updateConnectionStatus()
     }
 }
+#endif

@@ -39,38 +39,21 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     }
                     
                     let surfRecordMO = NSManagedObject(entity: surfRecordEntity, insertInto: backgroundContext)
-                    surfRecordMO.setValue(record.surfDate, forKey: "surfDate")
-                    surfRecordMO.setValue(record.startTime, forKey: "startTime")
-                    surfRecordMO.setValue(record.endTime, forKey: "endTime")
-                    surfRecordMO.setValue(record.rating, forKey: "rating")
-                    surfRecordMO.setValue(record.memo, forKey: "memo")
-                    surfRecordMO.setValue(record.isPin, forKey: "isPin")
-                    if let beachKey = self.beachIDAttributeKeyIfExists(in: backgroundContext) {
-                        surfRecordMO.setValue(record.beachID, forKey: beachKey)
-                    }
-                    
+                    let beachKey = self.beachIDAttributeKeyIfExists(in: backgroundContext)
+                    self.applyRecordValues(record, to: surfRecordMO, beachKey: beachKey)
+
                     // Create SurfChart entities
                     guard let chartEntity = NSEntityDescription.entity(forEntityName: "SurfChart", in: backgroundContext) else {
                         observer(.failure(RepositoryError.entityNotFound("SurfChart")))
                         return
                     }
-                    
-                    let chartObjects = record.charts.map { chartData -> NSManagedObject in
-                        let chartMO = NSManagedObject(entity: chartEntity, insertInto: backgroundContext)
-                        chartMO.setValue(chartData.time, forKey: "time")
-                        chartMO.setValue(chartData.windSpeed, forKey: "windSpeed")
-                        chartMO.setValue(chartData.windDirection, forKey: "windDirection")
-                        chartMO.setValue(chartData.waveHeight, forKey: "waveHeight")
-                        chartMO.setValue(chartData.wavePeriod, forKey: "wavePeriod")
-                        chartMO.setValue(chartData.waveDirection, forKey: "waveDirection")
-                        chartMO.setValue(chartData.airTemperature, forKey: "airTemperature")
-                        chartMO.setValue(chartData.waterTemperature, forKey: "waterTemperature")
-                        chartMO.setValue(chartData.weatherIconName, forKey: "weatherIconName")
-                        return chartMO
+
+                    let chartObjects = record.charts.map {
+                        self.makeChartManagedObject(from: $0, chartEntity: chartEntity, in: backgroundContext)
                     }
                     
                     // Set relationship
-                    surfRecordMO.setValue(NSSet(array: chartObjects), forKey: "charts")
+                    surfRecordMO.setValue(NSSet(array: chartObjects), forKey: SurfRecordField.charts)
                     
                     // Save context
                     try backgroundContext.save()
@@ -224,42 +207,27 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     let managedObject = try backgroundContext.existingObject(with: objectID)
                     
                     // Update properties
-                    managedObject.setValue(record.surfDate, forKey: "surfDate")
-                    managedObject.setValue(record.startTime, forKey: "startTime")
-                    managedObject.setValue(record.endTime, forKey: "endTime")
-                    managedObject.setValue(record.rating, forKey: "rating")
-                    managedObject.setValue(record.memo, forKey: "memo")
-                    managedObject.setValue(record.isPin, forKey: "isPin")
-                    if let beachKey = self.beachIDAttributeKeyIfExists(in: backgroundContext) {
-                        managedObject.setValue(record.beachID, forKey: beachKey)
+                    let beachKey = self.beachIDAttributeKeyIfExists(in: backgroundContext)
+                    self.applyRecordValues(record, to: managedObject, beachKey: beachKey)
+
+                    // Update charts relationship (replace all)
+                    if let existingCharts = managedObject.value(forKey: SurfRecordField.charts) as? NSSet {
+                        existingCharts
+                            .compactMap { $0 as? NSManagedObject }
+                            .forEach { backgroundContext.delete($0) }
                     }
-                    
-                    // Update charts relationship (simplified - in real app you might want to handle this more carefully)
-                    if let existingCharts = managedObject.value(forKey: "charts") as? NSSet {
-                        existingCharts.forEach { backgroundContext.delete($0 as! NSManagedObject) }
-                    }
-                    
+
                     // Create new charts
                     guard let chartEntity = NSEntityDescription.entity(forEntityName: "SurfChart", in: backgroundContext) else {
                         observer(.failure(RepositoryError.entityNotFound("SurfChart")))
                         return
                     }
-                    
-                    let chartObjects = record.charts.map { chartData -> NSManagedObject in
-                        let chartMO = NSManagedObject(entity: chartEntity, insertInto: backgroundContext)
-                        chartMO.setValue(chartData.time, forKey: "time")
-                        chartMO.setValue(chartData.windSpeed, forKey: "windSpeed")
-                        chartMO.setValue(chartData.windDirection, forKey: "windDirection")
-                        chartMO.setValue(chartData.waveHeight, forKey: "waveHeight")
-                        chartMO.setValue(chartData.wavePeriod, forKey: "wavePeriod")
-                        chartMO.setValue(chartData.waveDirection, forKey: "waveDirection")
-                        chartMO.setValue(chartData.airTemperature, forKey: "airTemperature")
-                        chartMO.setValue(chartData.waterTemperature, forKey: "waterTemperature")
-                        chartMO.setValue(chartData.weatherIconName, forKey: "weatherIconName")
-                        return chartMO
+
+                    let chartObjects = record.charts.map {
+                        self.makeChartManagedObject(from: $0, chartEntity: chartEntity, in: backgroundContext)
                     }
                     
-                    managedObject.setValue(NSSet(array: chartObjects), forKey: "charts")
+                    managedObject.setValue(NSSet(array: chartObjects), forKey: SurfRecordField.charts)
                     
                     try backgroundContext.save()
                     
@@ -277,6 +245,56 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
         }
     }
     
+    private enum SurfRecordField {
+        static let surfDate = "surfDate"
+        static let startTime = "startTime"
+        static let endTime = "endTime"
+        static let rating = "rating"
+        static let memo = "memo"
+        static let isPin = "isPin"
+        static let charts = "charts"
+
+        static let time = "time"
+        static let windSpeed = "windSpeed"
+        static let windDirection = "windDirection"
+        static let waveHeight = "waveHeight"
+        static let wavePeriod = "wavePeriod"
+        static let waveDirection = "waveDirection"
+        static let airTemperature = "airTemperature"
+        static let waterTemperature = "waterTemperature"
+        static let weatherIconName = "weatherIconName"
+    }
+
+    private func applyRecordValues(_ record: SurfRecordData, to managedObject: NSManagedObject, beachKey: String?) {
+        managedObject.setValue(record.surfDate, forKey: SurfRecordField.surfDate)
+        managedObject.setValue(record.startTime, forKey: SurfRecordField.startTime)
+        managedObject.setValue(record.endTime, forKey: SurfRecordField.endTime)
+        managedObject.setValue(record.rating, forKey: SurfRecordField.rating)
+        managedObject.setValue(record.memo, forKey: SurfRecordField.memo)
+        managedObject.setValue(record.isPin, forKey: SurfRecordField.isPin)
+        if let beachKey {
+            managedObject.setValue(record.beachID, forKey: beachKey)
+        }
+    }
+
+    private func makeChartManagedObject(
+        from chartData: SurfChartData,
+        chartEntity: NSEntityDescription,
+        in context: NSManagedObjectContext
+    ) -> NSManagedObject {
+        let chartMO = NSManagedObject(entity: chartEntity, insertInto: context)
+        chartMO.setValue(chartData.time, forKey: SurfRecordField.time)
+        chartMO.setValue(chartData.windSpeed, forKey: SurfRecordField.windSpeed)
+        chartMO.setValue(chartData.windDirection, forKey: SurfRecordField.windDirection)
+        chartMO.setValue(chartData.waveHeight, forKey: SurfRecordField.waveHeight)
+        chartMO.setValue(chartData.wavePeriod, forKey: SurfRecordField.wavePeriod)
+        chartMO.setValue(chartData.waveDirection, forKey: SurfRecordField.waveDirection)
+        chartMO.setValue(chartData.airTemperature, forKey: SurfRecordField.airTemperature)
+        chartMO.setValue(chartData.waterTemperature, forKey: SurfRecordField.waterTemperature)
+        chartMO.setValue(chartData.weatherIconName, forKey: SurfRecordField.weatherIconName)
+        return chartMO
+    }
+
     // MARK: - Attribute Key Helpers
     private func beachIDAttributeKeyIfExists(in context: NSManagedObjectContext) -> String? {
         if let entity = NSEntityDescription.entity(forEntityName: "SurfRecord", in: context) {
@@ -295,9 +313,9 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
     
     // MARK: - Private Helpers
     private func mapToSurfRecordData(_ managedObject: NSManagedObject) -> SurfRecordData? {
-        guard let surfDate = managedObject.value(forKey: "surfDate") as? Date,
-              let startTime = managedObject.value(forKey: "startTime") as? Date,
-              let endTime = managedObject.value(forKey: "endTime") as? Date else {
+        guard let surfDate = managedObject.value(forKey: SurfRecordField.surfDate) as? Date,
+              let startTime = managedObject.value(forKey: SurfRecordField.startTime) as? Date,
+              let endTime = managedObject.value(forKey: SurfRecordField.endTime) as? Date else {
             return nil
         }
         
@@ -307,26 +325,26 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
         } else {
             beachID = 0
         }
-        let rating = managedObject.value(forKey: "rating") as? Int16 ?? 0
-        let memo = managedObject.value(forKey: "memo") as? String
-        let isPin = managedObject.value(forKey: "isPin") as? Bool ?? false
-        
+        let rating = managedObject.value(forKey: SurfRecordField.rating) as? Int16 ?? 0
+        let memo = managedObject.value(forKey: SurfRecordField.memo) as? String
+        let isPin = managedObject.value(forKey: SurfRecordField.isPin) as? Bool ?? false
+
         var chartData: [SurfChartData] = []
-        if let charts = managedObject.value(forKey: "charts") as? NSSet {
+        if let charts = managedObject.value(forKey: SurfRecordField.charts) as? NSSet {
             chartData = charts.compactMap { chartMO in
                 guard let chartMO = chartMO as? NSManagedObject,
-                      let time = chartMO.value(forKey: "time") as? Date else { return nil }
-                
+                      let time = chartMO.value(forKey: SurfRecordField.time) as? Date else { return nil }
+
                 return SurfChartData(
                     time: time,
-                    windSpeed: chartMO.value(forKey: "windSpeed") as? Double ?? 0.0,
-                    windDirection: chartMO.value(forKey: "windDirection") as? Double ?? 0.0,
-                    waveHeight: chartMO.value(forKey: "waveHeight") as? Double ?? 0.0,
-                    wavePeriod: chartMO.value(forKey: "wavePeriod") as? Double ?? 0.0,
-                    waveDirection: chartMO.value(forKey: "waveDirection") as? Double ?? 0.0,
-                    airTemperature: chartMO.value(forKey: "airTemperature") as? Double ?? 0.0,
-                    waterTemperature: chartMO.value(forKey: "waterTemperature") as? Double ?? 0.0,
-                    weatherIconName: chartMO.value(forKey: "weatherIconName") as? String ?? ""
+                    windSpeed: chartMO.value(forKey: SurfRecordField.windSpeed) as? Double ?? 0.0,
+                    windDirection: chartMO.value(forKey: SurfRecordField.windDirection) as? Double ?? 0.0,
+                    waveHeight: chartMO.value(forKey: SurfRecordField.waveHeight) as? Double ?? 0.0,
+                    wavePeriod: chartMO.value(forKey: SurfRecordField.wavePeriod) as? Double ?? 0.0,
+                    waveDirection: chartMO.value(forKey: SurfRecordField.waveDirection) as? Double ?? 0.0,
+                    airTemperature: chartMO.value(forKey: SurfRecordField.airTemperature) as? Double ?? 0.0,
+                    waterTemperature: chartMO.value(forKey: SurfRecordField.waterTemperature) as? Double ?? 0.0,
+                    weatherIconName: chartMO.value(forKey: SurfRecordField.weatherIconName) as? String ?? ""
                 )
             }.sorted { $0.time < $1.time }
         }
