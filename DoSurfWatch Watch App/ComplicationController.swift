@@ -14,10 +14,12 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
                     .modularSmall,
                     .modularLarge,
                     .utilitarianSmall,
+                    .utilitarianSmallFlat,
                     .utilitarianLarge,
                     .circularSmall,
                     .extraLarge,
                     .graphicCorner,
+                    .graphicBezel,
                     .graphicCircular,
                     .graphicRectangular,
                     .graphicExtraLarge
@@ -79,7 +81,7 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
             return createModularSmallTemplate(lastSession: lastSession)
         case .modularLarge:
             return createModularLargeTemplate(lastSession: lastSession)
-        case .utilitarianSmall:
+        case .utilitarianSmall, .utilitarianSmallFlat:
             return createUtilitarianSmallTemplate(lastSession: lastSession)
         case .utilitarianLarge:
             return createUtilitarianLargeTemplate(lastSession: lastSession)
@@ -89,6 +91,8 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
             return createExtraLargeTemplate(lastSession: lastSession)
         case .graphicCorner:
             return createGraphicCornerTemplate(lastSession: lastSession)
+        case .graphicBezel:
+            return createGraphicBezelTemplate(lastSession: lastSession)
         case .graphicCircular:
             return createGraphicCircularTemplate(lastSession: lastSession)
         case .graphicRectangular:
@@ -117,7 +121,7 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
             return createModularSmallTemplate(lastSession: sampleSession)
         case .modularLarge:
             return createModularLargeTemplate(lastSession: sampleSession)
-        case .utilitarianSmall:
+        case .utilitarianSmall, .utilitarianSmallFlat:
             return createUtilitarianSmallTemplate(lastSession: sampleSession)
         case .utilitarianLarge:
             return createUtilitarianLargeTemplate(lastSession: sampleSession)
@@ -127,6 +131,8 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
             return createExtraLargeTemplate(lastSession: sampleSession)
         case .graphicCorner:
             return createGraphicCornerTemplate(lastSession: sampleSession)
+        case .graphicBezel:
+            return createGraphicBezelTemplate(lastSession: sampleSession)
         case .graphicCircular:
             return createGraphicCircularTemplate(lastSession: sampleSession)
         case .graphicRectangular:
@@ -144,114 +150,102 @@ class ComplicationController: NSObject, CLKComplicationDataSource {
     // MARK: - Individual Template Creators
     
     private func createModularSmallTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateModularSmallSimpleText {
-        let template = CLKComplicationTemplateModularSmallSimpleText()
-        
-        if let session = lastSession {
-            template.textProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-        } else {
-            template.textProvider = CLKSimpleTextProvider(text: "--:--")
-        }
-        
-        return template
+        let textProvider = CLKSimpleTextProvider(text: lastSession?.formattedDuration ?? "--:--")
+        return CLKComplicationTemplateModularSmallSimpleText(textProvider: textProvider)
     }
     
     private func createModularLargeTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateModularLargeStandardBody {
-        let template = CLKComplicationTemplateModularLargeStandardBody()
-        template.headerTextProvider = CLKSimpleTextProvider(text: "🏄‍♂️ Last Surf")
-        
-        if let session = lastSession {
-            template.body1TextProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-            template.body2TextProvider = CLKSimpleTextProvider(text: session.shortSummary)
-        } else {
-            template.body1TextProvider = CLKSimpleTextProvider(text: "No sessions yet")
-            template.body2TextProvider = CLKSimpleTextProvider(text: "Start surfing!")
-        }
-        
-        return template
+        let header = CLKSimpleTextProvider(text: "🏄‍♂️ Last Surf")
+        let body1 = CLKSimpleTextProvider(text: lastSession?.formattedDuration ?? "No sessions yet")
+        let body2 = CLKSimpleTextProvider(text: lastSession?.shortSummary ?? "Start surfing!")
+
+        return CLKComplicationTemplateModularLargeStandardBody(
+            headerTextProvider: header,
+            body1TextProvider: body1,
+            body2TextProvider: body2
+        )
     }
     
     private func createUtilitarianSmallTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateUtilitarianSmallFlat {
-        let template = CLKComplicationTemplateUtilitarianSmallFlat()
-        
-        if let session = lastSession {
-            template.textProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-        } else {
-            template.textProvider = CLKSimpleTextProvider(text: "--:--")
-        }
-        
-        return template
+        let textProvider = CLKSimpleTextProvider(text: lastSession?.formattedDuration ?? "--:--")
+        return CLKComplicationTemplateUtilitarianSmallFlat(textProvider: textProvider)
     }
     
     private func createUtilitarianLargeTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateUtilitarianLargeFlat {
-        let template = CLKComplicationTemplateUtilitarianLargeFlat()
-        
+        let text: String
         if let session = lastSession {
-            template.textProvider = CLKSimpleTextProvider(text: "🏄‍♂️ \(session.formattedDuration) • \(session.waveCount)🌊")
+            text = "🏄‍♂️ \(session.formattedDuration) • \(session.waveCount)🌊"
         } else {
-            template.textProvider = CLKSimpleTextProvider(text: "🏄‍♂️ No sessions yet")
+            text = "🏄‍♂️ No sessions yet"
         }
-        
-        return template
+
+        return CLKComplicationTemplateUtilitarianLargeFlat(
+            textProvider: CLKSimpleTextProvider(text: text)
+        )
     }
     
     private func createCircularSmallTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateCircularSmallSimpleText {
-        let template = CLKComplicationTemplateCircularSmallSimpleText()
-        
+        let text: String
         if let session = lastSession {
             let minutes = Int(session.duration) / 60
-            template.textProvider = CLKSimpleTextProvider(text: "\(minutes)m")
+            text = "\(minutes)m"
         } else {
-            template.textProvider = CLKSimpleTextProvider(text: "--")
+            text = "--"
         }
-        
-        return template
+
+        return CLKComplicationTemplateCircularSmallSimpleText(
+            textProvider: CLKSimpleTextProvider(text: text)
+        )
     }
     
     private func createExtraLargeTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateExtraLargeSimpleText {
-        let template = CLKComplicationTemplateExtraLargeSimpleText()
-        
-        if let session = lastSession {
-            template.textProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-        } else {
-            template.textProvider = CLKSimpleTextProvider(text: "--:--")
-        }
-        
-        return template
+        let textProvider = CLKSimpleTextProvider(text: lastSession?.formattedDuration ?? "--:--")
+        return CLKComplicationTemplateExtraLargeSimpleText(textProvider: textProvider)
     }
     
     private func createGraphicCornerTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateGraphicCornerTextImage {
-        let template = CLKComplicationTemplateGraphicCornerTextImage()
-        template.imageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
-        
-        if let session = lastSession {
-            template.textProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-        } else {
-            template.textProvider = CLKSimpleTextProvider(text: "--:--")
-        }
-        
-        return template
+        let textProvider = CLKSimpleTextProvider(text: lastSession?.formattedDuration ?? "--:--")
+        let imageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
+        return CLKComplicationTemplateGraphicCornerTextImage(
+            textProvider: textProvider,
+            imageProvider: imageProvider
+        )
     }
     
-    private func createGraphicCircularTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateGraphicCircularImage {
-        let template = CLKComplicationTemplateGraphicCircularImage()
-        template.imageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
-        return template
+    private func createGraphicCircularTemplate(lastSession _: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateGraphicCircularImage {
+        let imageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
+        return CLKComplicationTemplateGraphicCircularImage(imageProvider: imageProvider)
+    }
+
+    private func createGraphicBezelTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateGraphicBezelCircularText {
+        let circularTemplate = createGraphicCircularTemplate(lastSession: lastSession)
+        let text = lastSession?.formattedDuration ?? "--:--"
+        return CLKComplicationTemplateGraphicBezelCircularText(
+            circularTemplate: circularTemplate,
+            textProvider: CLKSimpleTextProvider(text: text)
+        )
     }
     
     private func createGraphicRectangularTemplate(lastSession: ComplicationDataManager.LastSessionData?) -> CLKComplicationTemplateGraphicRectangularStandardBody {
-        let template = CLKComplicationTemplateGraphicRectangularStandardBody()
-        template.headerImageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
-        template.headerTextProvider = CLKSimpleTextProvider(text: "Last Surf")
-        
+        let headerImageProvider = CLKFullColorImageProvider(fullColorImage: UIImage(systemName: "figure.surfing") ?? UIImage())
+        let headerTextProvider = CLKSimpleTextProvider(text: "Last Surf")
+
+        let body1Text: String
+        let body2Text: String
         if let session = lastSession {
-            template.body1TextProvider = CLKSimpleTextProvider(text: session.formattedDuration)
-            template.body2TextProvider = CLKSimpleTextProvider(text: "\(Int(session.distance))m • \(session.waveCount) waves")
+            body1Text = session.formattedDuration
+            body2Text = "\(Int(session.distance))m • \(session.waveCount) waves"
         } else {
-            template.body1TextProvider = CLKSimpleTextProvider(text: "No sessions")
-            template.body2TextProvider = CLKSimpleTextProvider(text: "Start surfing!")
+            body1Text = "No sessions"
+            body2Text = "Start surfing!"
         }
-        
-        return template
+
+        return CLKComplicationTemplateGraphicRectangularStandardBody(
+            headerImageProvider: headerImageProvider,
+            headerTextProvider: headerTextProvider,
+            body1TextProvider: CLKSimpleTextProvider(text: body1Text),
+            body2TextProvider: CLKSimpleTextProvider(text: body2Text)
+        )
     }
     
     @available(watchOS 7.0, *)
