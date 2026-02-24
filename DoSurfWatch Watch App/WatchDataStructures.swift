@@ -1,11 +1,25 @@
 import Foundation
 
-// Watch 앱에서 사용할 서핑 세션 데이터
+// MARK: - Watch session sync protocol
+
+enum WatchPayloadSchema {
+    static let currentVersion = 2
+    static let defaultBatchSize = 8
+}
+
+enum WatchSessionLifecycleState: Int, Codable {
+    case started = 1
+    case inProgress = 2
+    case completed = 3
+    case deleted = 4
+}
+
 struct WatchSurfSessionData: Codable {
     let payloadVersion: Int
-    let recordId: String
-    let distance: Double
-    let duration: TimeInterval
+    let schemaVersion: Int
+    let sessionId: String
+    let distanceMeters: Double
+    let durationSeconds: Double
     let startTime: Date
     let endTime: Date
     let waveCount: Int
@@ -15,13 +29,15 @@ struct WatchSurfSessionData: Codable {
     let strokeCount: Int
     let lastModifiedAt: Date
     let deviceId: String
+    let state: WatchSessionLifecycleState
     let isDeleted: Bool
 
     init(
         payloadVersion: Int = 1,
-        recordId: String,
-        distance: Double,
-        duration: TimeInterval,
+        schemaVersion: Int = WatchPayloadSchema.currentVersion,
+        sessionId: String,
+        distanceMeters: Double,
+        durationSeconds: Double,
         startTime: Date,
         endTime: Date,
         waveCount: Int,
@@ -31,12 +47,14 @@ struct WatchSurfSessionData: Codable {
         strokeCount: Int,
         lastModifiedAt: Date = Date(),
         deviceId: String,
-        isDeleted: Bool = false
+        state: WatchSessionLifecycleState = .completed,
+        isDeleted: Bool? = nil
     ) {
         self.payloadVersion = payloadVersion
-        self.recordId = recordId
-        self.distance = distance
-        self.duration = duration
+        self.schemaVersion = schemaVersion
+        self.sessionId = sessionId
+        self.distanceMeters = distanceMeters
+        self.durationSeconds = durationSeconds
         self.startTime = startTime
         self.endTime = endTime
         self.waveCount = waveCount
@@ -46,48 +64,68 @@ struct WatchSurfSessionData: Codable {
         self.strokeCount = strokeCount
         self.lastModifiedAt = lastModifiedAt
         self.deviceId = deviceId
-        self.isDeleted = isDeleted
+        self.state = state
+        self.isDeleted = isDeleted ?? (state == .deleted)
     }
 
-    static func deletePayload(
-        recordId: String,
-        deviceId: String,
-        lastModifiedAt: Date = Date()
-    ) -> WatchSurfSessionData {
-        return WatchSurfSessionData(
+    static func deletion(sessionId: String, deviceId: String) -> WatchSurfSessionData {
+        WatchSurfSessionData(
             payloadVersion: 1,
-            recordId: recordId,
-            distance: 0,
-            duration: 0,
-            startTime: lastModifiedAt,
-            endTime: lastModifiedAt,
+            schemaVersion: WatchPayloadSchema.currentVersion,
+            sessionId: sessionId,
+            distanceMeters: 0,
+            durationSeconds: 0,
+            startTime: Date(),
+            endTime: Date(),
             waveCount: 0,
             maxHeartRate: 0,
             avgHeartRate: 0,
             activeCalories: 0,
             strokeCount: 0,
-            lastModifiedAt: lastModifiedAt,
             deviceId: deviceId,
+            state: .deleted,
             isDeleted: true
         )
     }
 
     var dictionary: [String: Any] {
-        return [
-            "payloadVersion": payloadVersion,
-            "recordId": recordId,
-            "distance": distance,
-            "duration": duration,
-            "startTime": startTime.timeIntervalSince1970,
-            "endTime": endTime.timeIntervalSince1970,
-            "waveCount": waveCount,
-            "maxHeartRate": maxHeartRate,
-            "avgHeartRate": avgHeartRate,
-            "activeCalories": activeCalories,
-            "strokeCount": strokeCount,
-            "lastModifiedAt": lastModifiedAt.timeIntervalSince1970,
-            "deviceId": deviceId,
-            "isDeleted": isDeleted
+        [
+            WatchMessageKey.payloadVersion: payloadVersion,
+            WatchMessageKey.schemaVersion: schemaVersion,
+            WatchMessageKey.sessionId: sessionId,
+            WatchMessageKey.distanceMeters: distanceMeters,
+            WatchMessageKey.durationSeconds: durationSeconds,
+            WatchMessageKey.startTime: startTime.timeIntervalSince1970,
+            WatchMessageKey.endTime: endTime.timeIntervalSince1970,
+            WatchMessageKey.waveCount: waveCount,
+            WatchMessageKey.maxHeartRate: maxHeartRate,
+            WatchMessageKey.avgHeartRate: avgHeartRate,
+            WatchMessageKey.activeCalories: activeCalories,
+            WatchMessageKey.strokeCount: strokeCount,
+            WatchMessageKey.lastModifiedAt: lastModifiedAt.timeIntervalSince1970,
+            WatchMessageKey.deviceId: deviceId,
+            WatchMessageKey.state: state.rawValue,
+            WatchMessageKey.isDeleted: isDeleted
         ]
     }
+}
+
+private enum WatchMessageKey {
+    static let payloadVersion = "payloadVersion"
+    static let schemaVersion = "schemaVersion"
+    static let payloads = "payloads"
+    static let sessionId = "sessionId"
+    static let distanceMeters = "distanceMeters"
+    static let durationSeconds = "durationSeconds"
+    static let startTime = "startTime"
+    static let endTime = "endTime"
+    static let waveCount = "waveCount"
+    static let maxHeartRate = "maxHeartRate"
+    static let avgHeartRate = "avgHeartRate"
+    static let activeCalories = "activeCalories"
+    static let strokeCount = "strokeCount"
+    static let lastModifiedAt = "lastModifiedAt"
+    static let deviceId = "deviceId"
+    static let state = "state"
+    static let isDeleted = "isDeleted"
 }

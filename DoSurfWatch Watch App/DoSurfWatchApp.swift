@@ -4,24 +4,16 @@ import ClockKit
 @main
 struct DoSurfWatch_Watch_AppApp: App {
     @StateObject private var manager = SurfWorkoutManager()
-    
-    init() {
-        // WatchConnectivity 초기화
-        Task {
-            await WatchConnectivityManager.shared.activate()
-            try? await HealthAuth().requestPermissions()
-        }
-    }
-    
+    @StateObject private var connectivity = WatchConnectivityManager.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView(manager: manager)
-                .environmentObject(WatchConnectivityManager.shared)
+                .environmentObject(connectivity)
+                .task {
+                    await connectivity.activate()
+                    await manager.requestPermissions()
+                }
         }
     }
 }
-
-
-
-
-

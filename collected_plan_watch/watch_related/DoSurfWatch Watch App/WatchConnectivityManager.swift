@@ -3,112 +3,110 @@ import WatchConnectivity
 import SwiftUI
 import Combine
 
-final class WatchConnectivityManager: NSObject, ObservableObject {
+@MainActor
+class WatchConnectivityManager: NSObject, ObservableObject {
     static let shared = WatchConnectivityManager()
-
-    @Published private(set) var isReachable = false
-    @Published private(set) var isActivated = false
-    @Published private(set) var pendingCount = 0
-
+    
+    @Published var isReachable = false
+    @Published var isActivated = false
+    
     private var pendingSessions: [WatchSurfSessionData] = []
     private var isSending = false
-    private let maxBatchCount = WatchPayloadSchema.defaultBatchSize
-    private let maxRetryCount = 3
+    private let maxBatchCount = 5
+    private let maxRetryCount = 2
 
     override init() {
         super.init()
     }
-
+    
     func activate() async {
         guard WCSession.isSupported() else {
             print("❌ WatchConnectivity not supported")
             return
         }
-
+        
         let session = WCSession.default
         session.delegate = self
         session.activate()
+        
         print("🔄 WatchConnectivity activating...")
     }
-
-    func enqueuePayload(_ payload: WatchSurfSessionData) {
-        pendingSessions.append(payload)
-        pendingCount = pendingSessions.count
-        flushPending()
+    
+    func sendSurfData(_ data: WatchSurfSessionData) async throws {
+        pendingSessions.append(data)
+        try await sendPendingSessions(retryCount: 0)
     }
-
-    func enqueuePayloads(_ sessions: [WatchSurfSessionData]) {
-        guard !sessions.isEmpty else { return }
+    
+    func sendBatch(_ sessions: [WatchSurfSessionData]) async throws {
         pendingSessions.append(contentsOf: sessions)
-        pendingCount = pendingSessions.count
-        flushPending()
+        try await sendPendingSessions(retryCount: 0)
     }
-
+    
     func flushPending() {
-        Task { @MainActor in
+        Task {
             do {
                 try await sendPendingSessions(retryCount: 0)
             } catch {
-                print("⚠️ Flush failed: \(error.localizedDescription)")
+                print("⚠️ flush failed: \(error.localizedDescription)")
             }
         }
     }
-
+    
     private func sendPendingSessions(retryCount: Int) async throws {
         guard WCSession.default.activationState == .activated else {
             throw WatchConnectivityError.notActivated
         }
         guard WCSession.default.isReachable else {
-            print("ℹ️ iPhone not reachable. Keep pending: \(pendingSessions.count)")
+            print("ℹ️ WatchConnectivity is not reachable. Pending sessions retained: \(pendingSessions.count)")
             throw WatchConnectivityError.notReachable
         }
         guard !pendingSessions.isEmpty else { return }
         guard !isSending else { return }
-
+        
         isSending = true
         defer { isSending = false }
-
+        
         let batch = Array(pendingSessions.prefix(maxBatchCount))
         let payload: [String: Any] = [
-            WatchMessageKey.payloadVersion: WatchPayloadSchema.currentVersion,
-            WatchMessageKey.payloads: batch.map { $0.dictionary }
+            "payloadVersion": 1,
+            "payloads": batch.map { $0.dictionary }
         ]
-
+        
         do {
             try await withCheckedThrowingContinuation { continuation in
                 WCSession.default.sendMessage(payload, replyHandler: { [weak self] _ in
+                    self?.confirmSent(batchCount: batch.count)
                     continuation.resume()
-                    self?.removeConfirmed(batchCount: batch.count)
                 }, errorHandler: { [weak self] error in
+                    print("❌ Send error: \(error.localizedDescription)")
+                    self?.rollbackBatch(batchCount: batch.count)
                     continuation.resume(throwing: error)
-                    print("❌ sendMessage failed: \(error.localizedDescription)")
-                    self?.retainPending(batchCount: batch.count)
                 })
             }
-
+            
             if !pendingSessions.isEmpty {
                 try await sendPendingSessions(retryCount: 0)
             }
         } catch {
             if retryCount < maxRetryCount {
+                print("↻ retry send pending sessions (\(retryCount + 1)/\(maxRetryCount))")
                 let nextRetry = retryCount + 1
-                let delay = UInt64(pow(2.0, Double(nextRetry)) * 0.5 * Double(NSEC_PER_SEC))
-                try? await Task.sleep(nanoseconds: delay)
+                try await Task.sleep(nanoseconds: UInt64(0.5 * Double(1 << nextRetry) * 1_000_000_000))
                 try await sendPendingSessions(retryCount: nextRetry)
                 return
             }
             throw error
         }
     }
-
-    private func removeConfirmed(batchCount: Int) {
-        guard batchCount > 0 else { return }
+    
+    private func confirmSent(batchCount: Int) {
         pendingSessions.removeFirst(min(batchCount, pendingSessions.count))
-        pendingCount = pendingSessions.count
+        print("✅ sent session batch. pending: \(pendingSessions.count)")
     }
-
-    private func retainPending(batchCount: Int) {
-        pendingCount = pendingSessions.count
+    
+    private func rollbackBatch(batchCount: Int) {
+        // 현재는 append-only 큐라 rollback은 필요하지 않음.
+        // 실패한 배치만 pending 상태로 유지
         print("↩️ keep pending batch for retry: +\(batchCount)")
     }
 }
@@ -117,33 +115,33 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 extension WatchConnectivityManager: WCSessionDelegate {
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
         Task { @MainActor in
-            isActivated = (activationState == .activated)
-            isReachable = session.isReachable
-
+            self.isActivated = (activationState == .activated)
+            self.isReachable = session.isReachable
+            
             print("✅ watchOS WCSession activated: \(activationState.rawValue)")
             if let error {
                 print("⚠️ Activation error: \(error.localizedDescription)")
             }
         }
     }
-
+    
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {
         Task { @MainActor in
-            isReachable = session.isReachable
-            print("📱 iPhone reachability: \(session.isReachable)")
+            self.isReachable = session.isReachable
+            print("📱 iPhone reachability changed: \(session.isReachable)")
             if session.isReachable {
-                flushPending()
+                self.flushPending()
             }
         }
     }
 }
 
-// MARK: - Error
+// MARK: - 에러 정의
 enum WatchConnectivityError: LocalizedError {
     case notActivated
     case notReachable
     case sendFailed(String)
-
+    
     var errorDescription: String? {
         switch self {
         case .notActivated:
@@ -154,9 +152,4 @@ enum WatchConnectivityError: LocalizedError {
             return "Send failed: \(message)"
         }
     }
-}
-
-private enum WatchMessageKey {
-    static let payloadVersion = "payloadVersion"
-    static let payloads = "payloads"
 }

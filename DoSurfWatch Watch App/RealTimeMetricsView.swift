@@ -136,16 +136,10 @@ struct RealTimeMetricsView: View {
                             .cornerRadius(8)
                     }
                     
-                    // 자동 감지 상태
-                    if manager.isAutoDetecting {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 6, height: 6)
-                            Text("Auto Detection ON")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
+                    if manager.isRunning {
+                        Text("자동 모드: 실시간 추적")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
                     }
                 }
             }

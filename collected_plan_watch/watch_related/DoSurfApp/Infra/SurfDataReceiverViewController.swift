@@ -23,7 +23,7 @@ class SurfDataReceiverViewController: UIViewController {
     
     // MARK: - Properties
     private var watchConnectivity: iPhoneWatchConnectivity!
-    private var receivedData: WatchSessionPayload?
+    private var receivedData: SurfSessionData?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -200,8 +200,8 @@ class SurfDataReceiverViewController: UIViewController {
     private func updateDataLabels() {
         DispatchQueue.main.async {
             if let data = self.receivedData {
-                self.distanceLabel.text = "📏 Distance: \(Int(data.distanceMeters)) meters"
-                self.durationLabel.text = "⏱️ Duration: \(self.formatDuration(data.durationSeconds))"
+                self.distanceLabel.text = "📏 Distance: \(Int(data.distance)) meters"
+                self.durationLabel.text = "⏱️ Duration: \(self.formatDuration(data.duration))"
                 self.startTimeLabel.text = "🚀 Start: \(self.formatDate(data.startTime))"
                 self.endTimeLabel.text = "🏁 End: \(self.formatDate(data.endTime))"
                 
@@ -258,9 +258,22 @@ class SurfDataReceiverViewController: UIViewController {
 
 // MARK: - WatchConnectivity Delegate
 extension SurfDataReceiverViewController: iPhoneWatchConnectivityDelegate {
-    func watchConnectivityDidReceivePayloads(_ sessions: [WatchSessionPayload]) {
+    func didReceiveSurfSessions(_ sessions: [WatchSessionPayload]) {
         guard let data = sessions.last else { return }
-        receivedData = data
+        receivedData = SurfSessionData(
+            payloadVersion: data.payloadVersion,
+            recordId: data.recordId,
+            distance: data.distance,
+            duration: data.duration,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            waveCount: data.waveCount,
+            maxHeartRate: data.maxHeartRate,
+            avgHeartRate: data.avgHeartRate,
+            activeCalories: data.activeCalories,
+            strokeCount: data.strokeCount,
+            isDeleted: data.isDeleted
+        )
         UserDefaults.standard.set(Date(), forKey: "lastReceivedTime")
         updateDataLabels()
         
@@ -270,6 +283,19 @@ extension SurfDataReceiverViewController: iPhoneWatchConnectivityDelegate {
                 message: "New watch session data received (batch: \(sessions.count)).",
                 preferredStyle: .alert
             )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self.present(alert, animated: true)
+        }
+    }
+    
+    func didReceiveLegacySurfData(_ data: SurfSessionData) {
+        receivedData = data
+        UserDefaults.standard.set(Date(), forKey: "lastReceivedTime")
+        updateDataLabels()
+        
+        // 성공 알림
+        DispatchQueue.main.async {
+            let alert = UIAlertController(title: "✅ Data Received", message: "New surf session data received from Apple Watch!", preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             self.present(alert, animated: true)
         }

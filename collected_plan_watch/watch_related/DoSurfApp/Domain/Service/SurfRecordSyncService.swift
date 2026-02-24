@@ -1,6 +1,5 @@
 import Foundation
 import RxSwift
-import ActivityKit
 
 final class SurfRecordSyncService {
     private let repository: NoteRepositoryProtocol
@@ -12,36 +11,22 @@ final class SurfRecordSyncService {
     func applyWatchPayloads(_ sessions: [WatchSessionPayload]) -> Single<Void> {
         guard !sessions.isEmpty else { return .just(()) }
 
-        let syncJobs = sessions.map { session in
-            syncSession(session)
+        let applied = sessions.map { sessionPayload -> Single<Bool> in
+            shouldApply(sessionPayload)
+                .flatMap { [weak self] shouldApply in
+                    guard let self else { return .just(false) }
+                    guard shouldApply else { return .just(false) }
+                    return self.fetchOrCreateRecord(for: sessionPayload)
+                }
         }
 
-        return Single.zip(syncJobs)
-            .map { applied in
-                if applied.contains(true) {
+        return Single.zip(applied)
+            .map { applieds in
+                if applieds.contains(true) {
                     NotificationCenter.default.post(name: .surfRecordsDidChange, object: nil)
                 }
                 return ()
             }
-    }
-
-    private func syncSession(_ payload: WatchSessionPayload) -> Single<Bool> {
-        switch payload.sessionState {
-        case .started:
-            startLiveActivityIfNeeded(payload)
-            return .just(false)
-        case .inProgress:
-            updateLiveActivity(payload)
-            return .just(false)
-        case .completed, .deleted:
-            handleLiveActivityOnTerminalState(payload)
-            return shouldApply(payload)
-                .flatMap { [weak self] shouldApply in
-                    guard let self else { return .just(false) }
-                    if !shouldApply { return .just(false) }
-                    return self.fetchOrCreateRecord(for: payload)
-                }
-        }
     }
 
     private func shouldApply(_ payload: WatchSessionPayload) -> Single<Bool> {
@@ -49,10 +34,6 @@ final class SurfRecordSyncService {
             .map { local in
                 guard let local else {
                     return true
-                }
-
-                if payload.schemaVersion < WatchPayloadSchema.minimumSupportedVersion {
-                    return false
                 }
 
                 if payload.lastModifiedAt < local.lastModifiedAt {
@@ -101,45 +82,10 @@ final class SurfRecordSyncService {
             charts: existing?.charts ?? []
         )
 
-        guard let existing else {
+        if existing == nil {
             return repository.saveSurfRecord(merged).map { true }
         }
 
         return repository.updateSurfRecord(merged).map { true }
-    }
-
-    private func startLiveActivityIfNeeded(_ payload: WatchSessionPayload) {
-        guard #available(iOS 16.2, *) else { return }
-        SurfingActivityManager.shared.startActivity(
-            startTime: payload.startTime,
-            beachName: "서핑 중",
-            rideCount: payload.waveCount,
-            averageHeartRate: payload.avgHeartRate
-        )
-    }
-
-    private func updateLiveActivity(_ payload: WatchSessionPayload) {
-        guard #available(iOS 16.2, *) else { return }
-        SurfingActivityManager.shared.updateSummary(
-            beachName: "서핑 중",
-            rideCount: payload.waveCount,
-            averageHeartRate: payload.avgHeartRate
-        )
-    }
-
-    private func handleLiveActivityOnTerminalState(_ payload: WatchSessionPayload) {
-        guard #available(iOS 16.2, *) else { return }
-        SurfingActivityManager.shared.updateSummary(
-            beachName: "서핑 완료",
-            rideCount: payload.waveCount,
-            averageHeartRate: payload.avgHeartRate
-        )
-
-        if payload.isDeleted {
-            SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
-            return
-        }
-
-        SurfingActivityManager.shared.endActivity(dismissalPolicy: .immediate)
     }
 }

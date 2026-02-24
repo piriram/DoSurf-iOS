@@ -17,36 +17,12 @@ final class WatchDataSyncCoordinator: NSObject {
 }
 
 extension WatchDataSyncCoordinator: iPhoneWatchConnectivityDelegate {
-    func didReceiveSurfSessions(_ sessions: [WatchSessionPayload]) {
-        syncService.applyWatchPayloads(sessions)
-            .subscribe(onSuccess: { _ in
-                print("✅ Watch sync applied: \(sessions.count) sessions")
+    func watchConnectivityDidReceivePayloads(_ payloads: [WatchSessionPayload]) {
+        syncService.applyWatchPayloads(payloads)
+            .subscribe(onSuccess: {
+                print("✅ Watch sync applied: \(payloads.count) payloads")
             }, onFailure: { error in
                 print("⚠️ Watch sync failed: \(error.localizedDescription)")
-            })
-            .disposed(by: disposeBag)
-    }
-
-    func didReceiveLegacySurfData(_ data: SurfSessionData) {
-        let payload = WatchSessionPayload(
-            recordId: data.recordId,
-            distance: data.distance,
-            duration: data.duration,
-            startTime: data.startTime,
-            endTime: data.endTime,
-            waveCount: data.waveCount,
-            maxHeartRate: data.maxHeartRate,
-            avgHeartRate: data.avgHeartRate,
-            activeCalories: data.activeCalories,
-            strokeCount: data.strokeCount,
-            lastModifiedAt: Date(),
-            deviceId: "watch-legacy"
-        )
-        syncService.applyWatchPayloads([payload])
-            .subscribe(onSuccess: { _ in
-                print("✅ Legacy watch session synced")
-            }, onFailure: { error in
-                print("⚠️ Legacy watch sync failed: \(error.localizedDescription)")
             })
             .disposed(by: disposeBag)
     }
