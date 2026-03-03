@@ -4,6 +4,14 @@
 <dict>
     <key>FirebaseAppDelegateProxyEnabled</key>
     <false/>
+    <key>NSHealthShareUsageDescription</key>
+    <string>이 앱은 서핑 세션 거리와 시간을 기록하기 위해 건강 데이터를 읽습니다.</string>
+    <key>NSHealthUpdateUsageDescription</key>
+    <string>이 앱은 서핑 운동 기록을 건강 앱에 저장하기 위해 건강 데이터를 씁니다.</string>
+    <key>WKBackgroundModes</key>
+    <array>
+        <string>workout-processing</string>
+    </array>
     <key>CFBundleDisplayName</key>
     <string>DoSurfWatch Extension</string>
     <key>CLKComplicationPrincipalClass</key>
@@ -32,7 +40,5 @@
             <string>app.NewT.DoSurf.watch</string>
         </dict>
     </dict>
-    <key>WKWatchOnly</key>
-    <true/>
 </dict>
 </plist>

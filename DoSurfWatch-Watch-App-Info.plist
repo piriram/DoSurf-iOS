@@ -6,10 +6,8 @@
 	<array>
 		<string>location</string>
 	</array>
-	<key>WKBackgroundModes</key>
-	<array>
-		<string>workout-processing</string>
-	</array>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>app.NewT.DoSurf</string>
 	<key>WKWatchKitApp</key>
 	<true/>
 </dict>

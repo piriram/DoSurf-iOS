@@ -20,6 +20,8 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg">
 </p>
 
+> 운영 참고: SSH 공유 인수인계 문서는 [`SSH_SHARE_HANDOFF.md`](./SSH_SHARE_HANDOFF.md) 참고
+
 ---
 
 ## 📱 스크린샷
