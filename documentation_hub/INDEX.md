@@ -2,9 +2,6 @@
 
 원본 경로 -> 집계 경로
 
-- [PRODUCT_SPECIFICATION_FINAL.md](documentation_hub/PRODUCT_SPECIFICATION_FINAL.md)
-- [README.md](documentation_hub/README.md)
-- [SSH_SHARE_HANDOFF.md](documentation_hub/SSH_SHARE_HANDOFF.md)
 - [collected_plan_watch/plan_related/CORE_IMPLEMENTATION_DEVELOPED.md](documentation_hub/collected_plan_watch__plan_related__CORE_IMPLEMENTATION_DEVELOPED.md)
 - [collected_plan_watch/plan_related/CORE_IMPLEMENTATION_DEVELOP_PLAN.md](documentation_hub/collected_plan_watch__plan_related__CORE_IMPLEMENTATION_DEVELOP_PLAN.md)
 - [collected_plan_watch/plan_related/CORE_IMPLEMENTATION_QA_DEVELOPED.md](documentation_hub/collected_plan_watch__plan_related__CORE_IMPLEMENTATION_QA_DEVELOPED.md)
@@ -20,8 +17,10 @@
 - [collected_plan_watch/plan_related/PRODUCT_SPECIFICATION_FINAL.md](documentation_hub/collected_plan_watch__plan_related__PRODUCT_SPECIFICATION_FINAL.md)
 - [collected_plan_watch/plan_related/dosurf.md](documentation_hub/collected_plan_watch__plan_related__dosurf.md)
 - [collected_plan_watch/plan_related/portfolio.md](documentation_hub/collected_plan_watch__plan_related__portfolio.md)
+- [collected_plan_watch/plan_related/qa_logs/summary_20260306_215156.md](documentation_hub/collected_plan_watch__plan_related__qa_logs__summary_20260306_215156.md)
+- [collected_plan_watch/plan_related/qa_logs/summary_20260306_221020.md](documentation_hub/collected_plan_watch__plan_related__qa_logs__summary_20260306_221020.md)
+- [collected_plan_watch/plan_related/qa_logs/summary_20260306_221113.md](documentation_hub/collected_plan_watch__plan_related__qa_logs__summary_20260306_221113.md)
+- [collected_plan_watch/plan_related/qa_logs/summary_20260306_221930.md](documentation_hub/collected_plan_watch__plan_related__qa_logs__summary_20260306_221930.md)
 - [collected_plan_watch/watch_related/PRODUCT_SPECIFICATION_FINAL.md](documentation_hub/collected_plan_watch__watch_related__PRODUCT_SPECIFICATION_FINAL.md)
 - [collected_plan_watch/watch_related/portfolio.md](documentation_hub/collected_plan_watch__watch_related__portfolio.md)
 - [collected_plan_watch/watch_related/portfolio_doseub_core_implementations.md](documentation_hub/collected_plan_watch__watch_related__portfolio_doseub_core_implementations.md)
-- [portfolio.md](documentation_hub/portfolio.md)
-- [portfolio_doseub_core_implementations.md](documentation_hub/portfolio_doseub_core_implementations.md)
