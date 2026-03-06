@@ -1,0 +1,46 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project DoSurfApp.xcodeproj -scheme DoSurfApp -showdestinations
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  IQKeyboardToolbar: https://github.com/hackiftekhar/IQKeyboardToolbar.git @ 1.1.3
+  SnapKit: https://github.com/SnapKit/SnapKit.git @ 5.7.1
+  GoogleAppMeasurement: https://github.com/google/GoogleAppMeasurement.git @ 12.3.0
+  SwiftProtobuf: https://github.com/apple/swift-protobuf.git @ 1.31.1
+  InteropForGoogle: https://github.com/google/interop-ios-for-google-sdks.git @ 101.0.0
+  RxDataSources: https://github.com/RxSwiftCommunity/RxDataSources.git @ 5.0.2
+  GoogleUtilities: https://github.com/google/GoogleUtilities.git @ 8.1.0
+  IQKeyboardReturnManager: https://github.com/hackiftekhar/IQKeyboardReturnManager.git @ 1.0.6
+  IQKeyboardCore: https://github.com/hackiftekhar/IQKeyboardCore.git @ 1.0.8
+  IQTextView: https://github.com/hackiftekhar/IQTextView.git @ 1.0.5
+  AppCheck: https://github.com/google/app-check.git @ 11.2.0
+  gRPC: https://github.com/google/grpc-binary.git @ 1.69.1
+  IQTextInputViewNotification: https://github.com/hackiftekhar/IQTextInputViewNotification.git @ 1.0.9
+  nanopb: https://github.com/firebase/nanopb.git @ 2.30910.0
+  GoogleDataTransport: https://github.com/google/GoogleDataTransport.git @ 10.1.0
+  IQKeyboardNotification: https://github.com/hackiftekhar/IQKeyboardNotification.git @ 1.0.6
+  Promises: https://github.com/google/promises.git @ 2.4.0
+  GoogleAdsOnDeviceConversion: https://github.com/googleads/google-ads-on-device-conversion-ios-sdk @ 3.0.0
+  abseil: https://github.com/google/abseil-cpp-binary.git @ 1.2024072200.0
+  RxSwift: https://github.com/ReactiveX/RxSwift.git @ 6.9.0
+  leveldb: https://github.com/firebase/leveldb.git @ 1.22.5
+  IQKeyboardToolbarManager: https://github.com/hackiftekhar/IQKeyboardToolbarManager.git @ 1.1.4
+  IQKeyboardManagerSwift: https://github.com/hackiftekhar/IQKeyboardManager.git @ 8.0.1
+  Firebase: https://github.com/firebase/firebase-ios-sdk @ 12.3.0
+  GTMSessionFetcher: https://github.com/google/gtm-session-fetcher.git @ 5.0.0
+
+
+
+	Available destinations for the "DoSurfApp" scheme:
+		{ platform:iOS, arch:arm64, id:00008101-0001253A26F9001E, name:iPhone }
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+		{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+		{ platform:iOS Simulator, arch:arm64, id:FE0FFEE7-7731-4D1A-AE03-57BBB2EFF6A1, OS:18.6, name:16프로 }
+		{ platform:iOS Simulator, arch:arm64, id:B6E2C4EE-E59B-4073-8B79-5F885F017559, OS:18.6, name:iPad Air 11-inch (M3) }
+		{ platform:iOS Simulator, arch:arm64, id:8EC10653-BBE6-48F9-8B75-B522941C8B2E, OS:26.2, name:iPad Air 11-inch (M3) }
+		{ platform:iOS Simulator, arch:arm64, id:26F40312-43D2-4983-B468-C20B745D6DE3, OS:18.6, name:iPad mini 5 (18.6 test) }
+		{ platform:iOS Simulator, arch:arm64, id:944F046A-1212-4628-88D5-293858441A7C, OS:18.6, name:iPad mini 6 (18.6 test) }
+		{ platform:iOS Simulator, arch:arm64, id:0891DDD8-CD83-4ACB-A696-4755AE6D0720, OS:18.6, name:iPhone 16 }
+		{ platform:iOS Simulator, arch:arm64, id:F3AAAE05-3ABD-4CD9-BB24-016E094FDC6D, OS:18.6, name:iPhone SE (3rd generation) - iOS 18.6 }
