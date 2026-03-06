@@ -1,0 +1,1 @@
+Skipped: scheme 'DoSurfApp' has no testable references in TestAction. Configure a test target in Scheme -> Edit Scheme -> Test before hard-enforcing test gate.

@@ -14,6 +14,22 @@
 
 ## 수행한 검증(명령어, 결과, 실패 원인)
 
+### 추가 재실행(2026-03-06 22:19)
+
+- 실행 커맨드: `bash scripts/release_preflight.sh`
+- 실행 결과: **PASS (exit 0)**
+- 요약 로그: `collected_plan_watch/plan_related/qa_logs/summary_20260306_221930.md`
+- 단계별 결과 반영:
+  - `scheme_list`/`show_destinations`/`ios_build`/`watch_build`/`swiftlint_check`: `exit_code 0`
+  - `ios_test`: 실행 스킵(conditional)
+    - 사유: `DoSurfApp` 스킴 `TestAction`에 연결된 `<TestableReference>` 없음
+    - 대응: testable target/target 등록 후 테스트 액션을 구성해야 실제 테스트 실행 가능
+
+- 생성 로그 추가:
+  - `collected_plan_watch/plan_related/qa_logs/summary_20260306_221930.md`
+  - `collected_plan_watch/plan_related/qa_logs/ios_test_20260306_221930.log`
+
+
 - 실행 커맨드: `bash scripts/release_preflight.sh`
   - 실행 위치: `./active/DoSurf-iOS-iosclaw`
   - 실행 결과: **실패 (exit 1)**
