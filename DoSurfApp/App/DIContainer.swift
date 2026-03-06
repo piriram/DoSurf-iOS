@@ -2,92 +2,145 @@ import Foundation
 
 final class DIContainer {
     static let shared = DIContainer()
-    private init() {
-        print("DIContainer 생성")
+
+    private let environment: AppEnvironment
+    private let chartCacheManager: ChartCacheManager
+
+    private lazy var liveBeachRepository: FirestoreProtocol = FirestoreRepository()
+
+    private lazy var surfRecordRepositoryInstance: NoteRepositoryProtocol = {
+        if environment.dataSourceMode.usesMockData {
+            return MockSurfRecordRepository()
+        }
+        return SurfRecordRepository()
+    }()
+
+    private lazy var fetchBeachDataUseCaseInstance: FetchBeachDataUseCase = {
+        let scenarioMockUseCase = MockFetchBeachDataUseCase(scenario: environment.mockBeachScenario)
+        let fallbackMockUseCase = MockFetchBeachDataUseCase(scenario: .normal)
+
+        switch environment.dataSourceMode {
+        case .live:
+            return CachedFetchBeachDataUseCase(
+                remote: DefaultFetchBeachDataUseCase(repository: liveBeachRepository),
+                fallback: fallbackMockUseCase,
+                cacheManager: chartCacheManager,
+                useFallbackWhenRemoteFails: false
+            )
+        case .mock:
+            return CachedFetchBeachDataUseCase(
+                remote: scenarioMockUseCase,
+                fallback: scenarioMockUseCase,
+                cacheManager: chartCacheManager,
+                useFallbackWhenRemoteFails: true
+            )
+        case .mockWithDelay(let seconds):
+            let delayed = DelayedFetchBeachDataUseCase(base: scenarioMockUseCase, delaySeconds: seconds)
+            return CachedFetchBeachDataUseCase(
+                remote: delayed,
+                fallback: scenarioMockUseCase,
+                cacheManager: chartCacheManager,
+                useFallbackWhenRemoteFails: true
+            )
+        }
+    }()
+
+    private lazy var fetchBeachListUseCaseInstance: FetchBeachListUseCase = {
+        if environment.dataSourceMode.usesMockData {
+            return MockFetchBeachListUseCase()
+        }
+
+        return DefaultFetchBeachListUseCase(repository: liveBeachRepository)
+    }()
+
+    private init(
+        environment: AppEnvironment = .current,
+        chartCacheManager: ChartCacheManager = ChartCacheManager()
+    ) {
+        self.environment = environment
+        self.chartCacheManager = chartCacheManager
+
+        print("[AppEnvironment] dataSource=\(environment.dataSourceMode.description)")
+        if environment.dataSourceMode.usesMockData {
+            print("[AppEnvironment] mockBeachScenario=\(environment.mockBeachScenario.description)")
+        }
     }
-    
+
     // MARK: - Repository Factories
     func makeBeachRepository() -> FirestoreProtocol {
-        return FirestoreRepository()
+        liveBeachRepository
     }
-    
+
     func makeSurfRecordRepository() -> NoteRepositoryProtocol {
-        return SurfRecordRepository()
+        surfRecordRepositoryInstance
     }
-    
+
     // MARK: - UseCase Factories
     func makeFetchBeachDataUseCase() -> FetchBeachDataUseCase {
-        return CachedFetchBeachDataUseCase(
-            remote: DefaultFetchBeachDataUseCase(
-                repository: makeBeachRepository()
-            ),
-            fallback: MockFetchBeachDataUseCase()
-        )
+        fetchBeachDataUseCaseInstance
     }
-    
+
     func makeFetchBeachListUseCase() -> FetchBeachListUseCase {
-        return DefaultFetchBeachListUseCase(
-            repository: makeBeachRepository()
-        )
+        fetchBeachListUseCaseInstance
     }
-    
+
     func makeSurfRecordUseCase() -> SurfRecordUseCaseProtocol {
-        return SurfRecordUseCase(repository: makeSurfRecordRepository())
+        SurfRecordUseCase(repository: makeSurfRecordRepository())
     }
-    
+
     // MARK: - Service Factories
     func makeStorageService() -> SurfingRecordService {
-        return UserDefaultsManager()
+        UserDefaultsManager()
     }
-    
+
     // MARK: - ViewModel Factories
     func makeDashboardViewModel() -> DashboardViewModel {
-        return DashboardViewModel(
+        DashboardViewModel(
             fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
             surfRecordUseCase: makeSurfRecordUseCase(),
             fetchBeachListUseCase: makeFetchBeachListUseCase()
         )
     }
-    
+
     func makeSurfRecordViewModel(mode: SurfRecordMode) -> NoteViewModel {
-        return NoteViewModel(
+        NoteViewModel(
             mode: mode,
             surfRecordUseCase: makeSurfRecordUseCase(),
             fetchBeachDataUseCase: makeFetchBeachDataUseCase()
         )
     }
-    
+
     func makeBeachSelectViewModel() -> BeachSelectViewModel {
-        return BeachSelectViewModel(
+        BeachSelectViewModel(
             fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
             fetchBeachListUseCase: makeFetchBeachListUseCase(),
             storageService: makeStorageService()
         )
     }
-    
+
     func makeBeachSelectViewModel(initialSelectedBeach: BeachDTO?) -> BeachSelectViewModel {
-        return BeachSelectViewModel(
+        BeachSelectViewModel(
             fetchBeachDataUseCase: makeFetchBeachDataUseCase(),
             fetchBeachListUseCase: makeFetchBeachListUseCase(),
             storageService: makeStorageService(),
             initialSelectedBeach: initialSelectedBeach
         )
     }
-    
+
     func makeRecordHistoryViewModel() -> RecordHistoryViewModel {
-        return RecordHistoryViewModel(
+        RecordHistoryViewModel(
             surfRecordUseCase: makeSurfRecordUseCase(),
             fetchBeachListUseCase: makeFetchBeachListUseCase(),
             storageService: makeStorageService()
         )
     }
-    
+
     func makeButtonTabBarViewModel() -> ButtonTabBarViewModel {
-        return ButtonTabBarViewModel(storageService: makeStorageService())
+        ButtonTabBarViewModel(storageService: makeStorageService())
     }
-    
+
     // MARK: - ViewController Factories
-    
+
     /// 새 기록 생성용 ViewController
     func makeSurfRecordViewController(
         startTime: Date?,
@@ -118,7 +171,7 @@ final class DIContainer {
         )
     }
 
-    func makeTabBarViewController() -> ButtonTabBarController{
+    func makeTabBarViewController() -> ButtonTabBarController {
         let viewModel = makeButtonTabBarViewModel()
         return ButtonTabBarController(viewModel: viewModel)
     }

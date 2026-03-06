@@ -19,6 +19,8 @@ class DashboardViewController: BaseViewController {
     private let beachSelectedSubject = PublishSubject<BeachDTO>()
     private let cardsLazyTrigger = PublishSubject<Void>()
 
+    private var staleBannerHideWorkItem: DispatchWorkItem?
+
     // MARK: - UI
     private lazy var backgroundImageView: UIImageView = {
         let imageView = UIImageView()
@@ -27,11 +29,24 @@ class DashboardViewController: BaseViewController {
         imageView.clipsToBounds = true
         return imageView
     }()
-    
+
     private let bottomBackgroundView: UIView = {
         let v = UIView()
         v.backgroundColor = .systemBackground
         return v
+    }()
+
+    private let staleCacheBannerLabel: UILabel = {
+        let label = UILabel()
+        label.backgroundColor = UIColor.systemOrange.withAlphaComponent(0.94)
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 13, weight: .semibold)
+        label.textAlignment = .center
+        label.layer.cornerRadius = 12
+        label.layer.masksToBounds = true
+        label.alpha = 0
+        label.transform = CGAffineTransform(translationX: 0, y: -14)
+        return label
     }()
 
     private let headerView = DashboardHeaderView()
@@ -78,6 +93,7 @@ class DashboardViewController: BaseViewController {
         view.addSubview(headerView)
         view.addSubview(chartContainerView)
         view.addSubview(bottomBackgroundView)
+        view.addSubview(staleCacheBannerLabel)
         chartContainerView.addSubview(chartListView)
         chartListView.attachRefreshControl(refreshControl)
     }
@@ -95,11 +111,18 @@ class DashboardViewController: BaseViewController {
             $0.bottom.equalTo(view.safeAreaLayoutGuide).inset(55)
         }
         chartListView.snp.makeConstraints { $0.edges.equalToSuperview() }
-        
+
         bottomBackgroundView.snp.makeConstraints {
-                $0.leading.trailing.bottom.equalToSuperview()
-                $0.top.equalTo(chartContainerView.snp.bottom)
-            }
+            $0.leading.trailing.bottom.equalToSuperview()
+            $0.top.equalTo(chartContainerView.snp.bottom)
+        }
+
+        staleCacheBannerLabel.snp.makeConstraints {
+            $0.top.equalTo(view.safeAreaLayoutGuide).offset(6)
+            $0.centerX.equalToSuperview()
+            $0.height.equalTo(30)
+            $0.width.lessThanOrEqualToSuperview().inset(24)
+        }
     }
 
     override func configureAction() {
@@ -177,6 +200,14 @@ class DashboardViewController: BaseViewController {
             .subscribe(onNext: { [weak self] in self?.showErrorAlert(error: $0) })
             .disposed(by: disposeBag)
 
+        NotificationCenter.default.rx.notification(.chartCacheServedStaleData)
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] notification in
+                let age = (notification.userInfo?["age"] as? TimeInterval) ?? 0
+                self?.showStaleCacheBanner(age: age)
+            })
+            .disposed(by: disposeBag)
+
         NotificationCenter.default.rx.notification(.surfRecordsDidChange)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
@@ -242,6 +273,28 @@ class DashboardViewController: BaseViewController {
         alert.addAction(UIAlertAction(title: "확인", style: .default))
         present(alert, animated: true)
     }
+
+    private func showStaleCacheBanner(age: TimeInterval) {
+        let minutes = max(1, Int(age / 60))
+        staleCacheBannerLabel.text = "오프라인 상태 · 마지막 업데이트 \(minutes)분 전 데이터를 표시 중"
+
+        staleBannerHideWorkItem?.cancel()
+
+        UIView.animate(withDuration: 0.2) {
+            self.staleCacheBannerLabel.alpha = 1
+            self.staleCacheBannerLabel.transform = .identity
+        }
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            UIView.animate(withDuration: 0.2) {
+                self.staleCacheBannerLabel.alpha = 0
+                self.staleCacheBannerLabel.transform = CGAffineTransform(translationX: 0, y: -14)
+            }
+        }
+        staleBannerHideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: workItem)
+    }
 }
 // DashboardViewController.swift
 
@@ -271,4 +324,3 @@ extension DashboardViewController {
         return chartListView
     }
 }
-
