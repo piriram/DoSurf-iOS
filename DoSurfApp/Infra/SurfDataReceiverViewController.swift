@@ -258,12 +258,19 @@ class SurfDataReceiverViewController: UIViewController {
 
 // MARK: - WatchConnectivity Delegate
 extension SurfDataReceiverViewController: iPhoneWatchConnectivityDelegate {
-    func watchConnectivityDidReceivePayloads(_ sessions: [WatchSessionPayload]) {
-        guard let data = sessions.last else { return }
+    func watchConnectivityDidReceivePayloads(
+        _ sessions: [WatchSessionPayload],
+        completion: @escaping (Result<Int, Error>) -> Void
+    ) {
+        guard let data = sessions.last else {
+            completion(.success(0))
+            return
+        }
+
         receivedData = data
         UserDefaults.standard.set(Date(), forKey: "lastReceivedTime")
         updateDataLabels()
-        
+
         DispatchQueue.main.async {
             let alert = UIAlertController(
                 title: "✅ Data Received",
@@ -273,8 +280,10 @@ extension SurfDataReceiverViewController: iPhoneWatchConnectivityDelegate {
             alert.addAction(UIAlertAction(title: "OK", style: .default))
             self.present(alert, animated: true)
         }
+
+        completion(.success(sessions.count))
     }
-    
+
     func watchConnectivityDidChangeReachability(_ isReachable: Bool) {
         updateConnectionStatus()
     }

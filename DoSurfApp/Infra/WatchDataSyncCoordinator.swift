@@ -17,12 +17,17 @@ final class WatchDataSyncCoordinator: NSObject {
 }
 
 extension WatchDataSyncCoordinator: iPhoneWatchConnectivityDelegate {
-    func watchConnectivityDidReceivePayloads(_ payloads: [WatchSessionPayload]) {
+    func watchConnectivityDidReceivePayloads(
+        _ payloads: [WatchSessionPayload],
+        completion: @escaping (Result<Int, Error>) -> Void
+    ) {
         syncService.applyWatchPayloads(payloads)
             .subscribe(onSuccess: {
                 print("✅ Watch sync applied: \(payloads.count) payloads")
+                completion(.success(payloads.count))
             }, onFailure: { error in
                 print("⚠️ Watch sync failed: \(error.localizedDescription)")
+                completion(.failure(error))
             })
             .disposed(by: disposeBag)
     }

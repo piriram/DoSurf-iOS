@@ -73,7 +73,10 @@ struct WatchSessionPayload: Codable {
 }
 
 protocol iPhoneWatchConnectivityDelegate: AnyObject {
-    func watchConnectivityDidReceivePayloads(_ payloads: [WatchSessionPayload])
+    func watchConnectivityDidReceivePayloads(
+        _ payloads: [WatchSessionPayload],
+        completion: @escaping (Result<Int, Error>) -> Void
+    )
     func watchConnectivityDidChangeReachability(_ isReachable: Bool)
 }
 
@@ -136,13 +139,28 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
                 return
             }
 
+            guard let delegate else {
+                replyHandler(response(success: false, message: WatchDataError.noDelegate.errorDescription ?? "No delegate"))
+                return
+            }
+
             DispatchQueue.main.async {
-                self.delegate?.watchConnectivityDidReceivePayloads(sessions)
-                replyHandler(self.response(
-                    success: true,
-                    message: "Data received",
-                    acceptedCount: sessions.count
-                ))
+                delegate.watchConnectivityDidReceivePayloads(sessions) { result in
+                    switch result {
+                    case .success(let acceptedCount):
+                        replyHandler(self.response(
+                            success: true,
+                            message: "Data applied",
+                            acceptedCount: acceptedCount
+                        ))
+                    case .failure(let error):
+                        replyHandler(self.response(
+                            success: false,
+                            message: error.localizedDescription,
+                            acceptedCount: 0
+                        ))
+                    }
+                }
             }
         } catch {
             print("❌ failed to parse watch payload: \(error.localizedDescription)")
@@ -151,7 +169,15 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
     }
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-        self.session(session, didReceiveMessage: message) { _ in }
+        do {
+            let sessions = try parsePayloads(from: message)
+            guard !sessions.isEmpty else { return }
+            DispatchQueue.main.async {
+                self.delegate?.watchConnectivityDidReceivePayloads(sessions) { _ in }
+            }
+        } catch {
+            print("❌ failed to parse watch payload without reply: \(error.localizedDescription)")
+        }
     }
 
     func sessionReachabilityDidChange(_ session: WCSession) {
@@ -317,6 +343,7 @@ private enum WatchSessionPayloadMapper {
 enum WatchDataError: LocalizedError {
     case invalidFormat
     case missingFields
+    case noDelegate
 
     var errorDescription: String? {
         switch self {
@@ -324,6 +351,8 @@ enum WatchDataError: LocalizedError {
             return "Invalid watch payload format"
         case .missingFields:
             return "Missing required fields in watch payload"
+        case .noDelegate:
+            return "No watch sync delegate available"
         }
     }
 }
