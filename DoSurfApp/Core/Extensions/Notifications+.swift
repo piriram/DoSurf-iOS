@@ -11,3 +11,11 @@ extension Notification.Name {
 extension Notification.Name {
     static let recordHistoryApplyFilterRequested = Notification.Name("RecordHistoryApplyFilterRequested")
 }
+
+extension Notification.Name {
+    static let chartCacheServedStaleData = Notification.Name("ChartCacheServedStaleData")
+}
+
+extension Notification.Name {
+    static let liveActivityPushTokenDidUpdate = Notification.Name("LiveActivityPushTokenDidUpdate")
+}
