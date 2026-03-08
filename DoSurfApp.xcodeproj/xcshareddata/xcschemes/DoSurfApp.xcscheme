@@ -54,6 +54,24 @@
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
       allowLocationSimulation = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Launch DoSurf Watch App on paired simulator"
+               scriptText = "WATCH_ID=C6153E9E-A88A-4BD8-87BA-9312228F9EFD&#10;xcrun simctl bootstatus $WATCH_ID -b &gt;/dev/null 2&gt;&amp;1 || true&#10;xcrun simctl launch $WATCH_ID app.NewT.DoSurf.watch &gt;/dev/null 2&gt;&amp;1 || true">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "21E7A47B2E842FED008EFDDA"
+                     BuildableName = "DoSurfApp.app"
+                     BlueprintName = "DoSurfApp"
+                     ReferencedContainer = "container:DoSurfApp.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
