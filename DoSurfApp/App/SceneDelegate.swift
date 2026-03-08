@@ -17,8 +17,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = vc
         window?.makeKeyAndVisible()
         watchDataSyncCoordinator.start()
-        
+        if let url = connectionOptions.urlContexts.first?.url {
+            handleIncomingURL(url)
+        }
 
+    }
+
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        handleIncomingURL(url)
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -49,5 +56,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // to restore the scene back to its current state.
     }
 
+    private func handleIncomingURL(_ url: URL) {
+        guard url.scheme?.lowercased() == "dosurf",
+              url.host?.lowercased() == "live-activity" else {
+            return
+        }
+
+        let action = url.path.lowercased().contains("/end") ? "end" : "open"
+        NotificationCenter.default.post(
+            name: .liveActivityRouteRequested,
+            object: nil,
+            userInfo: ["action": action, "url": url.absoluteString]
+        )
+    }
 
 }

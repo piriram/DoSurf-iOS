@@ -13,12 +13,15 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
     @Published private(set) var isReachable = false
     @Published private(set) var isActivated = false
     @Published private(set) var pendingCount = 0
+    @Published private(set) var mirroredRecordCount = 0
+    @Published private(set) var mirroredSessions: [WatchSurfSessionData] = []
 
     private var pendingSessions: [WatchSurfSessionData] = []
     private var isSending = false
     private let maxBatchCount = WatchPayloadSchema.defaultBatchSize
     private let maxRetryCount = 3
     private let pendingStore = PendingSessionStore()
+    private let mirroredStore = MirroredSessionStore()
 
     #if os(watchOS)
     private var appDidBecomeActiveObserver: NSObjectProtocol?
@@ -28,6 +31,8 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         super.init()
         pendingSessions = pendingStore.load()
         pendingCount = pendingSessions.count
+        mirroredSessions = mirroredStore.load()
+        mirroredRecordCount = mirroredSessions.filter { !$0.isDeleted }.count
 
         #if os(watchOS)
         appDidBecomeActiveObserver = NotificationCenter.default.addObserver(
@@ -70,6 +75,90 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
 
         sessions.forEach { upsertPending($0) }
         flushPending()
+    }
+
+    var syncedRecords: [WatchSurfSessionData] {
+        mirroredSessions
+            .filter { !$0.isDeleted }
+            .sorted { lhs, rhs in
+                if lhs.isPinned != rhs.isPinned {
+                    return lhs.isPinned && !rhs.isPinned
+                }
+                if lhs.startTime != rhs.startTime {
+                    return lhs.startTime > rhs.startTime
+                }
+                return lhs.sessionId < rhs.sessionId
+            }
+    }
+
+    func saveMirroredRecordEdits(
+        sessionId: String,
+        rating: Int,
+        memo: String,
+        isPinned: Bool
+    ) {
+        guard let current = mirroredSessions.first(where: { $0.sessionId == sessionId && !$0.isDeleted }) else {
+            return
+        }
+
+        let trimmedMemo = memo.trimmingCharacters(in: .whitespacesAndNewlines)
+        let updated = WatchSurfSessionData(
+            payloadVersion: WatchPayloadSchema.nextPayloadVersion(after: current.payloadVersion),
+            schemaVersion: current.schemaVersion,
+            sessionId: current.sessionId,
+            beachID: current.beachID,
+            distanceMeters: current.distanceMeters,
+            durationSeconds: current.durationSeconds,
+            startTime: current.startTime,
+            endTime: current.endTime,
+            waveCount: current.waveCount,
+            maxHeartRate: current.maxHeartRate,
+            avgHeartRate: current.avgHeartRate,
+            activeCalories: current.activeCalories,
+            strokeCount: current.strokeCount,
+            lastModifiedAt: Date(),
+            deviceId: WatchLocalDeviceIdentity.stableId,
+            state: .completed,
+            isDeleted: false,
+            rating: min(max(rating, 0), 5),
+            memo: trimmedMemo.isEmpty ? nil : trimmedMemo,
+            isPinned: isPinned
+        )
+
+        mergeMirroredPayloads([updated], source: "local-edit")
+        enqueuePayload(updated)
+    }
+
+    func deleteMirroredRecord(sessionId: String) {
+        guard let current = mirroredSessions.first(where: { $0.sessionId == sessionId && !$0.isDeleted }) else {
+            return
+        }
+
+        let deleted = WatchSurfSessionData(
+            payloadVersion: WatchPayloadSchema.nextPayloadVersion(after: current.payloadVersion),
+            schemaVersion: current.schemaVersion,
+            sessionId: current.sessionId,
+            beachID: current.beachID,
+            distanceMeters: current.distanceMeters,
+            durationSeconds: current.durationSeconds,
+            startTime: current.startTime,
+            endTime: current.endTime,
+            waveCount: current.waveCount,
+            maxHeartRate: current.maxHeartRate,
+            avgHeartRate: current.avgHeartRate,
+            activeCalories: current.activeCalories,
+            strokeCount: current.strokeCount,
+            lastModifiedAt: Date(),
+            deviceId: WatchLocalDeviceIdentity.stableId,
+            state: .deleted,
+            isDeleted: true,
+            rating: current.rating,
+            memo: current.memo,
+            isPinned: current.isPinned
+        )
+
+        mergeMirroredPayloads([deleted], source: "local-delete")
+        enqueuePayload(deleted)
     }
 
     func flushPending() {
@@ -225,6 +314,96 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
         pendingStore.save(pendingSessions)
         pendingCount = pendingSessions.count
     }
+
+    private func applyMirroredSnapshot(_ payloads: [WatchSurfSessionData], source: String) {
+        mirroredSessions = payloads.sorted { lhs, rhs in
+            if lhs.lastModifiedAt != rhs.lastModifiedAt {
+                return lhs.lastModifiedAt > rhs.lastModifiedAt
+            }
+            return lhs.sessionId < rhs.sessionId
+        }
+        mirroredStore.save(mirroredSessions)
+        mirroredRecordCount = mirroredSessions.filter { !$0.isDeleted }.count
+        print("📦 replaced iPhone records on watch: source=\(source), total=\(mirroredSessions.count)")
+    }
+
+    private func mergeMirroredPayloads(_ payloads: [WatchSurfSessionData], source: String) {
+        guard !payloads.isEmpty else { return }
+
+        for payload in payloads {
+            if let index = mirroredSessions.firstIndex(where: { $0.sessionId == payload.sessionId }) {
+                let current = mirroredSessions[index]
+                guard shouldReplaceMirror(current: current, incoming: payload) else { continue }
+                mirroredSessions[index] = payload
+            } else {
+                mirroredSessions.append(payload)
+            }
+        }
+
+        mirroredSessions.sort { lhs, rhs in
+            if lhs.lastModifiedAt != rhs.lastModifiedAt {
+                return lhs.lastModifiedAt > rhs.lastModifiedAt
+            }
+            return lhs.sessionId < rhs.sessionId
+        }
+
+        mirroredStore.save(mirroredSessions)
+        mirroredRecordCount = mirroredSessions.filter { !$0.isDeleted }.count
+        print("📥 merged iPhone records on watch: source=\(source), total=\(mirroredSessions.count)")
+    }
+
+    private func shouldReplaceMirror(current: WatchSurfSessionData, incoming: WatchSurfSessionData) -> Bool {
+        if incoming.isDeleted != current.isDeleted {
+            return incoming.isDeleted
+        }
+
+        if incoming.lastModifiedAt != current.lastModifiedAt {
+            return incoming.lastModifiedAt > current.lastModifiedAt
+        }
+
+        if incoming.state != current.state {
+            return incoming.state.rawValue > current.state.rawValue
+        }
+
+        if incoming.payloadVersion != current.payloadVersion {
+            return incoming.payloadVersion > current.payloadVersion
+        }
+
+        return incoming.deviceId < current.deviceId
+    }
+
+    private func receiveInbound(message: [String: Any], source: String) {
+        do {
+            let payloads = try parseInboundPayloads(from: message)
+            let syncKind = WatchInboundSyncKind(rawValue: (message[WatchMessageKey.syncKind] as? String) ?? "")
+            Task { @MainActor in
+                if syncKind == .snapshot {
+                    applyMirroredSnapshot(payloads, source: source)
+                } else {
+                    mergeMirroredPayloads(payloads, source: source)
+                }
+            }
+        } catch {
+            print("⚠️ failed to parse inbound iPhone sync from \(source): \(error.localizedDescription)")
+        }
+    }
+
+    private func parseInboundPayloads(from message: [String: Any]) throws -> [WatchSurfSessionData] {
+        if let payloads = message[WatchMessageKey.payloads] as? [[String: Any]] {
+            if payloads.isEmpty {
+                return []
+            }
+            return try payloads.map { try WatchInboundPayloadMapper.toPayload(from: $0) }
+        }
+
+        let fallback = try WatchInboundPayloadMapper.toPayload(from: message)
+        return [fallback]
+    }
+}
+
+private enum WatchInboundSyncKind: String {
+    case delta
+    case snapshot
 }
 
 // MARK: - WCSessionDelegate
@@ -252,6 +431,18 @@ extension WatchConnectivityManager: WCSessionDelegate {
             if session.isReachable {
                 flushPending()
             }
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String : Any] = [:]) {
+        Task { @MainActor in
+            receiveInbound(message: userInfo, source: "userInfo")
+        }
+    }
+
+    nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String : Any]) {
+        Task { @MainActor in
+            receiveInbound(message: applicationContext, source: "applicationContext")
         }
     }
 
@@ -285,8 +476,28 @@ enum WatchConnectivityError: LocalizedError {
 }
 
 private enum WatchMessageKey {
+    static let syncKind = "syncKind"
     static let payloadVersion = "payloadVersion"
     static let payloads = "payloads"
+    static let schemaVersion = "schemaVersion"
+    static let sessionId = "sessionId"
+    static let beachID = "beachID"
+    static let distanceMeters = "distanceMeters"
+    static let durationSeconds = "durationSeconds"
+    static let startTime = "startTime"
+    static let endTime = "endTime"
+    static let waveCount = "waveCount"
+    static let maxHeartRate = "maxHeartRate"
+    static let avgHeartRate = "avgHeartRate"
+    static let activeCalories = "activeCalories"
+    static let strokeCount = "strokeCount"
+    static let lastModifiedAt = "lastModifiedAt"
+    static let deviceId = "deviceId"
+    static let state = "state"
+    static let isDeleted = "isDeleted"
+    static let rating = "rating"
+    static let memo = "memo"
+    static let isPinned = "isPinned"
 }
 
 private enum WatchReplyKey {
@@ -304,6 +515,150 @@ private struct WatchSendReply {
         success = (dictionary[WatchReplyKey.success] as? Bool) ?? false
         message = (dictionary[WatchReplyKey.message] as? String) ?? ""
         acceptedCount = (dictionary[WatchReplyKey.acceptedCount] as? Int) ?? 0
+    }
+}
+
+private enum WatchInboundPayloadMapper {
+    static func toPayload(from dictionary: [String: Any]) throws -> WatchSurfSessionData {
+        guard let sessionId = parseString(dictionary[WatchMessageKey.sessionId]),
+              let distance = parseDouble(dictionary[WatchMessageKey.distanceMeters]),
+              let duration = parseDouble(dictionary[WatchMessageKey.durationSeconds]) else {
+            throw WatchConnectivityError.sendFailed("Missing mirrored record fields")
+        }
+
+        let state = parseState(dictionary[WatchMessageKey.state])
+            ?? (parseBool(dictionary[WatchMessageKey.isDeleted]) == true ? .deleted : .completed)
+
+        return WatchSurfSessionData(
+            payloadVersion: parseInt(dictionary[WatchMessageKey.payloadVersion]) ?? 1,
+            schemaVersion: parseInt(dictionary[WatchMessageKey.schemaVersion]) ?? WatchPayloadSchema.currentVersion,
+            sessionId: sessionId,
+            beachID: parseInt(dictionary[WatchMessageKey.beachID]) ?? 0,
+            distanceMeters: distance,
+            durationSeconds: duration,
+            startTime: parseDate(dictionary[WatchMessageKey.startTime]) ?? Date(),
+            endTime: parseDate(dictionary[WatchMessageKey.endTime]) ?? Date(),
+            waveCount: parseInt(dictionary[WatchMessageKey.waveCount]) ?? 0,
+            maxHeartRate: parseDouble(dictionary[WatchMessageKey.maxHeartRate]) ?? 0,
+            avgHeartRate: parseDouble(dictionary[WatchMessageKey.avgHeartRate]) ?? 0,
+            activeCalories: parseDouble(dictionary[WatchMessageKey.activeCalories]) ?? 0,
+            strokeCount: parseInt(dictionary[WatchMessageKey.strokeCount]) ?? 0,
+            lastModifiedAt: parseDate(dictionary[WatchMessageKey.lastModifiedAt]) ?? Date(),
+            deviceId: parseString(dictionary[WatchMessageKey.deviceId]) ?? "ios-unknown",
+            state: state,
+            isDeleted: parseBool(dictionary[WatchMessageKey.isDeleted]),
+            rating: parseInt(dictionary[WatchMessageKey.rating]) ?? 0,
+            memo: parseString(dictionary[WatchMessageKey.memo]),
+            isPinned: parseBool(dictionary[WatchMessageKey.isPinned]) ?? false
+        )
+    }
+
+    private static func parseDouble(_ value: Any?) -> Double? {
+        switch value {
+        case let number as NSNumber:
+            return number.doubleValue
+        case let value as Double:
+            return value
+        case let value as Int:
+            return Double(value)
+        case let value as String:
+            return Double(value)
+        default:
+            return nil
+        }
+    }
+
+    private static func parseInt(_ value: Any?) -> Int? {
+        switch value {
+        case let number as NSNumber:
+            return number.intValue
+        case let value as Int:
+            return value
+        case let value as String:
+            return Int(value)
+        default:
+            return nil
+        }
+    }
+
+    private static func parseString(_ value: Any?) -> String? {
+        value as? String
+    }
+
+    private static func parseBool(_ value: Any?) -> Bool? {
+        switch value {
+        case let value as Bool:
+            return value
+        case let number as NSNumber:
+            return number.boolValue
+        case let value as String:
+            let normalized = value.lowercased()
+            return normalized == "true" || normalized == "1"
+        default:
+            return nil
+        }
+    }
+
+    private static func parseDate(_ value: Any?) -> Date? {
+        switch value {
+        case let date as Date:
+            return date
+        case let number as NSNumber:
+            return Date(timeIntervalSince1970: number.doubleValue)
+        case let value as Double:
+            return Date(timeIntervalSince1970: value)
+        case let value as String:
+            guard let timestamp = Double(value) else { return nil }
+            return Date(timeIntervalSince1970: timestamp)
+        default:
+            return nil
+        }
+    }
+
+    private static func parseState(_ value: Any?) -> WatchSessionLifecycleState? {
+        switch value {
+        case let number as NSNumber:
+            return WatchSessionLifecycleState(rawValue: number.intValue)
+        case let value as Int:
+            return WatchSessionLifecycleState(rawValue: value)
+        case let value as String:
+            return WatchSessionLifecycleState(rawValue: Int(value) ?? -1)
+        default:
+            return nil
+        }
+    }
+}
+
+private struct MirroredSessionStore {
+    private let defaults = UserDefaults.standard
+    private let storageKey = "watch.mirrored.sessions.v1"
+
+    func save(_ sessions: [WatchSurfSessionData]) {
+        guard !sessions.isEmpty else {
+            defaults.removeObject(forKey: storageKey)
+            return
+        }
+
+        do {
+            let data = try JSONEncoder().encode(sessions)
+            defaults.set(data, forKey: storageKey)
+        } catch {
+            print("⚠️ failed to persist mirrored sessions: \(error.localizedDescription)")
+        }
+    }
+
+    func load() -> [WatchSurfSessionData] {
+        guard let data = defaults.data(forKey: storageKey) else {
+            return []
+        }
+
+        do {
+            return try JSONDecoder().decode([WatchSurfSessionData].self, from: data)
+        } catch {
+            defaults.removeObject(forKey: storageKey)
+            print("⚠️ failed to restore mirrored sessions: \(error.localizedDescription)")
+            return []
+        }
     }
 }
 

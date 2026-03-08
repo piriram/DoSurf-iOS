@@ -4,19 +4,6 @@ import HealthKit
 import CoreLocation
 import WatchKit
 
-private enum WatchDeviceInfo {
-    static let storageKey = "watch_device_id"
-
-    static var stableId: String {
-        if let saved = UserDefaults.standard.string(forKey: storageKey) {
-            return saved
-        }
-        let newId = UUID().uuidString
-        UserDefaults.standard.set(newId, forKey: storageKey)
-        return newId
-    }
-}
-
 final class SurfWorkoutManager: NSObject, ObservableObject {
     // MARK: - Published state
     @Published private(set) var isRunning = false
@@ -163,7 +150,7 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         let maxHR = heartRates.max() ?? heartRate
         let avgHR = heartRates.isEmpty ? heartRate : (heartRates.reduce(0, +) / Double(heartRates.count))
 
-        let deviceId = WatchDeviceInfo.stableId
+        let deviceId = WatchLocalDeviceIdentity.stableId
 
         return WatchSurfSessionData(
             payloadVersion: 1,

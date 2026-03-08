@@ -333,10 +333,16 @@ final class NoteViewModel {
         charts: [Chart]
     ) -> Observable<Void> {
         let beachID = existing.beachID != 0 ? existing.beachID : (charts.first?.beachID ?? 0)
-        
+        let lastModifiedAt = Date()
+
         let updated = SurfRecordData(
             beachID: beachID,
             id: existing.id,
+            recordId: existing.recordId,
+            payloadVersion: SurfRecordMutationMetadata.nextPayloadVersion(after: existing.payloadVersion),
+            lastModifiedAt: lastModifiedAt,
+            deviceId: SurfRecordMutationMetadata.stableDeviceId,
+            isDeleted: false,
             surfDate: date,
             startTime: startTime,
             endTime: endTime,

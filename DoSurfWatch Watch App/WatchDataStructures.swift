@@ -2,9 +2,27 @@ import Foundation
 
 // MARK: - Watch session sync protocol
 
+enum WatchLocalDeviceIdentity {
+    private static let storageKey = "watch_device_id"
+
+    static var stableId: String {
+        if let saved = UserDefaults.standard.string(forKey: storageKey) {
+            return saved
+        }
+
+        let newId = UUID().uuidString
+        UserDefaults.standard.set(newId, forKey: storageKey)
+        return newId
+    }
+}
+
 enum WatchPayloadSchema {
     static let currentVersion = 2
     static let defaultBatchSize = 8
+
+    static func nextPayloadVersion(after current: Int) -> Int {
+        current < Int.max ? current + 1 : current
+    }
 }
 
 enum WatchSessionLifecycleState: Int, Codable {
@@ -18,6 +36,7 @@ struct WatchSurfSessionData: Codable {
     let payloadVersion: Int
     let schemaVersion: Int
     let sessionId: String
+    let beachID: Int
     let distanceMeters: Double
     let durationSeconds: Double
     let startTime: Date
@@ -31,11 +50,15 @@ struct WatchSurfSessionData: Codable {
     let deviceId: String
     let state: WatchSessionLifecycleState
     let isDeleted: Bool
+    let rating: Int
+    let memo: String?
+    let isPinned: Bool
 
     init(
         payloadVersion: Int = 1,
         schemaVersion: Int = WatchPayloadSchema.currentVersion,
         sessionId: String,
+        beachID: Int = 0,
         distanceMeters: Double,
         durationSeconds: Double,
         startTime: Date,
@@ -48,11 +71,15 @@ struct WatchSurfSessionData: Codable {
         lastModifiedAt: Date = Date(),
         deviceId: String,
         state: WatchSessionLifecycleState = .completed,
-        isDeleted: Bool? = nil
+        isDeleted: Bool? = nil,
+        rating: Int = 0,
+        memo: String? = nil,
+        isPinned: Bool = false
     ) {
         self.payloadVersion = payloadVersion
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
+        self.beachID = beachID
         self.distanceMeters = distanceMeters
         self.durationSeconds = durationSeconds
         self.startTime = startTime
@@ -66,6 +93,9 @@ struct WatchSurfSessionData: Codable {
         self.deviceId = deviceId
         self.state = state
         self.isDeleted = isDeleted ?? (state == .deleted)
+        self.rating = rating
+        self.memo = memo
+        self.isPinned = isPinned
     }
 
     static func deletion(sessionId: String, deviceId: String) -> WatchSurfSessionData {
@@ -73,6 +103,7 @@ struct WatchSurfSessionData: Codable {
             payloadVersion: 1,
             schemaVersion: WatchPayloadSchema.currentVersion,
             sessionId: sessionId,
+            beachID: 0,
             distanceMeters: 0,
             durationSeconds: 0,
             startTime: Date(),
@@ -84,15 +115,19 @@ struct WatchSurfSessionData: Codable {
             strokeCount: 0,
             deviceId: deviceId,
             state: .deleted,
-            isDeleted: true
+            isDeleted: true,
+            rating: 0,
+            memo: nil,
+            isPinned: false
         )
     }
 
     var dictionary: [String: Any] {
-        [
+        var dictionary: [String: Any] = [
             WatchMessageKey.payloadVersion: payloadVersion,
             WatchMessageKey.schemaVersion: schemaVersion,
             WatchMessageKey.sessionId: sessionId,
+            WatchMessageKey.beachID: beachID,
             WatchMessageKey.distanceMeters: distanceMeters,
             WatchMessageKey.durationSeconds: durationSeconds,
             WatchMessageKey.startTime: startTime.timeIntervalSince1970,
@@ -105,8 +140,16 @@ struct WatchSurfSessionData: Codable {
             WatchMessageKey.lastModifiedAt: lastModifiedAt.timeIntervalSince1970,
             WatchMessageKey.deviceId: deviceId,
             WatchMessageKey.state: state.rawValue,
-            WatchMessageKey.isDeleted: isDeleted
+            WatchMessageKey.isDeleted: isDeleted,
+            WatchMessageKey.rating: rating,
+            WatchMessageKey.isPinned: isPinned
         ]
+
+        if let memo {
+            dictionary[WatchMessageKey.memo] = memo
+        }
+
+        return dictionary
     }
 }
 
@@ -115,6 +158,7 @@ private enum WatchMessageKey {
     static let schemaVersion = "schemaVersion"
     static let payloads = "payloads"
     static let sessionId = "sessionId"
+    static let beachID = "beachID"
     static let distanceMeters = "distanceMeters"
     static let durationSeconds = "durationSeconds"
     static let startTime = "startTime"
@@ -128,4 +172,7 @@ private enum WatchMessageKey {
     static let deviceId = "deviceId"
     static let state = "state"
     static let isDeleted = "isDeleted"
+    static let rating = "rating"
+    static let memo = "memo"
+    static let isPinned = "isPinned"
 }

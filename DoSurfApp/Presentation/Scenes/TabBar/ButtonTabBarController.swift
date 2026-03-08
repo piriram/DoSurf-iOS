@@ -187,6 +187,14 @@ final class ButtonTabBarController: UIViewController {
                 self?.showSurfEndOverlay()
             })
             .disposed(by: disposeBag)
+
+        NotificationCenter.default.rx.notification(.liveActivityRouteRequested)
+            .compactMap { $0.userInfo?["action"] as? String }
+            .observe(on: MainScheduler.instance)
+            .subscribe(onNext: { [weak self] action in
+                self?.handleLiveActivityRoute(action)
+            })
+            .disposed(by: disposeBag)
     }
     
     // MARK: - Tab Switching
@@ -321,6 +329,17 @@ final class ButtonTabBarController: UIViewController {
         UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut]) {
             self.bottomBar.alpha = hidden ? 0 : 1
         }
+    }
+
+    private func handleLiveActivityRoute(_ action: String) {
+        viewModel.switchTab(to: .chart)
+
+        guard action == "end",
+              storageService.readSurfingState() else {
+            return
+        }
+
+        showSurfEndOverlay()
     }
     
     // MARK: - Surf Start Overlay

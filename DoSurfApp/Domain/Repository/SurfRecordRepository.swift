@@ -5,6 +5,7 @@ import RxSwift
 protocol NoteRepositoryProtocol {
     func saveSurfRecord(_ record: SurfRecordData) -> Single<Void>
     func fetchAllSurfRecords() -> Single<[SurfRecordData]>
+    func fetchAllSurfRecordsIncludingDeleted() -> Single<[SurfRecordData]>
     func fetchSurfRecords(for beachID: Int) -> Single<[SurfRecordData]>
     func fetchSurfRecord(byRecordId recordId: String) -> Single<SurfRecordData?>
     func fetchSurfRecord(by id: NSManagedObjectID) -> Single<SurfRecordData?>
@@ -82,6 +83,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     try backgroundContext.save()
                     
                     DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: .surfRecordMutationCommitted,
+                            object: nil,
+                            userInfo: ["recordId": record.recordId]
+                        )
                         observer(.success(()))
                     }
                 } catch {
@@ -123,6 +129,37 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                 }
             }
             
+            return Disposables.create()
+        }
+    }
+
+    func fetchAllSurfRecordsIncludingDeleted() -> Single<[SurfRecordData]> {
+        return Single.create { [weak self] observer in
+            guard let self = self else {
+                observer(.failure(RepositoryError.unknown))
+                return Disposables.create()
+            }
+
+            let backgroundContext = self.coreDataStack.newBackgroundContext()
+
+            backgroundContext.perform {
+                do {
+                    let request: NSFetchRequest<NSManagedObject> = NSFetchRequest(entityName: "SurfRecord")
+                    request.sortDescriptors = [NSSortDescriptor(key: "surfDate", ascending: false)]
+
+                    let results = try backgroundContext.fetch(request)
+                    let surfRecords = results.compactMap { self.mapToSurfRecordData($0) }
+
+                    DispatchQueue.main.async {
+                        observer(.success(surfRecords))
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        observer(.failure(RepositoryError.fetchError(error)))
+                    }
+                }
+            }
+
             return Disposables.create()
         }
     }
@@ -236,10 +273,24 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
             backgroundContext.perform {
                 do {
                     let managedObject = try backgroundContext.existingObject(with: id)
-                    backgroundContext.delete(managedObject)
+                    let currentPayloadVersion = (managedObject.value(forKey: "payloadVersion") as? NSNumber)?.int16Value ?? 1
+
+                    managedObject.setValue(true, forKey: "isRecordDeleted")
+                    managedObject.setValue(Date(), forKey: "lastModifiedAt")
+                    managedObject.setValue(
+                        SurfRecordMutationMetadata.nextPayloadVersion(after: currentPayloadVersion),
+                        forKey: "payloadVersion"
+                    )
+                    managedObject.setValue(SurfRecordMutationMetadata.stableDeviceId, forKey: "deviceId")
                     try backgroundContext.save()
                     
                     DispatchQueue.main.async {
+                        let recordId = managedObject.value(forKey: "recordId") as? String ?? ""
+                        NotificationCenter.default.post(
+                            name: .surfRecordMutationCommitted,
+                            object: nil,
+                            userInfo: ["recordId": recordId]
+                        )
                         observer(.success(()))
                     }
                 } catch {
@@ -313,6 +364,11 @@ final class SurfRecordRepository: NoteRepositoryProtocol {
                     try backgroundContext.save()
                     
                     DispatchQueue.main.async {
+                        NotificationCenter.default.post(
+                            name: .surfRecordMutationCommitted,
+                            object: nil,
+                            userInfo: ["recordId": record.recordId]
+                        )
                         observer(.success(()))
                     }
                 } catch {

@@ -19,3 +19,11 @@ extension Notification.Name {
 extension Notification.Name {
     static let liveActivityPushTokenDidUpdate = Notification.Name("LiveActivityPushTokenDidUpdate")
 }
+
+extension Notification.Name {
+    static let liveActivityRouteRequested = Notification.Name("LiveActivityRouteRequested")
+}
+
+extension Notification.Name {
+    static let surfRecordMutationCommitted = Notification.Name("SurfRecordMutationCommitted")
+}

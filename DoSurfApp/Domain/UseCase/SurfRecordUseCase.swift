@@ -40,9 +40,15 @@ final class SurfRecordUseCase: SurfRecordUseCaseProtocol {
         isPin: Bool,
         charts: [Chart]
     ) -> Single<Void> {
+        let lastModifiedAt = Date()
         let surfRecordData = SurfRecordData(
             beachID: beachID,
             id: nil,
+            recordId: UUID().uuidString,
+            payloadVersion: 1,
+            lastModifiedAt: lastModifiedAt,
+            deviceId: SurfRecordMutationMetadata.stableDeviceId,
+            isDeleted: false,
             surfDate: surfDate,
             startTime: startTime,
             endTime: endTime,

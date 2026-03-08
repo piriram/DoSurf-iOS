@@ -16,6 +16,10 @@ final class MockSurfRecordRepository: NoteRepositoryProtocol {
         inMemoryRepository.fetchAllSurfRecords()
     }
 
+    func fetchAllSurfRecordsIncludingDeleted() -> Single<[SurfRecordData]> {
+        inMemoryRepository.fetchAllSurfRecordsIncludingDeleted()
+    }
+
     func fetchSurfRecords(for beachID: Int) -> Single<[SurfRecordData]> {
         inMemoryRepository.fetchSurfRecords(for: beachID)
     }

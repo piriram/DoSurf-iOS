@@ -2,6 +2,10 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
+private enum SurfingLiveActivityURL {
+    static let session = URL(string: "dosurf://live-activity/session")!
+}
+
 /// 서핑 라이브 액티비티 위젯
 @available(iOS 16.2, *)
 struct SurfingLiveActivity: Widget {
@@ -102,6 +106,7 @@ struct SurfingLiveActivity: Widget {
                     .font(.system(size: 12))
                     .foregroundColor(.blue)
             }
+            .widgetURL(SurfingLiveActivityURL.session)
         }
     }
 }
@@ -192,5 +197,6 @@ struct LockScreenLiveActivityView: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
         )
+        .widgetURL(SurfingLiveActivityURL.session)
     }
 }

@@ -17,6 +17,7 @@ enum WatchSessionLifecycleState: Int, Codable {
 struct WatchSessionPayload: Codable {
     let payloadVersion: Int
     let sessionId: String
+    let beachID: Int
     let distanceMeters: Double
     let durationSeconds: TimeInterval
     let startTime: Date
@@ -29,11 +30,15 @@ struct WatchSessionPayload: Codable {
     let lastModifiedAt: Date
     let deviceId: String
     let sessionState: WatchSessionLifecycleState
+    let rating: Int
+    let memo: String?
+    let isPinned: Bool
     let schemaVersion: Int
 
     init(
         payloadVersion: Int = 1,
         sessionId: String,
+        beachID: Int = 0,
         distanceMeters: Double,
         durationSeconds: TimeInterval,
         startTime: Date,
@@ -46,10 +51,14 @@ struct WatchSessionPayload: Codable {
         lastModifiedAt: Date = Date(),
         deviceId: String,
         sessionState: WatchSessionLifecycleState = .completed,
+        rating: Int = 0,
+        memo: String? = nil,
+        isPinned: Bool = false,
         schemaVersion: Int = WatchPayloadSchema.currentVersion
     ) {
         self.payloadVersion = payloadVersion
         self.sessionId = sessionId
+        self.beachID = beachID
         self.distanceMeters = distanceMeters
         self.durationSeconds = durationSeconds
         self.startTime = startTime
@@ -62,6 +71,9 @@ struct WatchSessionPayload: Codable {
         self.lastModifiedAt = lastModifiedAt
         self.deviceId = deviceId
         self.sessionState = sessionState
+        self.rating = rating
+        self.memo = memo
+        self.isPinned = isPinned
         self.schemaVersion = schemaVersion
     }
 
@@ -78,6 +90,12 @@ protocol iPhoneWatchConnectivityDelegate: AnyObject {
         completion: @escaping (Result<Int, Error>) -> Void
     )
     func watchConnectivityDidChangeReachability(_ isReachable: Bool)
+    func watchConnectivityDidActivate()
+}
+
+extension iPhoneWatchConnectivityDelegate {
+    func watchConnectivityDidChangeReachability(_ isReachable: Bool) {}
+    func watchConnectivityDidActivate() {}
 }
 
 final class iPhoneWatchConnectivity: NSObject {
@@ -104,6 +122,46 @@ final class iPhoneWatchConnectivity: NSObject {
             "timestamp": Date().timeIntervalSince1970
         ]
     }
+
+    func pushDeltaToWatch(_ payloads: [WatchSessionPayload]) {
+        guard !payloads.isEmpty else { return }
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            print("ℹ️ iPhone delta skipped until WCSession activates")
+            return
+        }
+
+        let message = makeOutboundMessage(payloads: payloads, syncKind: .delta)
+        session.transferUserInfo(message)
+    }
+
+    func pushSnapshotToWatch(_ payloads: [WatchSessionPayload]) {
+        guard WCSession.isSupported() else { return }
+
+        let session = WCSession.default
+        guard session.activationState == .activated else {
+            print("ℹ️ iPhone snapshot skipped until WCSession activates")
+            return
+        }
+
+        let message = makeOutboundMessage(payloads: payloads, syncKind: .snapshot)
+
+        do {
+            try session.updateApplicationContext(message)
+        } catch {
+            print("⚠️ failed to update application context: \(error.localizedDescription)")
+        }
+    }
+
+    private func makeOutboundMessage(payloads: [WatchSessionPayload], syncKind: WatchSyncKind) -> [String: Any] {
+        [
+            WatchMessageKey.syncKind: syncKind.rawValue,
+            WatchMessageKey.payloadVersion: WatchPayloadSchema.currentVersion,
+            WatchMessageKey.payloads: payloads.map(WatchSessionPayloadMapper.toDictionary)
+        ]
+    }
 }
 
 extension iPhoneWatchConnectivity: WCSessionDelegate {
@@ -114,6 +172,9 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
             print("✅ iPhone WCSession activated: \(activationState.rawValue)")
             if let error {
                 print("⚠️ Activation error: \(error.localizedDescription)")
+            }
+            if self.isActivated {
+                self.delegate?.watchConnectivityDidActivate()
             }
         }
     }
@@ -197,11 +258,13 @@ extension iPhoneWatchConnectivity: WCSessionDelegate {
 }
 
 private enum WatchMessageKey {
+    static let syncKind = "syncKind"
     static let payloads = "payloads"
     static let payloadVersion = "payloadVersion"
     static let schemaVersion = "schemaVersion"
     static let sessionId = "sessionId"
     static let recordId = "recordId"
+    static let beachID = "beachID"
     static let distance = "distance"
     static let distanceMeters = "distanceMeters"
     static let duration = "duration"
@@ -217,6 +280,9 @@ private enum WatchMessageKey {
     static let deviceId = "deviceId"
     static let state = "state"
     static let isDeleted = "isDeleted"
+    static let rating = "rating"
+    static let memo = "memo"
+    static let isPinned = "isPinned"
 }
 
 private enum WatchSessionPayloadMapper {
@@ -243,6 +309,7 @@ private enum WatchSessionPayloadMapper {
         return WatchSessionPayload(
             payloadVersion: payloadVersion,
             sessionId: sessionId,
+            beachID: parseInt(dictionary[WatchMessageKey.beachID]) ?? 0,
             distanceMeters: distance,
             durationSeconds: duration,
             startTime: startTime,
@@ -255,8 +322,41 @@ private enum WatchSessionPayloadMapper {
             lastModifiedAt: parseDate(dictionary[WatchMessageKey.lastModifiedAt]) ?? Date(),
             deviceId: parseString(dictionary[WatchMessageKey.deviceId]) ?? "watch-unknown",
             sessionState: state,
+            rating: parseInt(dictionary[WatchMessageKey.rating]) ?? 0,
+            memo: parseString(dictionary[WatchMessageKey.memo]),
+            isPinned: parseBool(dictionary[WatchMessageKey.isPinned]) ?? false,
             schemaVersion: schemaVersion
         )
+    }
+
+    static func toDictionary(_ payload: WatchSessionPayload) -> [String: Any] {
+        var dictionary: [String: Any] = [
+            WatchMessageKey.payloadVersion: payload.payloadVersion,
+            WatchMessageKey.schemaVersion: payload.schemaVersion,
+            WatchMessageKey.sessionId: payload.sessionId,
+            WatchMessageKey.beachID: payload.beachID,
+            WatchMessageKey.distanceMeters: payload.distanceMeters,
+            WatchMessageKey.durationSeconds: payload.durationSeconds,
+            WatchMessageKey.startTime: payload.startTime.timeIntervalSince1970,
+            WatchMessageKey.endTime: payload.endTime.timeIntervalSince1970,
+            WatchMessageKey.waveCount: payload.waveCount,
+            WatchMessageKey.maxHeartRate: payload.maxHeartRate,
+            WatchMessageKey.avgHeartRate: payload.avgHeartRate,
+            WatchMessageKey.activeCalories: payload.activeCalories,
+            WatchMessageKey.strokeCount: payload.strokeCount,
+            WatchMessageKey.lastModifiedAt: payload.lastModifiedAt.timeIntervalSince1970,
+            WatchMessageKey.deviceId: payload.deviceId,
+            WatchMessageKey.state: payload.sessionState.rawValue,
+            WatchMessageKey.isDeleted: payload.isDeleted,
+            WatchMessageKey.rating: payload.rating,
+            WatchMessageKey.isPinned: payload.isPinned
+        ]
+
+        if let memo = payload.memo {
+            dictionary[WatchMessageKey.memo] = memo
+        }
+
+        return dictionary
     }
 
     private static func parseDouble(_ value: Any?) -> Double? {
@@ -355,4 +455,9 @@ enum WatchDataError: LocalizedError {
             return "No watch sync delegate available"
         }
     }
+}
+
+private enum WatchSyncKind: String {
+    case delta
+    case snapshot
 }

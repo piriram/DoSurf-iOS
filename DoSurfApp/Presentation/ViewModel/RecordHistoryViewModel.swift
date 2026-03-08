@@ -199,9 +199,15 @@ final class RecordHistoryViewModel {
                 }
                 
                 // Toggle pin status
+                let lastModifiedAt = Date()
                 let updatedRecord = SurfRecordData(
                     beachID: current.beachID,
                     id: current.id,
+                    recordId: current.recordId,
+                    payloadVersion: SurfRecordMutationMetadata.nextPayloadVersion(after: current.payloadVersion),
+                    lastModifiedAt: lastModifiedAt,
+                    deviceId: SurfRecordMutationMetadata.stableDeviceId,
+                    isDeleted: current.isDeleted,
                     surfDate: current.surfDate,
                     startTime: current.startTime,
                     endTime: current.endTime,

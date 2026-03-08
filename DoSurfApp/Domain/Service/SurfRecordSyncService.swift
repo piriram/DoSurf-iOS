@@ -130,7 +130,7 @@ final class SurfRecordSyncService {
         }
 
         let merged = SurfRecordData(
-            beachID: existing?.beachID ?? 0,
+            beachID: payload.beachID != 0 ? payload.beachID : (existing?.beachID ?? 0),
             id: existing?.id,
             recordId: payload.recordId,
             payloadVersion: Int16(max(payload.payloadVersion, Int(existing?.payloadVersion ?? 0))),
@@ -140,9 +140,9 @@ final class SurfRecordSyncService {
             surfDate: payload.startTime,
             startTime: payload.startTime,
             endTime: payload.endTime,
-            rating: existing?.rating ?? 0,
-            memo: existing?.memo,
-            isPin: existing?.isPin ?? false,
+            rating: Int16(payload.rating),
+            memo: payload.memo,
+            isPin: payload.isPinned,
             charts: existing?.charts ?? []
         )
 

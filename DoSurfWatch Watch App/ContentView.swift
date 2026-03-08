@@ -20,6 +20,12 @@ struct ContentView: View {
                     Image(systemName: "gauge")
                     Text("Metrics")
                 }
+
+            SyncedRecordsRootView()
+                .tabItem {
+                    Image(systemName: "list.bullet.rectangle")
+                    Text("Records")
+                }
         }
     }
 }

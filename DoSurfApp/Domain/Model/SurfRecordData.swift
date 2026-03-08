@@ -1,4 +1,5 @@
 import CoreData
+import Foundation
 
 // MARK: - Data Transfer Objects
 struct SurfRecordData {
@@ -47,5 +48,23 @@ struct SurfRecordData {
         self.memo = memo
         self.isPin = isPin
         self.charts = charts
+    }
+}
+
+enum SurfRecordMutationMetadata {
+    private static let deviceIdKey = "dosurf.ios.device_id"
+
+    static var stableDeviceId: String {
+        if let saved = UserDefaults.standard.string(forKey: deviceIdKey), !saved.isEmpty {
+            return saved
+        }
+
+        let newId = UUID().uuidString
+        UserDefaults.standard.set(newId, forKey: deviceIdKey)
+        return newId
+    }
+
+    static func nextPayloadVersion(after current: Int16) -> Int16 {
+        current < Int16.max ? current + 1 : current
     }
 }
