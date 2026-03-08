@@ -6,197 +6,178 @@ private enum SurfingLiveActivityURL {
     static let session = URL(string: "dosurf://live-activity/session")!
 }
 
-/// 서핑 라이브 액티비티 위젯
 @available(iOS 16.2, *)
 struct SurfingLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SurfingActivityAttributes.self) { context in
-            // Lock Screen / Banner UI
-            LockScreenLiveActivityView(context: context)
+            LockScreenSymbolHeroView(context: context)
         } dynamicIsland: { context in
-            // Dynamic Island UI
             DynamicIsland {
-                // Expanded UI
                 DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "figure.surfing")
-                                .font(.system(size: 20))
+                    HStack(spacing: 6) {
+                        Image(systemName: "figure.surfing")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("DoSurf")
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.blue)
-                            Text("서핑")
-                                .font(.system(size: 14, weight: .semibold))
+                            Text(context.state.beachName.isEmpty ? "해변 미지정" : context.state.beachName)
+                                .font(.system(size: 11, weight: .medium))
+                                .lineLimit(1)
                         }
-                        Text(context.state.beachName.isEmpty ? "해변 미지정" : context.state.beachName)
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
                     }
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.state.startTime, style: .timer)
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.blue)
-                        .monospacedDigit()
-                }
-
-                DynamicIslandExpandedRegion(.center) {
-                    VStack(spacing: 4) {
-                        Text("\(context.state.elapsedMinutes)분")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.primary)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(context.state.startTime, style: .timer)
+                            .font(.system(size: 16, weight: .bold))
                             .monospacedDigit()
-                        Text("경과 | 라이딩 \(context.state.rideCount)회")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                        Text("평균 심박수")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                        Text("\(Int(context.state.averageHeartRate)) bpm")
-                            .font(.system(size: 14, weight: .semibold))
                             .foregroundColor(.blue)
-                            .monospacedDigit()
+                        Text("LIVE")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue, in: Capsule())
                     }
                 }
 
                 DynamicIslandExpandedRegion(.bottom) {
-                    HStack(spacing: 12) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock.fill")
-                                .font(.system(size: 12))
-                            Text(context.state.startTime, format: .dateTime.hour().minute())
-                                .font(.system(size: 13, weight: .medium))
-                        }
-                        .foregroundColor(.secondary)
-
-                        Spacer()
-
+                    HStack(spacing: 8) {
+                        pill("라이딩", "\(context.state.rideCount)회")
+                        pill("심박", "\(Int(context.state.averageHeartRate)) bpm")
+                        Spacer(minLength: 4)
                         Text(context.state.statusMessage)
-                            .font(.system(size: 13, weight: .medium))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.blue)
                             .lineLimit(1)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 2)
                 }
             } compactLeading: {
-                // Compact Leading
-                HStack(spacing: 4) {
-                    Image(systemName: "figure.surfing")
-                        .font(.system(size: 12))
-                        .foregroundColor(.blue)
-                    Text(context.state.beachName.isEmpty ? "서핑" : context.state.beachName)
-                        .font(.system(size: 11, weight: .semibold))
-                        .lineLimit(1)
-                }
-            } compactTrailing: {
-                // Compact Trailing
-                HStack(spacing: 4) {
-                    Text("\(context.state.elapsedMinutes)")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .monospacedDigit()
-                    Text("분")
-                        .font(.system(size: 10))
-                        .foregroundColor(.secondary)
-                }
-            } minimal: {
-                // Minimal
                 Image(systemName: "figure.surfing")
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(4)
+                    .background(Color.blue, in: Circle())
+            } compactTrailing: {
+                Text(context.state.startTime, style: .timer)
+                    .font(.system(size: 12, weight: .bold))
+                    .monospacedDigit()
+                    .foregroundColor(.blue)
+            } minimal: {
+                Image(systemName: "figure.surfing")
                     .foregroundColor(.blue)
             }
             .widgetURL(SurfingLiveActivityURL.session)
         }
     }
+
+    private func pill(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 3) {
+            Text(title)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.primary)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(Color.blue.opacity(0.12), in: Capsule())
+    }
 }
 
-/// 잠금 화면 라이브 액티비티 뷰
 @available(iOS 16.2, *)
-struct LockScreenLiveActivityView: View {
+private struct LockScreenSymbolHeroView: View {
     let context: ActivityViewContext<SurfingActivityAttributes>
-    private var pulseScale: CGFloat {
-        let wave = sin(Date().timeIntervalSince1970 * 2)
-        return 0.9 + CGFloat((wave + 1) / 10)
-    }
 
     var body: some View {
-        HStack(spacing: 16) {
-            // 아이콘
-            ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.blue.opacity(0.3), Color.cyan.opacity(0.3)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 50, height: 50)
-                    .scaleEffect(pulseScale)
+        HStack(spacing: 12) {
+            SymbolHero(size: 54)
 
-                Image(systemName: "figure.surfing")
-                    .font(.system(size: 24))
-                    .foregroundColor(.blue)
-            }
-
-            // 정보
-            VStack(alignment: .leading, spacing: 4) {
-                Text("서핑 중 🏄‍♂️")
-                    .font(.system(size: 16, weight: .bold))
+            VStack(alignment: .leading, spacing: 6) {
+                Text("서핑 진행 중")
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.primary)
 
                 Text(context.state.beachName.isEmpty ? "해변 미지정" : context.state.beachName)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
 
                 HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 11))
-                        Text(context.state.startTime, format: .dateTime.hour().minute())
-                            .font(.system(size: 13))
-                    }
-
-                    Text("•")
-                        .font(.system(size: 11))
-
-                    Text("경과 \(context.state.elapsedMinutes)분")
-                        .font(.system(size: 13, weight: .medium))
-                        .lineLimit(1)
-                }
-                .foregroundColor(.secondary)
-
-                HStack(spacing: 10) {
-                    Text("라이딩 \(context.state.rideCount)회")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.blue)
-                    Text("평균 \(Int(context.state.averageHeartRate)) BPM")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.blue)
+                    metricPill("라이딩", "\(context.state.rideCount)회")
+                    metricPill("심박", "\(Int(context.state.averageHeartRate)) bpm")
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 6)
 
-            // 경과 시간 (크게)
-            VStack(spacing: 2) {
-                Text("\(context.state.elapsedMinutes)")
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(context.state.startTime, style: .timer)
                     .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.blue)
                     .monospacedDigit()
-
-                Text("분")
-                    .font(.system(size: 11))
+                    .foregroundColor(.blue)
+                Text("elapsed")
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundColor(.secondary)
             }
         }
-        .padding(16)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 11)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.blue.opacity(0.16), lineWidth: 1)
+        )
+        .padding(.horizontal, 6)
+        .padding(.vertical, 5)
         .widgetURL(SurfingLiveActivityURL.session)
+    }
+
+    private func metricPill(_ title: String, _ value: String) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.blue)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .background(Color.blue.opacity(0.1), in: Capsule())
+    }
+}
+
+@available(iOS 16.2, *)
+private struct SymbolHero: View {
+    let size: CGFloat
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.blue.opacity(0.35), Color.cyan.opacity(0.30)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: size, height: size)
+
+            Image(systemName: "figure.surfing")
+                .font(.system(size: size * 0.42, weight: .bold))
+                .foregroundColor(.blue)
+        }
     }
 }
