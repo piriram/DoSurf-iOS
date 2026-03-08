@@ -61,7 +61,7 @@ final class NoteBottomCardView: UIView {
         containerStack.spacing = 12
         addSubview(containerStack)
         containerStack.snp.makeConstraints { make in
-            make.verticalEdges.equalToSuperview().inset(16)
+            make.edges.equalToSuperview().inset(16)
         }
         
         // Rating
@@ -111,23 +111,11 @@ final class NoteBottomCardView: UIView {
         let commentStack = UIStackView(arrangedSubviews: [commentTitle, addMemoButton, memoTextView])
         commentStack.axis = .vertical
         commentStack.spacing = 12
+        commentStack.isLayoutMarginsRelativeArrangement = true
+        commentStack.directionalLayoutMargins = .init(top: 0, leading: 16, bottom: 0, trailing: 16)
         
         commentCard.addSubview(commentStack)
         commentStack.snp.makeConstraints { $0.edges.equalToSuperview() }
-        
-        commentTitle.snp.makeConstraints { make in
-            make.leading.equalTo(commentStack.snp.leading).inset(16)
-        }
-        
-        addMemoButton.snp.makeConstraints { make in
-            make.leading.equalTo(commentStack.snp.leading).inset(16)
-            make.trailing.equalTo(commentStack.snp.trailing).inset(16)
-        }
-        
-        memoTextView.snp.makeConstraints { make in
-            make.leading.equalTo(commentStack.snp.leading).inset(16)
-            make.trailing.equalTo(commentStack.snp.trailing).inset(16)
-        }
     }
     
     // MARK: - Bind
@@ -180,4 +168,3 @@ final class NoteBottomCardView: UIView {
         return memoTextView.text
     }
 }
-

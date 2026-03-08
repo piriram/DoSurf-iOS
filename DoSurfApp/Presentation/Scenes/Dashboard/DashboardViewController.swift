@@ -211,8 +211,10 @@ class DashboardViewController: BaseViewController {
         NotificationCenter.default.rx.notification(.surfRecordsDidChange)
             .observe(on: MainScheduler.instance)
             .subscribe(onNext: { [weak self] _ in
-                self?.refreshControl.beginRefreshing()
-                self?.refreshControl.sendActions(for: .valueChanged)
+                guard let self = self, self.isViewLoaded, self.view.window != nil else { return }
+                guard !self.refreshControl.isRefreshing else { return }
+                self.refreshControl.beginRefreshing()
+                self.refreshControl.sendActions(for: .valueChanged)
             })
             .disposed(by: disposeBag)
 
