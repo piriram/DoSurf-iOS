@@ -40,7 +40,9 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.flushPending()
+            Task { @MainActor [weak self] in
+                self?.flushPending()
+            }
         }
         #endif
     }
