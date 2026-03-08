@@ -71,10 +71,9 @@ final class SurfingActivityManager {
         print("🔵 [LiveActivity] Activity.request 호출...")
 
         do {
-            let activity = try Activity.request(
+            let (activity, supportsRemotePush) = try requestActivity(
                 attributes: attributes,
-                content: .init(state: initialContentState, staleDate: nil),
-                pushType: .token
+                contentState: initialContentState
             )
 
             currentActivity = activity
@@ -83,14 +82,23 @@ final class SurfingActivityManager {
             print("   - 시작 시간: \(startTime)")
             print("💡 Dynamic Island 또는 잠금 화면을 확인하세요")
 
+            if supportsRemotePush {
+                print("✅ [LiveActivity] 원격 업데이트용 push token 모드 활성화")
+            } else {
+                print("ℹ️ [LiveActivity] 로컬 업데이트 모드로 시작됨")
+                print("💡 원격 업데이트까지 쓰려면 App Target에 Push Notifications capability와 aps-environment entitlement가 필요합니다")
+            }
+
 #if targetEnvironment(simulator)
             print("⚠️ 시뮬레이터에서는 제한적으로 작동할 수 있습니다")
             print("💡 실제 기기에서 테스트하는 것을 권장합니다")
 #endif
 
             startUpdateTimer(startTime: startTime)
-            observeActivityPushTokens(activity)
-            observePushToStartTokenIfNeeded()
+            if supportsRemotePush {
+                observeActivityPushTokens(activity)
+                observePushToStartTokenIfNeeded()
+            }
 
         } catch {
             print("❌ [LiveActivity] 시작 실패: \(error.localizedDescription)")
@@ -102,6 +110,9 @@ final class SurfingActivityManager {
                 print("   2. DoSurfWidgetExtension이 빌드되는지 확인")
                 print("   3. Info.plist에 NSSupportsLiveActivities=true 확인")
             }
+
+            print("   4. 실제 기기 설정 > 앱/Face ID 및 암호/Live Activities 허용 상태 확인")
+            print("   5. 원격 업데이트를 쓸 경우 App Target의 Push Notifications capability와 aps-environment entitlement 확인")
         }
     }
 
@@ -218,6 +229,32 @@ final class SurfingActivityManager {
                 .init(state: updatedContentState, staleDate: nil)
             )
             print("🔄 Live Activity 업데이트됨: \(elapsedMinutes)분 경과 / 라이딩 \(rideCount)회")
+        }
+    }
+
+    private func requestActivity(
+        attributes: SurfingActivityAttributes,
+        contentState: SurfingActivityAttributes.ContentState
+    ) throws -> (activity: Activity<SurfingActivityAttributes>, supportsRemotePush: Bool) {
+        let content = ActivityContent(state: contentState, staleDate: nil)
+
+        do {
+            let activity = try Activity.request(
+                attributes: attributes,
+                content: content,
+                pushType: .token
+            )
+            return (activity, true)
+        } catch {
+            print("⚠️ [LiveActivity] push token 모드 시작 실패, 로컬 모드로 재시도합니다")
+            print("   - Fallback reason: \(error)")
+
+            let activity = try Activity.request(
+                attributes: attributes,
+                content: content,
+                pushType: nil
+            )
+            return (activity, false)
         }
     }
 
