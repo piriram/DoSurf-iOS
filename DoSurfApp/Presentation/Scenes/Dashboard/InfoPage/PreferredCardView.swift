@@ -105,6 +105,7 @@ final class PreferredCardView: UIView {
             }
             subValueLabel.snp.remakeConstraints { make in
                 make.leading.equalTo(valueLabel)
+                make.top.equalTo(valueLabel.snp.bottom).offset(2)
                 make.bottom.equalToSuperview().inset(16)
             }
         } else {
@@ -170,4 +171,3 @@ struct DashboardCardData {
         self.color = color
     }
 }
-

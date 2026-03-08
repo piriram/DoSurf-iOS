@@ -135,7 +135,6 @@ final class DashboardHeaderView: UIView {
             $0.top.equalTo(statisticsHeaderView.snp.bottom)
             $0.leading.trailing.equalToSuperview()
             $0.bottom.equalTo(pageControl.snp.top)
-            $0.height.lessThanOrEqualTo(170)
         }
         
         pageControl.snp.makeConstraints {

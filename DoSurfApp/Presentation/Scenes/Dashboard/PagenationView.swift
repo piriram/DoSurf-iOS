@@ -52,8 +52,8 @@ final class PagenationView: UIView {
         }
         
         contentStackView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-            make.height.equalTo(scrollView.snp.height)
+            make.edges.equalTo(scrollView.contentLayoutGuide)
+            make.height.equalTo(scrollView.frameLayoutGuide)
         }
     }
     
@@ -130,7 +130,7 @@ final class PagenationView: UIView {
             
             // containerView의 제약 조건 먼저 설정
             containerView.snp.makeConstraints { make in
-                make.width.equalTo(scrollView.snp.width)
+                make.width.equalTo(scrollView.frameLayoutGuide)
             }
             
             // page의 제약 조건은 addSubview 후에 설정
