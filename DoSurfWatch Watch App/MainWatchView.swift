@@ -2,22 +2,12 @@ import SwiftUI
 import Foundation
 
 private enum WatchBeachCatalog {
-    private static let namesById: [Int: String] = [
-        1001: "강릉 죽도 해변",
-        1002: "강릉 강촌 해변",
-        1003: "강릉 안현 해변",
-        1004: "강릉 도항 해변",
-        2001: "포항 간절곶 해변",
-        2002: "포항 청해 해변",
-        3001: "제주 협재 해변",
-        3002: "제주 중문 해변",
-        3003: "제주 함덕 해변",
-        4001: "부산 송도 해변"
-    ]
-
-    static func name(for beachID: Int) -> String {
-        guard beachID != 0 else { return "해변 미지정" }
-        return namesById[beachID] ?? "해변 #\(beachID)"
+    static func name(for record: WatchSurfSessionData) -> String {
+        if let beachName = record.beachName, !beachName.isEmpty {
+            return beachName
+        }
+        guard record.beachID != 0 else { return "해변 미지정" }
+        return "해변 #\(record.beachID)"
     }
 }
 
@@ -198,7 +188,7 @@ private struct SyncedRecordRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(WatchBeachCatalog.name(for: record.beachID))
+                Text(WatchBeachCatalog.name(for: record))
                     .font(.headline)
                     .lineLimit(1)
                 Spacer()
@@ -248,7 +238,7 @@ private struct SyncedRecordDetailView: View {
             if let record {
                 Form {
                     Section {
-                        LabeledContent("Beach", value: WatchBeachCatalog.name(for: record.beachID))
+                        LabeledContent("Beach", value: WatchBeachCatalog.name(for: record))
                         LabeledContent("Date", value: record.startTime.formatted(date: .abbreviated, time: .omitted))
                         LabeledContent("Duration", value: record.durationLabel)
                         LabeledContent("Distance", value: "\(Int(record.distanceMeters))m")
@@ -260,6 +250,16 @@ private struct SyncedRecordDetailView: View {
                         LabeledContent("Max HR", value: record.maxHeartRate > 0 ? "\(Int(record.maxHeartRate)) bpm" : "-")
                         LabeledContent("Calories", value: record.activeCalories > 0 ? "\(Int(record.activeCalories)) kcal" : "-")
                         LabeledContent("Strokes", value: record.strokeCount > 0 ? "\(record.strokeCount)" : "-")
+                    }
+
+                    if record.hasChartSummary {
+                        Section {
+                            LabeledContent("Avg Wave", value: record.avgWaveHeightText)
+                            LabeledContent("Max Wave", value: record.maxWaveHeightText)
+                            LabeledContent("Wave Period", value: record.avgWavePeriodText)
+                            LabeledContent("Water Temp", value: record.avgWaterTemperatureText)
+                            LabeledContent("Wind", value: record.avgWindSpeedText)
+                        }
                     }
 
                     Section {
@@ -323,6 +323,10 @@ private struct SyncedRecordDetailView: View {
 }
 
 private extension WatchSurfSessionData {
+    var hasChartSummary: Bool {
+        avgWaveHeight != nil || maxWaveHeight != nil || avgWavePeriod != nil || avgWaterTemperature != nil || avgWindSpeed != nil
+    }
+
     var durationLabel: String {
         let totalSeconds = max(Int(durationSeconds.rounded()), 0)
         let hours = totalSeconds / 3600
@@ -332,5 +336,30 @@ private extension WatchSurfSessionData {
             return "\(hours)h \(minutes)m"
         }
         return "\(minutes)m"
+    }
+
+    var avgWaveHeightText: String {
+        guard let avgWaveHeight else { return "-" }
+        return String(format: "%.1fm", avgWaveHeight)
+    }
+
+    var maxWaveHeightText: String {
+        guard let maxWaveHeight else { return "-" }
+        return String(format: "%.1fm", maxWaveHeight)
+    }
+
+    var avgWavePeriodText: String {
+        guard let avgWavePeriod else { return "-" }
+        return String(format: "%.1fs", avgWavePeriod)
+    }
+
+    var avgWaterTemperatureText: String {
+        guard let avgWaterTemperature else { return "-" }
+        return String(format: "%.1f°C", avgWaterTemperature)
+    }
+
+    var avgWindSpeedText: String {
+        guard let avgWindSpeed else { return "-" }
+        return String(format: "%.1fm/s", avgWindSpeed)
     }
 }

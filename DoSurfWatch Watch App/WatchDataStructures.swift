@@ -17,7 +17,7 @@ enum WatchLocalDeviceIdentity {
 }
 
 enum WatchPayloadSchema {
-    static let currentVersion = 2
+    static let currentVersion = 3
     static let defaultBatchSize = 8
 
     static func nextPayloadVersion(after current: Int) -> Int {
@@ -37,6 +37,7 @@ struct WatchSurfSessionData: Codable {
     let schemaVersion: Int
     let sessionId: String
     let beachID: Int
+    let beachName: String?
     let distanceMeters: Double
     let durationSeconds: Double
     let startTime: Date
@@ -53,12 +54,18 @@ struct WatchSurfSessionData: Codable {
     let rating: Int
     let memo: String?
     let isPinned: Bool
+    let avgWaveHeight: Double?
+    let maxWaveHeight: Double?
+    let avgWavePeriod: Double?
+    let avgWaterTemperature: Double?
+    let avgWindSpeed: Double?
 
     init(
         payloadVersion: Int = 1,
         schemaVersion: Int = WatchPayloadSchema.currentVersion,
         sessionId: String,
         beachID: Int = 0,
+        beachName: String? = nil,
         distanceMeters: Double,
         durationSeconds: Double,
         startTime: Date,
@@ -74,12 +81,18 @@ struct WatchSurfSessionData: Codable {
         isDeleted: Bool? = nil,
         rating: Int = 0,
         memo: String? = nil,
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        avgWaveHeight: Double? = nil,
+        maxWaveHeight: Double? = nil,
+        avgWavePeriod: Double? = nil,
+        avgWaterTemperature: Double? = nil,
+        avgWindSpeed: Double? = nil
     ) {
         self.payloadVersion = payloadVersion
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
         self.beachID = beachID
+        self.beachName = beachName
         self.distanceMeters = distanceMeters
         self.durationSeconds = durationSeconds
         self.startTime = startTime
@@ -96,6 +109,11 @@ struct WatchSurfSessionData: Codable {
         self.rating = rating
         self.memo = memo
         self.isPinned = isPinned
+        self.avgWaveHeight = avgWaveHeight
+        self.maxWaveHeight = maxWaveHeight
+        self.avgWavePeriod = avgWavePeriod
+        self.avgWaterTemperature = avgWaterTemperature
+        self.avgWindSpeed = avgWindSpeed
     }
 
     static func deletion(sessionId: String, deviceId: String) -> WatchSurfSessionData {
@@ -104,6 +122,7 @@ struct WatchSurfSessionData: Codable {
             schemaVersion: WatchPayloadSchema.currentVersion,
             sessionId: sessionId,
             beachID: 0,
+            beachName: nil,
             distanceMeters: 0,
             durationSeconds: 0,
             startTime: Date(),
@@ -118,7 +137,12 @@ struct WatchSurfSessionData: Codable {
             isDeleted: true,
             rating: 0,
             memo: nil,
-            isPinned: false
+            isPinned: false,
+            avgWaveHeight: nil,
+            maxWaveHeight: nil,
+            avgWavePeriod: nil,
+            avgWaterTemperature: nil,
+            avgWindSpeed: nil
         )
     }
 
@@ -145,8 +169,32 @@ struct WatchSurfSessionData: Codable {
             WatchMessageKey.isPinned: isPinned
         ]
 
+        if let beachName {
+            dictionary[WatchMessageKey.beachName] = beachName
+        }
+
         if let memo {
             dictionary[WatchMessageKey.memo] = memo
+        }
+
+        if let avgWaveHeight {
+            dictionary[WatchMessageKey.avgWaveHeight] = avgWaveHeight
+        }
+
+        if let maxWaveHeight {
+            dictionary[WatchMessageKey.maxWaveHeight] = maxWaveHeight
+        }
+
+        if let avgWavePeriod {
+            dictionary[WatchMessageKey.avgWavePeriod] = avgWavePeriod
+        }
+
+        if let avgWaterTemperature {
+            dictionary[WatchMessageKey.avgWaterTemperature] = avgWaterTemperature
+        }
+
+        if let avgWindSpeed {
+            dictionary[WatchMessageKey.avgWindSpeed] = avgWindSpeed
         }
 
         return dictionary
@@ -159,6 +207,7 @@ private enum WatchMessageKey {
     static let payloads = "payloads"
     static let sessionId = "sessionId"
     static let beachID = "beachID"
+    static let beachName = "beachName"
     static let distanceMeters = "distanceMeters"
     static let durationSeconds = "durationSeconds"
     static let startTime = "startTime"
@@ -175,4 +224,9 @@ private enum WatchMessageKey {
     static let rating = "rating"
     static let memo = "memo"
     static let isPinned = "isPinned"
+    static let avgWaveHeight = "avgWaveHeight"
+    static let maxWaveHeight = "maxWaveHeight"
+    static let avgWavePeriod = "avgWavePeriod"
+    static let avgWaterTemperature = "avgWaterTemperature"
+    static let avgWindSpeed = "avgWindSpeed"
 }

@@ -107,6 +107,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             schemaVersion: current.schemaVersion,
             sessionId: current.sessionId,
             beachID: current.beachID,
+            beachName: current.beachName,
             distanceMeters: current.distanceMeters,
             durationSeconds: current.durationSeconds,
             startTime: current.startTime,
@@ -122,7 +123,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             isDeleted: false,
             rating: min(max(rating, 0), 5),
             memo: trimmedMemo.isEmpty ? nil : trimmedMemo,
-            isPinned: isPinned
+            isPinned: isPinned,
+            avgWaveHeight: current.avgWaveHeight,
+            maxWaveHeight: current.maxWaveHeight,
+            avgWavePeriod: current.avgWavePeriod,
+            avgWaterTemperature: current.avgWaterTemperature,
+            avgWindSpeed: current.avgWindSpeed
         )
 
         mergeMirroredPayloads([updated], source: "local-edit")
@@ -139,6 +145,7 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             schemaVersion: current.schemaVersion,
             sessionId: current.sessionId,
             beachID: current.beachID,
+            beachName: current.beachName,
             distanceMeters: current.distanceMeters,
             durationSeconds: current.durationSeconds,
             startTime: current.startTime,
@@ -154,7 +161,12 @@ final class WatchConnectivityManager: NSObject, ObservableObject {
             isDeleted: true,
             rating: current.rating,
             memo: current.memo,
-            isPinned: current.isPinned
+            isPinned: current.isPinned,
+            avgWaveHeight: current.avgWaveHeight,
+            maxWaveHeight: current.maxWaveHeight,
+            avgWavePeriod: current.avgWavePeriod,
+            avgWaterTemperature: current.avgWaterTemperature,
+            avgWindSpeed: current.avgWindSpeed
         )
 
         mergeMirroredPayloads([deleted], source: "local-delete")
@@ -482,6 +494,7 @@ private enum WatchMessageKey {
     static let schemaVersion = "schemaVersion"
     static let sessionId = "sessionId"
     static let beachID = "beachID"
+    static let beachName = "beachName"
     static let distanceMeters = "distanceMeters"
     static let durationSeconds = "durationSeconds"
     static let startTime = "startTime"
@@ -498,6 +511,11 @@ private enum WatchMessageKey {
     static let rating = "rating"
     static let memo = "memo"
     static let isPinned = "isPinned"
+    static let avgWaveHeight = "avgWaveHeight"
+    static let maxWaveHeight = "maxWaveHeight"
+    static let avgWavePeriod = "avgWavePeriod"
+    static let avgWaterTemperature = "avgWaterTemperature"
+    static let avgWindSpeed = "avgWindSpeed"
 }
 
 private enum WatchReplyKey {
@@ -534,6 +552,7 @@ private enum WatchInboundPayloadMapper {
             schemaVersion: parseInt(dictionary[WatchMessageKey.schemaVersion]) ?? WatchPayloadSchema.currentVersion,
             sessionId: sessionId,
             beachID: parseInt(dictionary[WatchMessageKey.beachID]) ?? 0,
+            beachName: parseString(dictionary[WatchMessageKey.beachName]),
             distanceMeters: distance,
             durationSeconds: duration,
             startTime: parseDate(dictionary[WatchMessageKey.startTime]) ?? Date(),
@@ -549,7 +568,12 @@ private enum WatchInboundPayloadMapper {
             isDeleted: parseBool(dictionary[WatchMessageKey.isDeleted]),
             rating: parseInt(dictionary[WatchMessageKey.rating]) ?? 0,
             memo: parseString(dictionary[WatchMessageKey.memo]),
-            isPinned: parseBool(dictionary[WatchMessageKey.isPinned]) ?? false
+            isPinned: parseBool(dictionary[WatchMessageKey.isPinned]) ?? false,
+            avgWaveHeight: parseDouble(dictionary[WatchMessageKey.avgWaveHeight]),
+            maxWaveHeight: parseDouble(dictionary[WatchMessageKey.maxWaveHeight]),
+            avgWavePeriod: parseDouble(dictionary[WatchMessageKey.avgWavePeriod]),
+            avgWaterTemperature: parseDouble(dictionary[WatchMessageKey.avgWaterTemperature]),
+            avgWindSpeed: parseDouble(dictionary[WatchMessageKey.avgWindSpeed])
         )
     }
 
