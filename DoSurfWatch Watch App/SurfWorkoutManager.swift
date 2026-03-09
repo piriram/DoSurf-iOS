@@ -139,6 +139,11 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         locationManager.stopUpdatingLocation()
     }
 
+    func incrementWaveCount() {
+        guard isRunning else { return }
+        waveCount += 1
+    }
+
     // MARK: - Private: transport
     private func sendLifecyclePayload(state: WatchSessionLifecycleState) {
         let now = Date()
@@ -378,3 +383,31 @@ extension SurfWorkoutManager: HKLiveWorkoutBuilderDelegate {
         isInSession = false
     }
 }
+
+#if DEBUG
+extension SurfWorkoutManager {
+    static func preview(
+        isRunning: Bool = true,
+        elapsed: TimeInterval = 25 * 60,
+        distance: Double = 1340,
+        heartRate: Double = 146,
+        activeCalories: Double = 182,
+        waveCount: Int = 2,
+        strokeCount: Int = 38
+    ) -> SurfWorkoutManager {
+        let manager = SurfWorkoutManager()
+        manager.isRunning = isRunning
+        manager.isInSession = isRunning
+        manager.elapsed = elapsed
+        manager.distance = distance
+        manager.heartRate = heartRate
+        manager.activeCalories = activeCalories
+        manager.waveCount = waveCount
+        manager.strokeCount = strokeCount
+        manager.currentSpeed = 5.8
+        manager.maxSpeed = 8.2
+        manager.averageSpeed = 4.7
+        return manager
+    }
+}
+#endif

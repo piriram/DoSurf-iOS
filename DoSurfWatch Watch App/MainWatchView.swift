@@ -18,67 +18,13 @@ struct MainWatchView: View {
     @State private var sendResultMessage = ""
 
     var body: some View {
-        VStack(spacing: 16) {
-            VStack(spacing: 8) {
-                Text("Distance")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("\(Int(manager.distance)) m")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                Text("Time")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(formatTime(manager.elapsed))
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                if manager.heartRate > 0 {
-                    Text("❤️ \(Int(manager.heartRate)) BPM")
-                        .font(.caption)
-                }
-
-                if manager.waveCount > 0 {
-                    Text("🌊 \(manager.waveCount) waves")
-                        .font(.caption)
-                }
-
-                if manager.strokeCount > 0 {
-                    Text("🏄‍♂️ \(manager.strokeCount) strokes")
-                        .font(.caption)
-                }
-
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(connectivity.isReachable ? .green : .red)
-                        .frame(width: 8, height: 8)
-                    Text(connectivity.isReachable ? "iPhone Connected" : "iPhone Disconnected")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-
-                if manager.isRunning {
-                    Text("🏄‍♂️ Session Running")
-                        .font(.caption)
-                        .foregroundColor(.green)
-                } else if connectivity.pendingCount > 0 {
-                    Text("📤 Sync Pending: \(connectivity.pendingCount)")
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                } else if connectivity.mirroredRecordCount > 0 {
-                    Text("🗂 Synced Records: \(connectivity.mirroredRecordCount)")
-                        .font(.caption2)
-                        .foregroundColor(.blue)
-                } else if manager.sessionEnded || manager.elapsed > 0 {
-                    Text("📊 Session Done")
-                        .font(.caption)
-                        .foregroundColor(.blue)
-                }
-            }
-
+        ScrollView {
             VStack(spacing: 12) {
-                Button(manager.isRunning ? "End Session" : "Start Session") {
+                Text(manager.isRunning ? "세션 진행 중" : "세션 제어")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Button(manager.isRunning ? "세션 종료" : "세션 시작") {
                     if manager.isRunning {
                         manager.end()
                     } else {
@@ -88,17 +34,46 @@ struct MainWatchView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
 
+                Button(manager.isRunning ? "라이딩 +1" : "라이딩 추가(세션 시작 후)") {
+                    manager.incrementWaveCount()
+                }
+                .buttonStyle(.bordered)
+                .disabled(!manager.isRunning)
+
                 if !manager.isRunning && (manager.elapsed > 0 || manager.distance > 0) {
-                    Button("Send to iPhone") {
+                    Button("iPhone으로 전송") {
                         sendDataToiPhone()
                     }
                     .buttonStyle(.bordered)
                 }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(connectivity.isReachable ? .green : .orange)
+                            .frame(width: 7, height: 7)
+                        Text(connectivity.isReachable ? "iPhone 연결됨" : "iPhone 오프라인")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if connectivity.pendingCount > 0 {
+                        Text("전송 대기 \(connectivity.pendingCount)건")
+                            .font(.caption2)
+                            .foregroundColor(.orange)
+                    } else if connectivity.mirroredRecordCount > 0 {
+                        Text("동기화 완료 \(connectivity.mirroredRecordCount)건")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 4)
             }
+            .padding()
         }
-        .padding()
-        .alert("Send Result", isPresented: $showingSendResult) {
-            Button("OK") {}
+        .alert("전송 결과", isPresented: $showingSendResult) {
+            Button("확인") {}
         } message: {
             Text(sendResultMessage)
         }
@@ -160,9 +135,9 @@ struct SyncedRecordsRootView: View {
             List {
                 if connectivity.syncedRecords.isEmpty {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("No Synced Records")
+                        Text("동기화된 기록이 없어요")
                             .font(.headline)
-                        Text("iPhone records will appear here after sync.")
+                        Text("iPhone 동기화 후 기록이 여기에 표시됩니다.")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                     }
@@ -177,7 +152,7 @@ struct SyncedRecordsRootView: View {
                     }
                 }
             }
-            .navigationTitle("Records")
+            .navigationTitle("기록")
         }
     }
 }
@@ -204,7 +179,7 @@ private struct SyncedRecordRow: View {
 
             HStack(spacing: 8) {
                 Text("\(Int(record.distanceMeters))m")
-                Text("\(record.waveCount) waves")
+                Text("라이딩 \(record.waveCount)회")
                 Text(record.durationLabel)
             }
             .font(.caption2)
@@ -238,42 +213,42 @@ private struct SyncedRecordDetailView: View {
             if let record {
                 Form {
                     Section {
-                        LabeledContent("Beach", value: WatchBeachCatalog.name(for: record))
-                        LabeledContent("Date", value: record.startTime.formatted(date: .abbreviated, time: .omitted))
-                        LabeledContent("Duration", value: record.durationLabel)
-                        LabeledContent("Distance", value: "\(Int(record.distanceMeters))m")
-                        LabeledContent("Waves", value: "\(record.waveCount)")
+                        LabeledContent("해변", value: WatchBeachCatalog.name(for: record))
+                        LabeledContent("날짜", value: record.startTime.formatted(date: .abbreviated, time: .omitted))
+                        LabeledContent("시간", value: record.durationLabel)
+                        LabeledContent("거리", value: "\(Int(record.distanceMeters))m")
+                        LabeledContent("라이딩", value: "\(record.waveCount)회")
                     }
 
                     Section {
-                        LabeledContent("Avg HR", value: record.avgHeartRate > 0 ? "\(Int(record.avgHeartRate)) bpm" : "-")
-                        LabeledContent("Max HR", value: record.maxHeartRate > 0 ? "\(Int(record.maxHeartRate)) bpm" : "-")
-                        LabeledContent("Calories", value: record.activeCalories > 0 ? "\(Int(record.activeCalories)) kcal" : "-")
-                        LabeledContent("Strokes", value: record.strokeCount > 0 ? "\(record.strokeCount)" : "-")
+                        LabeledContent("평균 심박", value: record.avgHeartRate > 0 ? "\(Int(record.avgHeartRate)) bpm" : "-")
+                        LabeledContent("최대 심박", value: record.maxHeartRate > 0 ? "\(Int(record.maxHeartRate)) bpm" : "-")
+                        LabeledContent("칼로리", value: record.activeCalories > 0 ? "\(Int(record.activeCalories)) kcal" : "-")
+                        LabeledContent("스트로크", value: record.strokeCount > 0 ? "\(record.strokeCount)" : "-")
                     }
 
                     if record.hasChartSummary {
                         Section {
-                            LabeledContent("Avg Wave", value: record.avgWaveHeightText)
-                            LabeledContent("Max Wave", value: record.maxWaveHeightText)
-                            LabeledContent("Wave Period", value: record.avgWavePeriodText)
-                            LabeledContent("Water Temp", value: record.avgWaterTemperatureText)
-                            LabeledContent("Wind", value: record.avgWindSpeedText)
+                            LabeledContent("평균 파고", value: record.avgWaveHeightText)
+                            LabeledContent("최대 파고", value: record.maxWaveHeightText)
+                            LabeledContent("파도 주기", value: record.avgWavePeriodText)
+                            LabeledContent("수온", value: record.avgWaterTemperatureText)
+                            LabeledContent("풍속", value: record.avgWindSpeedText)
                         }
                     }
 
                     Section {
-                        Toggle("Pinned", isOn: $isPinned)
+                        Toggle("상단 고정", isOn: $isPinned)
 
                         Stepper(value: $rating, in: 0...5) {
-                            Text("Rating \(rating)/5")
+                            Text("평점 \(rating)/5")
                         }
 
-                        TextField("Memo", text: $memo)
+                        TextField("메모", text: $memo)
                     }
 
                     Section {
-                        Button("Save Changes") {
+                        Button("변경사항 저장") {
                             connectivity.saveMirroredRecordEdits(
                                 sessionId: sessionId,
                                 rating: rating,
@@ -282,7 +257,7 @@ private struct SyncedRecordDetailView: View {
                             )
                         }
 
-                        Button("Delete Record", role: .destructive) {
+                        Button("기록 삭제", role: .destructive) {
                             connectivity.deleteMirroredRecord(sessionId: sessionId)
                             dismiss()
                         }
@@ -290,19 +265,19 @@ private struct SyncedRecordDetailView: View {
 
                     if connectivity.pendingCount > 0 {
                         Section {
-                            Text("Sync pending: \(connectivity.pendingCount)")
+                            Text("동기화 대기: \(connectivity.pendingCount)건")
                                 .font(.caption2)
                                 .foregroundColor(.orange)
                         }
                     }
 
                     Section {
-                        LabeledContent("Last Updated", value: record.lastModifiedAt.formatted(date: .omitted, time: .shortened))
-                        LabeledContent("Record ID", value: String(record.sessionId.prefix(8)))
+                        LabeledContent("최종 수정", value: record.lastModifiedAt.formatted(date: .omitted, time: .shortened))
+                        LabeledContent("기록 ID", value: String(record.sessionId.prefix(8)))
                             .font(.caption2)
                     }
                 }
-                .navigationTitle("Edit Record")
+                .navigationTitle("기록 편집")
                 .onAppear {
                     rating = record.rating
                     memo = record.memo ?? ""
@@ -310,9 +285,9 @@ private struct SyncedRecordDetailView: View {
                 }
             } else {
                 VStack(spacing: 8) {
-                    Text("Record Unavailable")
+                    Text("기록을 불러올 수 없어요")
                         .font(.headline)
-                    Text("It may have been deleted or not synced yet.")
+                    Text("삭제되었거나 아직 동기화되지 않았을 수 있어요.")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -333,9 +308,9 @@ private extension WatchSurfSessionData {
         let minutes = (totalSeconds % 3600) / 60
 
         if hours > 0 {
-            return "\(hours)h \(minutes)m"
+            return "\(hours)시간 \(minutes)분"
         }
-        return "\(minutes)m"
+        return "\(minutes)분"
     }
 
     var avgWaveHeightText: String {

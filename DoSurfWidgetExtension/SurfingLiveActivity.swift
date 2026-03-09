@@ -12,12 +12,12 @@ private extension SurfingActivityAttributes {
 
 private extension SurfingActivityAttributes.ContentState {
     static let preview = SurfingActivityAttributes.ContentState(
-        startTime: Date().addingTimeInterval(-32 * 60),
-        elapsedMinutes: 32,
-        statusMessage: "좋은 파도 포착",
+        startTime: Date().addingTimeInterval(-25 * 60),
+        elapsedMinutes: 25,
+        statusMessage: "", 
         beachName: "양양 인구해변",
-        rideCount: 7,
-        averageHeartRate: 118
+        rideCount: 2,
+        averageHeartRate: 146
     )
 }
 
