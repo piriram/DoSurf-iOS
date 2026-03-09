@@ -68,9 +68,11 @@ struct MainWatchView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 4)
+                .padding(.top, 2)
             }
-            .padding()
+            .padding(.horizontal, 10)
+            .padding(.top, 2)
+            .padding(.bottom, 8)
         }
         .alert("전송 결과", isPresented: $showingSendResult) {
             Button("확인") {}

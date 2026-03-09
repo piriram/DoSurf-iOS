@@ -78,7 +78,8 @@ private struct WatchSessionOverviewView: View {
                 }
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
+            .padding(.top, 2)
+            .padding(.bottom, 6)
         }
     }
 

@@ -50,7 +50,54 @@ final class SurfWorkoutManager: NSObject, ObservableObject {
         if !isSimulator {
             locationManager.requestWhenInUseAuthorization()
         }
+
+        #if DEBUG
+        applyLaunchMockIfNeeded()
+        #endif
     }
+
+    #if DEBUG
+    private func applyLaunchMockIfNeeded() {
+        let prefix = "--watch-mock="
+        guard let arg = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix(prefix) }) else { return }
+
+        let profile = String(arg.dropFirst(prefix.count)).lowercased()
+        switch profile {
+        case "calm", "light":
+            applyMockMetrics(elapsed: 12 * 60, distance: 420, heartRate: 108, calories: 62, waves: 1, strokes: 18, speed: 3.1, maxSpeed: 4.4, avgSpeed: 2.9)
+        case "intense", "hard":
+            applyMockMetrics(elapsed: 54 * 60, distance: 2480, heartRate: 168, calories: 386, waves: 9, strokes: 96, speed: 8.6, maxSpeed: 11.2, avgSpeed: 7.4)
+        default: // normal
+            applyMockMetrics(elapsed: 25 * 60, distance: 1280, heartRate: 146, calories: 182, waves: 2, strokes: 34, speed: 5.8, maxSpeed: 8.2, avgSpeed: 4.7)
+        }
+
+        isRunning = true
+        isInSession = true
+        startDate = Date().addingTimeInterval(-elapsed)
+    }
+
+    private func applyMockMetrics(
+        elapsed: TimeInterval,
+        distance: Double,
+        heartRate: Double,
+        calories: Double,
+        waves: Int,
+        strokes: Int,
+        speed: Double,
+        maxSpeed: Double,
+        avgSpeed: Double
+    ) {
+        self.elapsed = elapsed
+        self.distance = distance
+        self.heartRate = heartRate
+        self.activeCalories = calories
+        self.waveCount = waves
+        self.strokeCount = strokes
+        self.currentSpeed = speed
+        self.maxSpeed = maxSpeed
+        self.averageSpeed = avgSpeed
+    }
+    #endif
 
     // MARK: - Permissions
     func requestPermissions() async {
