@@ -21,6 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         IQKeyboardManager.shared.keyboardDistance = 60
 
         observeLiveActivityTokens()
+        launchDebugLiveActivityIfNeeded()
 
         return true
     }
@@ -72,6 +73,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
             print("📡 [LiveActivity] token stored: type=\(tokenType), activity=\(activityId), length=\(token.count)")
         }
+    }
+
+    private func launchDebugLiveActivityIfNeeded() {
+        #if DEBUG
+        guard #available(iOS 16.2, *) else { return }
+        guard ProcessInfo.processInfo.arguments.contains("--debug-live-activity") else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            let startTime = Date().addingTimeInterval(-25 * 60)
+            SurfingActivityManager.shared.startActivity(
+                startTime: startTime,
+                beachName: "포항 신항만해변",
+                rideCount: 2,
+                averageHeartRate: 146
+            )
+            SurfingActivityManager.shared.applyRemoteUpdate(
+                SurfingActivityAttributes.ContentState(
+                    startTime: startTime,
+                    elapsedMinutes: 25,
+                    statusMessage: "",
+                    beachName: "포항 신항만해변",
+                    rideCount: 2,
+                    averageHeartRate: 146
+                )
+            )
+            print("🧪 [LiveActivity] debug launch mock started")
+        }
+        #endif
     }
 
     @available(iOS 16.2, *)

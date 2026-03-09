@@ -18,62 +18,60 @@ struct MainWatchView: View {
     @State private var sendResultMessage = ""
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 12) {
-                Text(manager.isRunning ? "세션 진행 중" : "세션 제어")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(spacing: 12) {
+            Text(manager.isRunning ? "세션 진행 중" : "세션 제어")
+                .font(.headline)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button(manager.isRunning ? "세션 종료" : "세션 시작") {
-                    if manager.isRunning {
-                        manager.end()
-                    } else {
-                        manager.start()
-                    }
+            Button(manager.isRunning ? "세션 종료" : "세션 시작") {
+                if manager.isRunning {
+                    manager.end()
+                } else {
+                    manager.start()
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
 
-                Button(manager.isRunning ? "라이딩 +1" : "라이딩 추가(세션 시작 후)") {
-                    manager.incrementWaveCount()
+            Button(manager.isRunning ? "라이딩 +1" : "라이딩 추가(세션 시작 후)") {
+                manager.incrementWaveCount()
+            }
+            .buttonStyle(.bordered)
+            .disabled(!manager.isRunning)
+
+            if !manager.isRunning && (manager.elapsed > 0 || manager.distance > 0) {
+                Button("iPhone으로 전송") {
+                    sendDataToiPhone()
                 }
                 .buttonStyle(.bordered)
-                .disabled(!manager.isRunning)
-
-                if !manager.isRunning && (manager.elapsed > 0 || manager.distance > 0) {
-                    Button("iPhone으로 전송") {
-                        sendDataToiPhone()
-                    }
-                    .buttonStyle(.bordered)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(connectivity.isReachable ? .green : .orange)
-                            .frame(width: 7, height: 7)
-                        Text(connectivity.isReachable ? "iPhone 연결됨" : "iPhone 오프라인")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-
-                    if connectivity.pendingCount > 0 {
-                        Text("전송 대기 \(connectivity.pendingCount)건")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
-                    } else if connectivity.mirroredRecordCount > 0 {
-                        Text("동기화 완료 \(connectivity.mirroredRecordCount)건")
-                            .font(.caption2)
-                            .foregroundColor(.blue)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, 2)
             }
-            .padding(.horizontal, 10)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(connectivity.isReachable ? .green : .orange)
+                        .frame(width: 7, height: 7)
+                    Text(connectivity.isReachable ? "iPhone 연결됨" : "iPhone 오프라인")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+
+                if connectivity.pendingCount > 0 {
+                    Text("전송 대기 \(connectivity.pendingCount)건")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
+                } else if connectivity.mirroredRecordCount > 0 {
+                    Text("동기화 완료 \(connectivity.mirroredRecordCount)건")
+                        .font(.caption2)
+                        .foregroundColor(.blue)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 2)
-            .padding(.bottom, 8)
         }
+        .padding(.horizontal, 10)
+        .padding(.top, 2)
+        .padding(.bottom, 8)
         .alert("전송 결과", isPresented: $showingSendResult) {
             Button("확인") {}
         } message: {

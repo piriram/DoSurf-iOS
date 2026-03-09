@@ -15,7 +15,7 @@ private extension SurfingActivityAttributes.ContentState {
         startTime: Date().addingTimeInterval(-25 * 60),
         elapsedMinutes: 25,
         statusMessage: "", 
-        beachName: "양양 인구해변",
+        beachName: "포항 신항만해변",
         rideCount: 2,
         averageHeartRate: 146
     )

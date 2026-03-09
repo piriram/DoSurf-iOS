@@ -52,35 +52,33 @@ private struct WatchSessionOverviewView: View {
     @ObservedObject var connectivity: WatchConnectivityManager
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 10) {
-                HStack {
-                    statusPill
-                    Spacer(minLength: 0)
-                    reachabilityPill
-                }
-
-                Text(formatTime(manager.elapsed))
-                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                    .monospacedDigit()
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .minimumScaleFactor(0.7)
-                    .lineLimit(1)
-
-                HStack(spacing: 8) {
-                    overviewCard(title: "라이딩", value: "\(manager.waveCount)회", symbol: "water.waves")
-                    overviewCard(title: "심박", value: manager.heartRate > 0 ? "\(Int(manager.heartRate)) bpm" : "--", symbol: "heart.fill")
-                }
-
-                HStack(spacing: 8) {
-                    overviewCard(title: "거리", value: "\(Int(manager.distance))m", symbol: "figure.surfing")
-                    overviewCard(title: "칼로리", value: manager.activeCalories > 0 ? "\(Int(manager.activeCalories))" : "--", symbol: "flame.fill")
-                }
+        VStack(spacing: 10) {
+            HStack {
+                statusPill
+                Spacer(minLength: 0)
+                reachabilityPill
             }
-            .padding(.horizontal, 10)
-            .padding(.top, 2)
-            .padding(.bottom, 6)
+
+            Text(formatTime(manager.elapsed))
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .monospacedDigit()
+                .frame(maxWidth: .infinity, alignment: .center)
+                .minimumScaleFactor(0.7)
+                .lineLimit(1)
+
+            HStack(spacing: 8) {
+                overviewCard(title: "라이딩", value: "\(manager.waveCount)회", symbol: "water.waves")
+                overviewCard(title: "심박", value: manager.heartRate > 0 ? "\(Int(manager.heartRate)) bpm" : "--", symbol: "heart.fill")
+            }
+
+            HStack(spacing: 8) {
+                overviewCard(title: "거리", value: "\(Int(manager.distance))m", symbol: "figure.surfing")
+                overviewCard(title: "칼로리", value: manager.activeCalories > 0 ? "\(Int(manager.activeCalories))" : "--", symbol: "flame.fill")
+            }
         }
+        .padding(.horizontal, 10)
+        .padding(.top, 2)
+        .padding(.bottom, 6)
     }
 
     private var statusPill: some View {
