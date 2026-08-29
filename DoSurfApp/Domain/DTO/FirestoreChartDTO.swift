@@ -36,7 +36,7 @@ struct FirestoreChartDTO {
             windDirection: windDirection ?? 0.0,
             windSpeed: windSpeed ?? 0.0,
             waveDirection: omWaveDirection ?? 0.0,
-            waveHeight: waveHeight ?? omWaveHeight ?? 0.0,
+            waveHeight: omWaveHeight ?? waveHeight ?? 0.0,
             wavePeriod: wavePeriod ?? Self.estimateWavePeriod(
                 windSpeed: windSpeed,
                 waveHeight: waveHeight,
