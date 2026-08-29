@@ -123,11 +123,15 @@ final class FirestoreRepository: FirestoreProtocol {
                                 precipitationProbability: data["precipitation_probability"] as? Double
                             )
                             
-                            let wavePeriod = Self.estimateWavePeriod(
-                                windSpeed: data["wind_speed"] as? Double,
-                                waveHeight: waveHeight,
-                                omWaveHeight: data["om_wave_height"] as? Double
-                            )
+                            // 백엔드 Phase 1부터 파랑모델의 실제 파주기가 wave.period_s 로 들어온다.
+                            // 없는 문서(Phase 1 배포 전 수집분)만 풍속 기반 추정으로 떨어진다.
+                            let wave = data["wave"] as? [String: Any]
+                            let wavePeriod = (wave?["period_s"] as? Double)
+                                ?? Self.estimateWavePeriod(
+                                    windSpeed: data["wind_speed"] as? Double,
+                                    waveHeight: waveHeight,
+                                    omWaveHeight: data["om_wave_height"] as? Double
+                                )
                             
                             let forecast = FirestoreChartDTO(
                                 documentId: document.documentID,
@@ -259,12 +263,21 @@ final class FirestoreRepository: FirestoreProtocol {
     
     // MARK: - Helper Methods
     
+    /// 풍속에서 파주기를 유도하는 폴백. `wave.period_s` 가 없는 문서에만 쓴다.
+    ///
+    /// 이 값을 믿지 말 것. 2026-08-29 실측(5개 해변 120시각)에서 실제 파주기와
+    /// 평균 3.89초 어긋났고 92%가 3초 이상 틀렸다. 원인은 두 가지다.
+    /// - clamp 바닥에 걸린다: 풍속이 2.41 m/s 이하면 결과가 항상 2.0이 된다.
+    ///   실측 풍속이 0.1~5.8 m/s라 120시각 중 77%가 2.0으로 고정됐다.
+    /// - 그라운드 스웰을 원리적으로 못 잡는다: 동해는 풍파 성분이 대부분 0인데
+    ///   스웰만으로 5~6.8초가 나온다. 바람이 없어도 먼바다 스웰은 들어온다.
     private static func estimateWavePeriod(
         windSpeed: Double?,
         waveHeight: Double?,
         omWaveHeight: Double?
     ) -> Double? {
         guard let u = windSpeed, u.isFinite, u > 0 else { return nil }
+        // Pierson–Moskowitz fully developed sea approximation: Tp ≈ 0.83 * U10
         let raw = 0.83 * u
         let clamped = max(2.0, min(18.0, raw))
         return clamped
