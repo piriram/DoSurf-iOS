@@ -25,7 +25,19 @@ final class DashboardGuideViewController: UIViewController {
         iv.clipsToBounds = true
         return iv
     }()
-    
+
+    /// 해양 예보는 Open-Meteo 무료 티어를 쓴다. CC BY 4.0이라 출처 표기가 의무다.
+    /// 지우지 말 것 — 라이선스 조건이다.
+    private let attributionLabel: UILabel = {
+        let label = UILabel()
+        label.text = "데이터 제공: Open-Meteo.com, 기상청"
+        label.font = .systemFont(ofSize: 11, weight: .regular)
+        label.textColor = .secondaryLabel
+        label.textAlignment = .center
+        label.numberOfLines = 0
+        return label
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
@@ -33,7 +45,8 @@ final class DashboardGuideViewController: UIViewController {
         view.addSubview(titleLabel)
         view.addSubview(closeButton)
         view.addSubview(sheetImageView)
-        
+        view.addSubview(attributionLabel)
+
         setupConstraints()
         
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
@@ -56,6 +69,11 @@ final class DashboardGuideViewController: UIViewController {
             make.top.equalTo(titleLabel.snp.bottom).offset(12)
             make.leading.trailing.equalToSuperview()
             make.height.equalTo(sheetImageView.snp.width).multipliedBy(572.0/593.0)  // 실제 이미지 비율 사용
+        }
+
+        attributionLabel.snp.makeConstraints { make in
+            make.top.equalTo(sheetImageView.snp.bottom).offset(16)
+            make.leading.trailing.equalToSuperview().inset(20)
         }
     }
     
