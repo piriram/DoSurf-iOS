@@ -19,6 +19,24 @@ final class DashboardGuideViewController: UIViewController {
         return button
     }()
     
+    /// 시트 전체를 불투명하게 덮는 배경.
+    ///
+    /// 지금까지 흰 배경으로 보이던 것은 `sheetImageView` 의 이미지였고, 이미지가
+    /// 끝나는 지점부터 뒤의 대시보드가 비쳤다. 내용이 이미지 높이보다 길어지면
+    /// 바로 드러난다.
+    ///
+    /// `.systemBackground` 로는 안 된다. iOS 26 시트는 반투명 재질을 쓰기 때문에
+    /// 시맨틱 배경색이 그대로 비쳐 보인다. 불투명 값을 직접 지정해야 한다.
+    private let backgroundView: UIView = {
+        let view = UIView()
+        view.backgroundColor = UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 1)
+                : UIColor(white: 1, alpha: 1)
+        }
+        return view
+    }()
+
     private let sheetImageView: UIImageView = {
         let iv = UIImageView(image: UIImage(named: "sheetImage"))
         iv.contentMode = .scaleToFill
@@ -42,6 +60,7 @@ final class DashboardGuideViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
         
+        view.addSubview(backgroundView)   // 나머지보다 먼저 — 맨 뒤에 깔린다
         view.addSubview(titleLabel)
         view.addSubview(closeButton)
         view.addSubview(sheetImageView)
@@ -53,6 +72,10 @@ final class DashboardGuideViewController: UIViewController {
     }
     
     private func setupConstraints() {
+        backgroundView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
+        }
+
         closeButton.snp.makeConstraints { make in
             make.top.equalTo(view.safeAreaLayoutGuide).offset(12)
             make.trailing.equalToSuperview().inset(16)
