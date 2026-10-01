@@ -311,7 +311,7 @@ final class ChartRowView: UIView {
         
         windLabel.text = String(format: "%.1fm/s", chart.windSpeed)
         waveHeightLabel.text = String(format: "%.1fm", chart.waveHeight)
-        wavePeriodLabel.text = String(format: "%.1fs", chart.wavePeriod)
+        wavePeriodLabel.text = chart.wavePeriod > 0 ? String(format: "%.1fs", chart.wavePeriod) : "—"
         temperatureLabel.text = String(format: "%.0f°C", chart.waterTemperature)
         
         ratingLabel.text = "—점"

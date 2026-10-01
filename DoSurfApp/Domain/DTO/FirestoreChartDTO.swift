@@ -37,28 +37,11 @@ struct FirestoreChartDTO {
             windSpeed: windSpeed ?? 0.0,
             waveDirection: omWaveDirection ?? 0.0,
             waveHeight: omWaveHeight ?? waveHeight ?? 0.0,
-            wavePeriod: wavePeriod ?? Self.estimateWavePeriod(
-                windSpeed: windSpeed,
-                waveHeight: waveHeight,
-                omWaveHeight: omWaveHeight
-            ) ?? 0.0,
+            wavePeriod: wavePeriod ?? 0.0,
             waterTemperature: omSeaSurfaceTemperature ?? 0.0,
             weather: computedWeather,
             airTemperature: airTemperature ?? 0.0
         )
-    }
-    
-    private static func estimateWavePeriod(
-        windSpeed: Double?,
-        waveHeight: Double?,
-        omWaveHeight: Double?
-    ) -> Double? {
-        guard let u = windSpeed, u.isFinite, u > 0 else { return nil }
-        // Pierson–Moskowitz fully developed sea approximation:
-        // Tp ≈ 0.83 * U10 (seconds), clamp to a reasonable surf range
-        let raw = 0.83 * u
-        let clamped = max(2.0, min(18.0, raw))
-        return clamped
     }
     
     private func mapWeather(skyCondition: Int?, precipitationType: Int?) -> WeatherType {
