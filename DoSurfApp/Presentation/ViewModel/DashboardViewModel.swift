@@ -169,7 +169,9 @@ final class DashboardViewModel {
                         let c = Double(perBeachStats.count)
                         let avgWind  = perBeachStats.map(\.wSpeed).reduce(0,+) / c
                         let avgWaveH = perBeachStats.map(\.h).reduce(0,+) / c
-                        let avgWaveP = perBeachStats.map(\.p).reduce(0,+) / c
+                        // 파주기 0은 값 없음이라 평균에서 뺀다
+                        let periods  = perBeachStats.map(\.p).filter { $0 > 0 }
+                        let avgWaveP = periods.isEmpty ? 0 : periods.reduce(0,+) / Double(periods.count)
                         let avgWindDir = self.averageDirectionDegrees(perBeachStats.compactMap(\.wDir))
                         let avgWaveDir = self.averageDirectionDegrees(perBeachStats.compactMap(\.wvDir))
 
@@ -179,7 +181,7 @@ final class DashboardViewModel {
                                   directionDegrees: avgWindDir, icon: "windFillIcon", color: .surfBlue),
                             .init(type: .wave, title: "파도",
                                   value: String(format: "%.1fm", avgWaveH),
-                                  subtitle: String(format: "%.1fs", avgWaveP),
+                                  subtitle: avgWaveP > 0 ? String(format: "%.1fs", avgWaveP) : "—",
                                   directionDegrees: avgWaveDir, icon: "waveFillIcon", color: .surfBlue),
                         ]
                     }
@@ -323,7 +325,8 @@ final class DashboardViewModel {
         let wSpeed = window.map(\.windSpeed).reduce(0,+) / Double(window.count)
         let wDir   = averageDirectionDegrees(window.map(\.windDirection))
         let h      = window.map(\.waveHeight).reduce(0,+) / Double(window.count)
-        let p      = window.map(\.wavePeriod).reduce(0,+) / Double(window.count)
+        let periods = window.map(\.wavePeriod).filter { $0 > 0 }
+        let p      = periods.isEmpty ? 0 : periods.reduce(0,+) / Double(periods.count)
         let wvDir  = averageDirectionDegrees(window.map(\.waveDirection))
         return (wSpeed, wDir, h, p, wvDir)
     }

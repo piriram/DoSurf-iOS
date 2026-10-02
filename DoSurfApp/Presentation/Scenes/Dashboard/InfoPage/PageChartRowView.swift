@@ -346,13 +346,17 @@ final class ChartRowView: UIView {
         if !record.charts.isEmpty {
             avgWindSpeed = record.charts.map { $0.windSpeed }.reduce(0, +) / Double(record.charts.count)
             avgWaveHeight = record.charts.map { $0.waveHeight }.reduce(0, +) / Double(record.charts.count)
-            avgWavePeriod = record.charts.map { $0.wavePeriod }.reduce(0, +) / Double(record.charts.count)
+            // 파주기 0은 값 없음이라 평균에서 뺀다
+            let wavePeriods = record.charts.map { $0.wavePeriod }.filter { $0 > 0 }
+            if !wavePeriods.isEmpty {
+                avgWavePeriod = wavePeriods.reduce(0, +) / Double(wavePeriods.count)
+            }
             avgWaterTemperature = record.charts.map { $0.waterTemperature }.reduce(0, +) / Double(record.charts.count)
         }
         
         windLabel.text = String(format: "%.1fm/s", avgWindSpeed)
         waveHeightLabel.text = String(format: "%.1fm", avgWaveHeight)
-        wavePeriodLabel.text = String(format: "%.1fs", avgWavePeriod)
+        wavePeriodLabel.text = avgWavePeriod > 0 ? String(format: "%.1fs", avgWavePeriod) : "—"
         temperatureLabel.text = String(format: "%.0f°C", avgWaterTemperature)
         
         let rating = Int(record.rating)
