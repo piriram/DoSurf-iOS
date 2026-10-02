@@ -215,7 +215,7 @@ final class ChartTableViewCell: UITableViewCell {
         timeLabel.setTextWithTypography(chart.time.toFormattedString(format: "HH시"), style: .body2Medium, color: UIColor(white: 0, alpha: 0.7))
         windSpeedLabel.setTextWithTypography(String(format: "%.1fm/s", chart.windSpeed), style: .body1Medium)
         waveHeightLabel.setTextWithTypography(String(format: "%.1fm", chart.waveHeight), style: .body1Medium)
-        waveSpeedLabel.setTextWithTypography(String(format: "%.1fs", chart.wavePeriod), style: .captionMedium, color: .secondaryLabel)
+        waveSpeedLabel.setTextWithTypography(chart.wavePeriod > 0 ? String(format: "%.1fs", chart.wavePeriod) : "—", style: .captionMedium, color: .secondaryLabel)
         airTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.airTemperature), style: .body1Medium)
         waterTemperatureLabel.setTextWithTypography(String(format: "%.0f°C", chart.waterTemperature), style: .body1Medium, color: .label)
         

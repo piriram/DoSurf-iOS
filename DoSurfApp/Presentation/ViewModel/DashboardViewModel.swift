@@ -116,7 +116,7 @@ final class DashboardViewModel {
                           directionDegrees: last.windDirection, icon: "windFillIcon", color: .surfBlue),
                     .init(type: .wave, title: "파도",
                           value: String(format: "%.1fm", last.waveHeight),
-                          subtitle: String(format: "%.1fs", last.wavePeriod),
+                          subtitle: last.wavePeriod > 0 ? String(format: "%.1fs", last.wavePeriod) : "—",
                           directionDegrees: last.waveDirection, icon: "waveFillIcon", color: .surfBlue),
                 ]
             }
